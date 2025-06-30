@@ -1,0 +1,529 @@
+import React, { useState, useEffect, useContext } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { AuthContext } from '@/context/AuthContext';
+import { Calendar, MapPin, Users, Phone, Mail, User, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+
+const BookingRequestForm = () => {
+   const [searchParams] = useSearchParams();
+   const eventDate = searchParams.get('date');
+
+   // Form state
+   const [formData, setFormData] = useState({
+      eventType: '',
+      numGuests: '',
+      eventLocation: '',
+      venueType: '',
+      mealPreference: [],
+      selectedCuisine: '',
+      selectedPackage: null,
+      selectedLiveCounters: [],
+      selectedSpecialMenus: [],
+      specialRequests: ''
+   });
+
+   // UI state
+   const [catererData, setCatererData] = useState(null);
+   const [loading, setLoading] = useState(true);
+   const [submitting, setSubmitting] = useState(false);
+   const [error, setError] = useState('');
+   const [success, setSuccess] = useState(false);
+   const [estimatedCost, setEstimatedCost] = useState(0);
+   const [debugInfo, setDebugInfo] = useState('');
+   const { currentUser } = useContext(AuthContext);
+
+   // Fetch caterer data
+   useEffect(() => {
+      const catererId = window.location.hash.split("/")[2].split("?")[0];
+      fetchCatererProfile(catererId);
+   }, []);
+
+   // Calculate estimated cost whenever form data changes
+   useEffect(() => {
+      calculateEstimatedCost();
+   }, [formData.numGuests, formData.selectedPackage, formData.selectedLiveCounters, formData.selectedSpecialMenus]);
+
+   const fetchCatererProfile = async (catererId) => {
+      try {
+         setLoading(true);
+         const response = await fetch(`http://localhost:5000/api/caterers-details/${catererId}/view-profile`);
+
+         if (!response.ok) {
+            throw new Error('Failed to fetch caterer profile');
+         }
+
+         const data = await response.json();
+         console.log(data);
+         if (data.success) {
+            setCatererData(data.data);
+         } else {
+            throw new Error(data.message || 'Failed to load caterer profile');
+         }
+      } catch (err) {
+         setError(err.message);
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   // Calculate estimated cost with debugging
+   const calculateEstimatedCost = () => {
+      console.log('Calculating cost...', {
+         numGuests: formData.numGuests,
+         selectedPackage: formData.selectedPackage,
+         selectedLiveCounters: formData.selectedLiveCounters
+      });
+
+      if (!formData.numGuests || !formData.selectedPackage) {
+         setEstimatedCost(0);
+         setDebugInfo('Missing numGuests or selectedPackage');
+         return;
+      }
+
+      const numGuests = parseInt(formData.numGuests);
+      if (isNaN(numGuests) || numGuests <= 0) {
+         setEstimatedCost(0);
+         setDebugInfo('Invalid number of guests');
+         return;
+      }
+
+      let totalCost = 0;
+      let breakdown = [];
+
+      // Base package cost
+      const packageCost = numGuests * formData.selectedPackage.pricePerPlate;
+      totalCost += packageCost;
+      breakdown.push(`Base Package: ${numGuests} × ₹${formData.selectedPackage.pricePerPlate} = ₹${packageCost}`);
+
+      // Add live counters cost
+      formData.selectedLiveCounters.forEach(counter => {
+         let counterCost = 0;     
+         counterCost = numGuests * counter.pricePerPlate;       
+         totalCost += counterCost;
+         breakdown.push(`${counter.name}: ${numGuests} × ₹${counter.pricePerPlate} = ₹${counterCost}`);
+      });
+
+      // Add special menus cost
+      formData.selectedSpecialMenus.forEach(menu => {
+         let menuCost = 0;
+         if (menu.costType === 'per_person') {
+            menuCost = numGuests * menu.cost;
+         } else {
+            menuCost = menu.cost;
+         }
+         totalCost += menuCost;
+         breakdown.push(`${menu.name}: ₹${menuCost}`);
+      });
+
+      setEstimatedCost(totalCost);
+      setDebugInfo(breakdown.join('\n'));
+      console.log('Final cost:', totalCost);
+   };
+
+   const handleInputChange = (field, value) => {
+      setFormData(prev => ({
+         ...prev,
+         [field]: value
+      }));
+   };
+
+   const handleMultiSelect = (field, item) => {
+      setFormData(prev => ({
+         ...prev,
+         [field]: prev[field].includes(item)
+            ? prev[field].filter(i => i !== item)
+            : [...prev[field], item]
+      }));
+   };
+
+   const handleSubmit = async (e) => {
+      e.preventDefault();
+      setSubmitting(true);
+      setError('');
+
+      try {
+         const catererId = window.location.hash.split("/")[2].split("?")[0];
+
+         const response = await fetch('http://localhost:5000/api/booking/booking-requests', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+               Authorization: `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({
+               ...formData,
+               catererId,
+               eventDate,
+               estimatedCost
+            })
+         });
+
+         if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to submit booking request');
+         }
+
+         setSuccess(true);
+      } catch (err) {
+         setError(err.message || 'Failed to submit booking request. Please try again.');
+         console.error(err);
+      } finally {
+         setSubmitting(false);
+      }
+   };
+
+   // Helper function to safely render values
+   const safeRender = (value, defaultText = 'Not specified') => {
+      if (value === null || value === undefined || value === '') {
+         return defaultText;
+      }
+      if (typeof value === 'object') {
+         return JSON.stringify(value);
+      }
+      return String(value);
+   };
+
+   // Get packages for selected cuisine
+   const getPackagesForCuisine = (cuisineName) => {
+      if (!catererData?.menu?.packages || !cuisineName) return [];
+      return catererData.menu.packages[cuisineName] || [];
+   };
+
+   if (loading) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+               <p className="mt-4 text-gray-600">Loading booking form...</p>
+            </div>
+         </div>
+      );
+   }
+
+   if (success) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+               <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
+               <p className="text-gray-600 mb-6">
+                  Your booking request has been submitted successfully. The caterer will review your request and contact you soon.
+               </p>
+               <Link
+                  to={'/dashboard'} 
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+               >
+                  Go to Dashboard
+               </Link>
+            </div>
+         </div>
+      );
+   }
+
+   if (!catererData) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+               <p className="text-gray-600">Failed to load caterer data. Please try again.</p>
+            </div>
+         </div>
+      );
+   }
+
+   const { vendorInfo, menu, services } = catererData;
+
+   return (
+      <div className="min-h-screen text-gray-700 bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
+         <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+               {/* Header */}
+               <div className="bg-blue-600 text-white p-6">
+                  <h1 className="text-2xl font-bold mb-2">Booking Request (Debug Version)</h1>
+                  <p className="text-blue-100">Test the estimated cost calculation</p>
+               </div>
+
+               {/* Error Alert */}
+               {error && (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-4 m-6">
+                     <div className="flex">
+                        <AlertCircle className="h-5 w-5 text-red-400" />
+                        <div className="ml-3">
+                           <p className="text-sm text-red-700">{error}</p>
+                        </div>
+                     </div>
+                  </div>
+               )}
+
+               <form onSubmit={handleSubmit} className="p-6 space-y-8">
+                  {/* Client Details */}
+                  <div className="border-b border-gray-200 pb-6">
+                     <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <User className="h-5 w-5 mr-2" />
+                        Your Details
+                     </h2>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                           <User className="h-4 w-4 text-gray-400 mr-2" />
+                           <span className="text-sm text-gray-700">{currentUser?.name}</span>
+                        </div>
+                        <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                           <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                           <span className="text-sm text-gray-700">{currentUser?.contact}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Caterer & Date Info */}
+                  <div className="border-b border-gray-200 pb-6">
+                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Booking Details</h2>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                           <span className="text-sm font-medium text-blue-900">Caterer: {vendorInfo?.ownerName}, {vendorInfo?.businessName}</span>
+                        </div>
+                        <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                           <Calendar className="h-4 w-4 text-blue-600 mr-2" />
+                           <span className="text-sm font-medium text-blue-900">{eventDate ? new Date(eventDate).toLocaleDateString() : 'No date selected'}</span>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Event Details */}
+                  <div className="space-y-6">
+                     <h2 className="text-lg font-semibold text-gray-900">Event Details</h2>
+
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-2">Event Type *</label>
+                           <select
+                              value={formData.eventType}
+                              onChange={(e) => handleInputChange('eventType', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                           >
+                              <option value="">Select event type</option>
+                              <option value="Wedding">Wedding</option>
+                              <option value="Birthday Party">Birthday Party</option>
+                              <option value="Corporate Event">Corporate Event</option>
+                              <option value="Pooja/Religious">Pooja/Religious</option>
+                              <option value="Baby Shower">Baby Shower</option>
+                              <option value="Housewarming">Housewarming</option>
+                              <option value="Small Get-Together">Small Get-Together</option>
+                              <option value="Other">Other</option>
+                           </select>
+                        </div>
+
+                        <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-2">Number of Guests *</label>
+                           <div className="relative">
+                              <Users className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                              <input
+                                 type="number"
+                                 value={formData.numGuests}
+                                 onChange={(e) => handleInputChange('numGuests', e.target.value)}
+                                 className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                 placeholder="Enter number of guests"
+                                 min="0"
+                                 required
+                              />
+                           </div>
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Event Location (Locality in Patna) *</label>
+                        <div className="relative">
+                           <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                           <input
+                              type="text"
+                              value={formData.eventLocation}
+                              onChange={(e) => handleInputChange('eventLocation', e.target.value)}
+                              className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="e.g., Kankarbagh, Fraser Road, Bailey Road"
+                              required
+                           />
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Venue Type</label>
+                        <select
+                           value={formData.venueType}
+                           onChange={(e) => handleInputChange('venueType', e.target.value)}
+                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                           <option value="">Select venue type</option>
+                           <option value="Banquet Hall">Banquet Hall</option>
+                           <option value="Home">Home</option>
+                           <option value="Office">Office</option>
+                           <option value="Open Ground">Open Ground</option>
+                           <option value="Rooftop">Rooftop</option>
+                           <option value="Other">Other</option>
+                        </select>
+                     </div>
+                  </div>
+
+                  {/* Catering Preferences */}
+                  <div className="space-y-6">
+                     <h2 className="text-lg font-semibold text-gray-900">Catering Preferences</h2>
+
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Meal Preference *</label>
+                        <div className="grid grid-cols-2 gap-3">
+                           {['Vegetarian Only', 'Non-Vegetarian', 'Mixed', 'Jain'].map((pref) => (
+                              <label key={pref} className="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                 <input
+                                    type="checkbox"
+                                    checked={formData.mealPreference.includes(pref)}
+                                    onChange={() => handleMultiSelect('mealPreference', pref)}
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                 />
+                                 <span className="ml-2 text-sm text-gray-700">{pref}</span>
+                              </label>
+                           ))}
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Cuisine Selection *</label>
+                        <select
+                           value={formData.selectedCuisine}
+                           onChange={(e) => {
+                              handleInputChange('selectedCuisine', e.target.value);
+                              handleInputChange('selectedPackage', null);
+                           }}
+                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           required
+                        >
+                           <option value="">Select cuisine</option>
+                           {Array.isArray(menu?.cuisines) && menu.cuisines.length > 0 ? (
+                              menu.cuisines.map((cuisine, index) => (
+                                 <option key={index} value={cuisine}>
+                                    {safeRender(cuisine)}
+                                 </option>
+                              ))
+                           ) : (
+                              <option disabled>No cuisines available</option>
+                           )}
+                        </select>
+                     </div>
+
+                     {/* Package Selection */}
+                     {formData.selectedCuisine && (
+                        <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-3">Package Selection *</label>
+                           <div className="space-y-3">
+                              {getPackagesForCuisine(formData.selectedCuisine).map((pkg, index) => (
+                                 <label key={index} className="flex items-start p-4 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <input
+                                       type="radio"
+                                       name="package"
+                                       checked={formData.selectedPackage?.name === pkg.name}
+                                       onChange={() => handleInputChange('selectedPackage', pkg)}
+                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mt-1"
+                                    />
+                                    <div className="ml-3 flex-1">
+                                       <div className="flex justify-between items-start">
+                                          <h3 className="text-sm font-medium text-gray-900">{pkg.name}</h3>
+                                          <span className="text-sm font-bold text-blue-600">₹{pkg.pricePerPlate}/plate</span>
+                                       </div>
+                                       <p className="text-xs flex gap-1 sm:gap-2 text-gray-600 mt-1">
+                                          {Object.entries(pkg.itemCounts).map(([type, count]) => (
+                                             <div key={type} className="text-center flex justify-center items-center gap-0.5 sm:gap-1">
+                                                <div className="sm:text-sm text-sm text-gray-900">{count}</div>
+                                                <div className="text-xs text-gray-500 capitalize leading-tight">{type}</div>
+                                             </div>
+                                          ))}
+                                       </p>
+                                    </div>
+                                 </label>
+                              ))}
+                           </div>
+                        </div>
+                     )}
+
+                     {/* Live Counters */}
+                     {services?.liveCounters && services.liveCounters.length > 0 && (
+                        <div>
+                           <label className="block text-sm font-medium text-gray-700 mb-3">Live Counters (Optional)</label>
+                           <div className="space-y-2">
+                              {services.liveCounters.map((counter, index) => (
+                                 <label key={index} className="flex items-center justify-between p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <div className="flex items-center">
+                                       <input
+                                          type="checkbox"
+                                          checked={formData.selectedLiveCounters.some(c => c.name === counter.name)}
+                                          onChange={() => handleMultiSelect('selectedLiveCounters', counter)}
+                                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                       />
+                                       <span className="ml-2 text-sm text-gray-700">{counter.name}</span>
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900">
+                                       ₹{counter.pricePerPlate } per person 
+                                    </span>
+                                 </label>
+                              ))}
+                           </div>
+                        </div>
+                     )}
+
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Special Requests/Notes</label>
+                        <textarea
+                           value={formData.specialRequests}
+                           onChange={(e) => handleInputChange('specialRequests', e.target.value)}
+                           rows={4}
+                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Any special dietary requirements, decorations, or other requests..."
+                        />
+                     </div>
+                  </div>
+
+                  {/* Estimated Cost */}
+                  {estimatedCost > 0 && (
+                     <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <h3 className="text-lg font-semibold text-green-900 mb-2">Estimated Cost</h3>
+                        <div className="text-3xl font-bold text-green-700 mb-2">₹{estimatedCost.toLocaleString()}</div>
+                        <p className="text-sm text-green-600">
+                           * This is an estimated quote and includes base package + selected live counters. Final pricing will be confirmed by the caterer.
+                        </p>
+                     </div>
+                  )}
+
+                  {/* Current Form State Display */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                     <h4 className="font-medium text-gray-900 mb-2">Current Form State:</h4>
+                     <div className="text-xs text-gray-600 space-y-1">
+                        <div>Number of Guests: {formData.numGuests || 'Not set'}</div>
+                        <div>Selected Package: {formData.selectedPackage?.name || 'Not selected'}</div>
+                        <div>Package Price: {formData.selectedPackage?.pricePerPlate ? `₹${formData.selectedPackage.pricePerPlate}` : 'N/A'}</div>
+                        <div>Live Counters: {formData.selectedLiveCounters.length}</div>
+                        <div>Estimated Cost: ₹{estimatedCost}</div>
+                     </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-6">
+                     <button
+                        type="submit"
+                        disabled={submitting || !formData.eventType || !formData.numGuests || !formData.eventLocation ||
+                           formData.mealPreference.length === 0 || !formData.selectedCuisine || !formData.selectedPackage}
+                        className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                        {submitting ? (
+                           <div className="flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                              Submitting Request...
+                           </div>
+                        ) : (
+                           `Send Booking Request (₹${estimatedCost.toLocaleString()})`
+                        )}
+                     </button>
+                  </div>
+               </form>
+            </div>
+         </div>
+      </div>
+   );
+};
+
+export default BookingRequestForm;

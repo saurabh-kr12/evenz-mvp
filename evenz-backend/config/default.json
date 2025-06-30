@@ -1,0 +1,10 @@
+
+{
+  "mongoURI": "mongodb://localhost:27017/sayenify",
+  "jwtExpire": "7d",
+  "jwtCookieExpire": 7,
+  "emailHost": "smtp.example.com",
+  "emailPort": 587,
+  "emailSecure": false,
+  "emailFrom": "no-reply@yourdomain.com"
+}
