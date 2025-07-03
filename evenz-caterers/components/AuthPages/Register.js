@@ -1,9 +1,10 @@
+"use client";
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { User, Mail, Phone, Building, MapPin, Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { AuthContext } from '@/context/AuthContext';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 // OTP Verification Component
 const OtpVerification = ({ value, onChange, onVerify, loading, verified, label }) => {
@@ -57,7 +58,7 @@ const OtpVerification = ({ value, onChange, onVerify, loading, verified, label }
 };
 
 const Register = () => {
-  const navigate = useNavigate()
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -200,7 +201,7 @@ const Register = () => {
       setLoading(false);
 
       // Navigate to profile page
-      navigate('/dashboard');
+      router.push('/dashboard');
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed. Please try again.');
       setLoading(false);
@@ -632,7 +633,7 @@ const Register = () => {
                 <p className="text-gray-600 text-sm">
                   Already have an account?{' '}
                   <Link
-                    to={'/login'}
+                    href={'/login'}
                     className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors underline-offset-4 hover:underline"
                   >
                     Sign in here

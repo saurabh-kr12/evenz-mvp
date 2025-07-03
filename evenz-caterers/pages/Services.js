@@ -1,6 +1,7 @@
+"use client";
 import React from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { FaUtensils, FaTruck, FaConciergeBell, FaShieldAlt, FaFileContract, FaImages, FaComments } from 'react-icons/fa'; // ✅ updated icons
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { FaUtensils, FaTruck, FaConciergeBell, FaShieldAlt, FaFileContract, FaImages } from 'react-icons/fa';
 import MenuCuisinesModule from '@/components/ServicePages/MenuCuisines';
 import ServicesLogistics from '@/components/ServicePages/ServiceLogistics';
 import CustomizationTasting from '@/components/ServicePages/Customization&Tasting';
@@ -9,33 +10,52 @@ import LegalPaymentSection from '@/components/ServicePages/Legal';
 import ExperienceMedia from '@/components/ServicePages/Media';
 
 const ServiceDashboard = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const currentPath = location.pathname.split('/').pop() || 'menu';
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get current tab from URL search params, default to 'menu'
+  const currentTab = searchParams.get('tab') || 'menu';
 
-  const handleNavigation = (path) => {
-    navigate(`/services/${path}`);
+  const handleNavigation = (tab) => {
+    router.push(`/services?tab=${tab}`);
   };
 
   const menuItems = [
-    { key: 'menu', label: 'Menu & Cuisines', icon: <FaUtensils /> }, // 🍽️ food-related
-    { key: 'services', label: 'Services & Logistics', icon: <FaTruck /> }, // 🚚 delivery/logistics
-    { key: 'customization', label: 'Customization & Tasting', icon: <FaConciergeBell /> }, // 🛎️ service/personalization
-    { key: 'compliance', label: 'Compliance & Safety', icon: <FaShieldAlt /> }, // 🛡️ protection/safety
-    { key: 'legal', label: 'Legal & Payment', icon: <FaFileContract /> }, // 📄 contracts/legal
-    { key: 'media', label: 'Media', icon: <FaImages /> }, // 🖼️ photos/videos
+    { key: 'menu', label: 'Menu & Cuisines', icon: <FaUtensils /> },
+    { key: 'services', label: 'Services & Logistics', icon: <FaTruck /> },
+    { key: 'customization', label: 'Customization & Tasting', icon: <FaConciergeBell /> },
+    { key: 'compliance', label: 'Compliance & Safety', icon: <FaShieldAlt /> },
+    { key: 'legal', label: 'Legal & Payment', icon: <FaFileContract /> },
+    { key: 'media', label: 'Media', icon: <FaImages /> },
   ];
 
+  const renderContent = () => {
+    switch (currentTab) {
+      case 'menu':
+        return <MenuCuisinesModule />;
+      case 'services':
+        return <ServicesLogistics />;
+      case 'customization':
+        return <CustomizationTasting />;
+      case 'compliance':
+        return <ComplianceSection />;
+      case 'legal':
+        return <LegalPaymentSection />;
+      case 'media':
+        return <ExperienceMedia />;
+      default:
+        return <MenuCuisinesModule />;
+    }
+  };
 
   return (
     <div className="bg-gray-50">
       <div className="flex px-4 sm:px-6 lg:px-8 py-4 md:py-6 max-w-7xl mx-auto flex-col lg:flex-row sm:gap-6">
         <div className="lg:w-1/5 space-y-6">
-
           {/* Dropdown Menu for mobile and tablet */}
           <div className="lg:hidden bg-white rounded-lg shadow-sm p-4">
             <select
-              value={currentPath}
+              value={currentTab}
               onChange={(e) => handleNavigation(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 text-gray-700"
             >
@@ -44,7 +64,6 @@ const ServiceDashboard = () => {
                   {item.label}
                 </option>
               ))}
-
             </select>
           </div>
 
@@ -56,29 +75,28 @@ const ServiceDashboard = () => {
                   <li key={item.key}>
                     <button
                       onClick={() => handleNavigation(item.key)}
-                      className={`w-full text-sm flex gap-y-1 items-center px-4 py-3 rounded-md cursor-pointer ${currentPath === item.key ? 'bg-blue-50 text-blue-700' : 'text-gray-800 hover:bg-gray-100'}`}
+                      className={`w-full text-sm flex gap-y-1 items-center px-4 py-3 rounded-md cursor-pointer ${
+                        currentTab === item.key 
+                          ? 'bg-blue-50 text-blue-700' 
+                          : 'text-gray-800 hover:bg-gray-100'
+                      }`}
                     >
-                      <span className={`mr-3 ${currentPath === item.key ? 'text-blue-700' : 'text-gray-500'}`}>{item.icon}</span>
+                      <span className={`mr-3 ${
+                        currentTab === item.key ? 'text-blue-700' : 'text-gray-500'
+                      }`}>
+                        {item.icon}
+                      </span>
                       <span>{item.label}</span>
                     </button>
                   </li>
                 ))}
-
               </ul>
             </nav>
           </div>
         </div>
 
         <div className="lg:w-4/5 min-h-screen">
-          <Routes>
-            <Route index element={<MenuCuisinesModule />} />
-            <Route path="menu" element={<MenuCuisinesModule />} />
-            <Route path="services" element={<ServicesLogistics />} />
-            <Route path="customization" element={<CustomizationTasting />} />
-            <Route path="compliance" element={<ComplianceSection />} />
-            <Route path="legal" element={<LegalPaymentSection />} />
-            <Route path="media" element={<ExperienceMedia />} />
-          </Routes>
+          {renderContent()}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
+"use client"
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
+import Link from 'next/link';
 
 const Footer = () => {
    const currentYear = new Date().getFullYear();
@@ -22,22 +22,22 @@ const Footer = () => {
                   <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
                   <ul className="space-y-2 text-sm text-gray-300">
                      <li>
-                        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+                        <Link href="/dashboard" className="hover:text-primary">Dashboard</Link>
                      </li>
                      <li>
-                        <Link to="/profile" className="hover:text-primary">Profile</Link>
+                        <Link href="/your-profile" className="hover:text-primary">Profile</Link>
                      </li>
                      <li>
-                        <Link to="/services" className="hover:text-primary">Services</Link>
+                        <Link href="/services" className="hover:text-primary">Services</Link>
                      </li>
                      <li>
-                        <Link to="/bookings" className="hover:text-primary">Bookings</Link>
+                        <Link href="/bookings" className="hover:text-primary">Bookings</Link>
                      </li>
                      <li>
-                        <Link to="/calendar" className="hover:text-primary">Calendar</Link>
+                        <Link href="/calendar" className="hover:text-primary">Calendar</Link>
                      </li>
                      <li>
-                        <Link to="/faq" className="hover:text-primary">FAQ</Link>
+                        <Link href="/faq" className="hover:text-primary">FAQ</Link>
                      </li>
                   </ul>
                </div>
@@ -77,8 +77,8 @@ const Footer = () => {
                   &copy; {currentYear} Evenz.in. All rights reserved.
                </p>
                <div className="mt-4 md:mt-0 flex space-x-6">
-                  <Link to="/terms" className="text-sm text-gray-300 hover:text-primary">Terms of Service</Link>
-                  <Link to="/privacy" className="text-sm text-gray-300 hover:text-primary">Privacy Policy</Link>
+                  <Link href="/terms" className="text-sm text-gray-300 hover:text-primary">Terms of Service</Link>
+                  <Link href="/privacy" className="text-sm text-gray-300 hover:text-primary">Privacy Policy</Link>
                </div>
             </div>
          </div>

@@ -1,11 +1,12 @@
-import React, { useState,useContext } from 'react';
+"use client";
+import React, { useState,useContext, use } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { AuthContext } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const Login = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { login } = useContext(AuthContext);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ const Login = () => {
       await login(formData);
       setLoading(false);
       // Navigate to profile page
-      navigate('/dashboard');
+      router.push('/dashboard');
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed. Please check your credentials.');
       setLoading(false);
@@ -211,7 +212,7 @@ const Login = () => {
                 <p className="text-gray-600 text-sm">
                   Don't have an account?{' '}
                   <Link 
-                    to={'/register'}
+                    href={'/register'}
                     className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors underline-offset-4 hover:underline"
                   >
                     Create one now

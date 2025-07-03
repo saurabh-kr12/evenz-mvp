@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+"use client";
+import React, { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   User, 
   Calendar, 
@@ -17,7 +18,7 @@ import {
 } from 'lucide-react';
 
 const CatererDashboard = () => {
-  const navigate = useNavigate();
+  const navigate = useRouter().push;
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

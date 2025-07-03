@@ -1,9 +1,8 @@
-// // client/src/context/AuthContext.js
+'use client'
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
 import axios from 'axios';
 
-// export const AuthContext = createContext();
 export const AuthContext = createContext({
   currentUser: null,
   loading: true,
@@ -13,15 +12,25 @@ export const AuthContext = createContext({
   updateProfile: () => { }
 });
 
+// Create axios instance
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api'
+});
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Keep most of the existing code, but make these adjustments:
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const token = localStorage.getItem('token'); // Changed from 'authToken' to match your existing token storage
+        // Check if we're on the client side
+        if (typeof window === 'undefined') {
+          setLoading(false);
+          return;
+        }
+
+        const token = localStorage.getItem('token');
         if (token) {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           const res = await axios.get('http://localhost:5000/api/vendor/vendor-profile/profile', {
@@ -29,12 +38,13 @@ export const AuthProvider = ({ children }) => {
               Authorization: `Bearer ${token}`
             }
           });
-          setCurrentUser(res.data); // Changed from res.data.user to res.data based on your API response
-          
+          setCurrentUser(res.data);
         }
       } catch (error) {
         console.error('Failed to load user:', error);
-        localStorage.removeItem('token');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+        }
       } finally {
         setLoading(false);
       }
@@ -45,22 +55,28 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const res = await axios.post('http://localhost:5000/api/vendor/auth/register', userData);
-    localStorage.setItem('token', res.data.token);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', res.data.token);
+    }
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setCurrentUser(res.data.user || res.data); // Handle both response structures
+    setCurrentUser(res.data.user || res.data);
     return res.data;
   };
 
   const login = async (credentials) => {
     const res = await axios.post('http://localhost:5000/api/vendor/auth/login', credentials);
-    localStorage.setItem('token', res.data.token);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', res.data.token);
+    }
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setCurrentUser(res.data.user || res.data); // Handle both response structures
+    setCurrentUser(res.data.user || res.data);
     return res.data;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
     delete api.defaults.headers.common['Authorization'];
     setCurrentUser(null);
   };

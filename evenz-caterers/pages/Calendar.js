@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Calendar, Save, Edit3, ChevronDown, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
 

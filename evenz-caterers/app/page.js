@@ -1,96 +1,20 @@
-"use client"
-import React, { useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from '@/components/AuthPages/login';
-import Register from '@/components/AuthPages/Register';
-import Dashboard from '@/pages/Dashboard';
-import Services from '@/pages/Services';
-import Bookings from '@/pages/Bookings';
-import Profile from '@/components/ProfilePage/Profile';
-import FAQ from '@/pages/FAQ';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { AuthProvider } from '@/context/AuthContext';
-import PrivateRoute from '@/components/PrivateRoute';
-import AvailabilityCalendar from '@/pages/Calendar';
+'use client'
 
-function App() {
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function HomePage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to register page
+    router.replace('/register')
+  }, [router])
 
   return (
-
-    <Router>
-      <AuthProvider>
-        <div>
-          <Navbar />
-          <main className='bg-gray-50'>
-            <Routes>
-              {/* Auth Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-
-
-
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/your-profile"
-                element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/calendar"
-                element={
-                  <PrivateRoute>
-                    <AvailabilityCalendar />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/bookings"
-                element={
-                  <PrivateRoute>
-                    <Bookings />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/services/*"
-                element={
-                  <PrivateRoute>
-                    <Services />
-                  </PrivateRoute>
-                }
-              />
-              
-              <Route
-                path="/faq"
-                element={
-                  <PrivateRoute>
-                    <FAQ />
-                  </PrivateRoute>
-                }
-              />
-
-              {/* Default Route */}
-              <Route path="/" element={<Navigate to="/register" />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </AuthProvider>
-    </Router>
-
-  );
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span className="ml-2">Loading...</span>
+    </div>
+  )
 }
-
-export default App;
