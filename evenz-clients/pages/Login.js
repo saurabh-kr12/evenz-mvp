@@ -133,7 +133,7 @@ const Login = () => {
                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
                                    <p className="text-gray-800 text-sm md:text-md">Are you a Vendor?</p>
                                    <a 
-                                     href='http://localhost:3001/#/login'
+                                     href='http://localhost:3001/login'
                                      target="_blank"
                                      rel="noopener noreferrer"
                                      className="inline-block cursor-pointer px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs md:text-sm rounded-full shadow-md hover:shadow-lg transition duration-300 ease-in-out"

@@ -171,7 +171,7 @@ const HomePage = () => {
           <h2 className="text-3xl font-bold mb-4">Are You a Caterer?</h2>
           <p className="text-xl mb-8">Join our platform to get more bookings and grow your business</p>
           <a 
-            href="http://localhost:3001/#/register" 
+            href="http://localhost:3001/register" 
             target='_blank'
             className="inline-block bg-white text-purple-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300">
             Join as a Caterer

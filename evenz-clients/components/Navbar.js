@@ -109,7 +109,7 @@ const Navbar = ({ User, setUser }) => {
                 Login
               </Link>
               <a
-                href='http://localhost:3001/#/register'
+                href='http://localhost:3001/register'
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700  transition duration-300 ease-in-out">

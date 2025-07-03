@@ -1,6 +1,6 @@
 // client/src/pages/YourProfile.js
 import React, { useState, useContext } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { AuthContext } from '../context/AuthContext';
 import Card from '../components/Card';
 import Input from '../components/Input';
