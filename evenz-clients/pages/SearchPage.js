@@ -1,9 +1,11 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import Link from 'next/link';
+import {useParams } from 'next/navigation';
 import { FaSearch, FaMapMarkerAlt, FaUtensils, FaRupeeSign } from 'react-icons/fa';
 
 const SearchPage = () => {
-  const location = useLocation();
+  const location = useParams;
   // Get query parameters for initial search (if any)
   const queryParams = new URLSearchParams(location.search);
   const initialArea = queryParams.get('area') || '';
@@ -199,7 +201,7 @@ const SearchPage = () => {
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link
-            to={`/vendors/${vendor.id}`}
+            href={`/vendors/${vendor.id}`}
             className="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm"
           >
             View Profile

@@ -1,6 +1,6 @@
+"use client";
 import React from 'react';
-import { Link } from 'react-router-dom';
-
+import Link from 'next/link';
 const ComingSoonPage = ({ category }) => {
   const categoryDetails = {
     'photographers': {
@@ -32,13 +32,13 @@ const ComingSoonPage = ({ category }) => {
         </p>
         <div className="flex flex-col space-y-4">
           <Link 
-            to="/catering-services" 
+            href="/catering-services" 
             className="bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg transition duration-300"
           >
             Find Caterers
           </Link>
           <Link 
-            to="/" 
+            href="/" 
             className="text-purple-600 hover:text-purple-800 transition duration-300"
           >
             Back to Home

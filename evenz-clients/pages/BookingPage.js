@@ -1,10 +1,13 @@
+"use client";
 import React, { useState, useEffect, useContext } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useParams,useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { AuthContext } from '@/context/AuthContext';
 import { Calendar, MapPin, Users, Phone, Mail, User, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 const BookingRequestForm = () => {
-   const [searchParams] = useSearchParams();
+   const params = useParams();
+   const searchParams = useSearchParams();
    const eventDate = searchParams.get('date');
 
    // Form state
@@ -33,7 +36,7 @@ const BookingRequestForm = () => {
 
    // Fetch caterer data
    useEffect(() => {
-      const catererId = window.location.hash.split("/")[2].split("?")[0];
+      const catererId = params.vendorId;
       fetchCatererProfile(catererId);
    }, []);
 

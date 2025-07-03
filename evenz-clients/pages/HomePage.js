@@ -1,6 +1,7 @@
 // pages/HomePage.js
+"use client";
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { FaSearch, FaRegCalendarCheck, FaRupeeSign, FaShieldAlt } from 'react-icons/fa';
 
 const HomePage = () => {
@@ -72,7 +73,7 @@ const HomePage = () => {
               placeholder="Search by area in Patna..."
               className="flex-grow p-3 outline-none text-gray-700 rounded-lg md:rounded-r-none"
             />
-            <Link to="/search" className="mt-2 md:mt-0 bg-pink-600 hover:bg-pink-700 text-white py-3 px-6 rounded-lg md:rounded-l-none transition duration-300 flex items-center justify-center">
+            <Link href="/search" className="mt-2 md:mt-0 bg-pink-600 hover:bg-pink-700 text-white py-3 px-6 rounded-lg md:rounded-l-none transition duration-300 flex items-center justify-center">
               <FaSearch className="mr-2" /> Find Caterers
             </Link>
           </div>
@@ -122,7 +123,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {vendorCategories.map(category => (
               <Link
-                to={category.id === 'caterers' ? '/catering-services' : `/${category.id}`}
+                href={category.id === 'caterers' ? '/catering-services' : `/${category.id}`}
                 key={category.id}
                 className="block bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-xl hover:-translate-y-2"
               >
@@ -169,9 +170,12 @@ const HomePage = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Are You a Caterer?</h2>
           <p className="text-xl mb-8">Join our platform to get more bookings and grow your business</p>
-          <Link to="/register?type=vendor" className="inline-block bg-white text-purple-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300">
+          <a 
+            href="http://localhost:3001/#/register" 
+            target='_blank'
+            className="inline-block bg-white text-purple-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300">
             Join as a Caterer
-          </Link>
+          </a>
         </div>
       </section>
     </div>

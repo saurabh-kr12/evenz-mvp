@@ -1,5 +1,6 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'next/navigation';
 import {
    Heart,
    MapPin,
@@ -9,6 +10,7 @@ import {
    Utensils,
    Shield,
    CreditCard,
+   AlertCircle,
    Camera,
    CheckCircle,
    XCircle,

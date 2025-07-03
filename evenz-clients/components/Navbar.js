@@ -1,23 +1,23 @@
+'use client';
 import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FaUser, FaBars, FaTimes, FaChevronDown, FaCalendarCheck, FaHeart, FaBell, FaSignOutAlt } from 'react-icons/fa';
 import { AuthContext } from '@/context/AuthContext';
-import api from '@/services/api';
 
 const Navbar = ({ User, setUser }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
   const { currentUser, logout, updateProfile } = useContext(AuthContext);
-
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    router.push('/');
   };
 
   const handleTabChange = (path) => {
-    navigate(path);
+    router.push(path);
     setDropdownOpen(false);
   };
 
@@ -26,7 +26,7 @@ const Navbar = ({ User, setUser }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to={currentUser ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center">
+            <Link href={currentUser ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center">
               <span className="text-2xl font-bold text-pink-600">Evenz.in</span>
             </Link>
           </div>
@@ -43,7 +43,7 @@ const Navbar = ({ User, setUser }) => {
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden mr-2 border-2 border-pink-200">
                     <img
-                      src='cat_profile_pic.jpg'
+                      src='/cat_profile_pic.jpg'
                       alt={currentUser.name}
                       className="w-full h-full object-cover"
                     />
@@ -93,19 +93,19 @@ const Navbar = ({ User, setUser }) => {
           ) : (
             // Not logged in state - show regular menu
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
+              <Link href="/" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
                 Home
               </Link>
-              <Link to="/search" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
+              <Link href="/search" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
                 Find Caterers
               </Link>
-              <Link to="/about" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
+              <Link href="/about" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
                 About
               </Link>
-              <Link to="/contact" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
+              <Link href="/contact" className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out">
                 Contact
               </Link>
-              <Link to="/login" className="px-4 py-2 text-gray-700 hover:text-pink-600 font-medium transition duration-300 ease-in-out">
+              <Link href="/login" className="px-4 py-2 text-gray-700 hover:text-pink-600 font-medium transition duration-300 ease-in-out">
                 Login
               </Link>
               <a
@@ -137,7 +137,7 @@ const Navbar = ({ User, setUser }) => {
             // Logged in currentUser mobile menu - show currentUser menu options
             <>
               <div
-                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
+                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out cursor-pointer"
                 onClick={() => {
                   handleTabChange('/dashboard/profile');
                   setMenuOpen(false);
@@ -147,7 +147,7 @@ const Navbar = ({ User, setUser }) => {
                 <span>My Profile</span>
               </div>
               <div
-                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
+                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out cursor-pointer"
                 onClick={() => {
                   handleTabChange('/dashboard/bookings');
                   setMenuOpen(false);
@@ -157,7 +157,7 @@ const Navbar = ({ User, setUser }) => {
                 <span>My Bookings</span>
               </div>
               <div
-                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
+                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out cursor-pointer"
                 onClick={() => {
                   handleTabChange('/dashboard/shortlists');
                   setMenuOpen(false);
@@ -182,35 +182,35 @@ const Navbar = ({ User, setUser }) => {
             // Not logged in mobile menu - show regular menu
             <>
               <Link
-                to="/"
+                href="/"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
                 onClick={() => setMenuOpen(false)}
               >
                 Home
               </Link>
               <Link
-                to="/search"
+                href="/search"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
                 onClick={() => setMenuOpen(false)}
               >
                 Find Caterers
               </Link>
               <Link
-                to="/about"
+                href="/about"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
                 onClick={() => setMenuOpen(false)}
               >
                 About
               </Link>
               <Link
-                to="/contact"
+                href="/contact"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
                 onClick={() => setMenuOpen(false)}
               >
                 Contact
               </Link>
               <Link
-                to="/login"
+                href="/login"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
                 onClick={() => setMenuOpen(false)}
               >

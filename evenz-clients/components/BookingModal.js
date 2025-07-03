@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Calendar, Clock, AlertCircle, CheckCircle, Search, X } from 'lucide-react';
 
 const BookingModal = ({ vendor, showModal, onClose }) => {
@@ -174,7 +174,7 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
               <div className="space-y-3">
                 {availabilityResult.isAvailable ? (
                   <Link
-                    to={`/booking/${vendor.id}?date=${selectedDate}`}
+                    href={`/booking/${vendor.id}?date=${selectedDate}`}
                     className=" w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -194,7 +194,7 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
                       Try Another Date
                     </button>
                     <Link
-                      to="/search"
+                      href="/search"
                       className=" w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <Search className="w-4 h-4" />

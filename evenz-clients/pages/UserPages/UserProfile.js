@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import YourProfile from '../ClinetProfile';
+"use client";
+import React from 'react';
+import YourProfile from '../ClientProfile';
 
 const UserProfile = () => {
   return (

@@ -1,12 +1,12 @@
+"use client"
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router';
+import Link from 'next/link';
 import { FaHeart, FaMapMarkerAlt, FaPhone, FaUser, FaEye, FaTrash } from 'react-icons/fa';
 
 const UserShortlists = () => {
   const [shortlistedCaterers, setShortlistedCaterers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
 
   // Fetch shortlisted caterers on component mount
   useEffect(() => {
@@ -32,7 +32,7 @@ const UserShortlists = () => {
         setError(data.message);
       }
     } catch (err) {
-      setError('Failed to fetch shortlisted caterers');
+      setError('Failed href fetch shortlisted caterers');
       console.error('Error fetching shortlist:', err);
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ const UserShortlists = () => {
         // Optional: Show success message
         console.log(`${catererName} removed from shortlist`);
       } else {
-        console.error('Failed to remove from shortlist:', data.message);
+        console.error('Failed href remove from shortlist:', data.message);
       }
     } catch (error) {
       console.error('Error removing from shortlist:', error);
@@ -115,7 +115,7 @@ const UserShortlists = () => {
               You haven't shortlisted any caterer yet.
             </p>
             <Link
-              to="/dashboard"
+              href="/dashboard"
               className="bg-purple-700 text-white px-6 py-2 rounded-md hover:bg-purple-800 transition-colors text-sm md:text-base"
             >
               Explore Caterers
@@ -162,14 +162,14 @@ const UserShortlists = () => {
                 <div className="flex flex-col gap-3">
                   <div className="flex gap-4">
                     <Link
-                      to={`/vendors/${item.caterer.id}`}
+                      href={`/vendors/${item.caterer.id}`}
                       className="flex-1 bg-purple-700 text-white py-2 px-3 rounded-md hover:bg-purple-800 transition-colors text-center text-sm font-medium flex items-center justify-center gap-1"
                     >
                       <FaEye className="text-xs" />
                       View Profile
                     </Link>
                     <Link
-                      to={`/booking/${item.caterer.id}`}
+                      href={`/booking/${item.caterer.id}`}
                       className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md hover:bg-green-700 transition-colors text-center text-sm font-medium"
                     >
                       Book Now

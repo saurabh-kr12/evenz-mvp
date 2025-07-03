@@ -1,17 +1,29 @@
-// client/src/components/PrivateRoute.js
-import React, { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
+
+'use client';
+import React, { useContext, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthContext } from '../context/AuthContext';
 import Spinner from './Spinner';
 
 const PrivateRoute = ({ children }) => {
   const { currentUser, loading } = useContext(AuthContext);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, loading, router]);
 
   if (loading) {
     return <Spinner />;
   }
 
-  return currentUser ? children : <Navigate to="/login" />;
+  if (!currentUser) {
+    return null; // Will redirect via useEffect
+  }
+
+  return children;
 };
 
 export default PrivateRoute;

@@ -1,6 +1,6 @@
 // client/src/pages/YourProfile.js
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { AuthContext } from '../context/AuthContext';
 import Card from '../components/Card';
 import Input from '../components/Input';
@@ -10,7 +10,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 
 const YourProfile = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { currentUser, logout, updateProfile } = useContext(AuthContext);
   
   // UI state
@@ -170,7 +170,7 @@ const YourProfile = () => {
   // Handle logout
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    router.push('/login');
   };
 
   return (
@@ -395,16 +395,6 @@ const YourProfile = () => {
             </div>
           )}
 
-          {/* Logout button */}
-          {/* <div className="mt-8 border-t border-gray-200 pt-6">
-            <Button
-              onClick={handleLogout}
-              className="w-full bg-red-100 text-red-600 hover:bg-red-200"
-            >
-              Log Out
-            </Button>
-          </div> */}
-        {/* </Card> */}
       </div>
     </div>
   );

@@ -1,254 +1,14 @@
-// // client/src/pages/Register.js
-// import React, { useState, useContext } from 'react';
-// import { Link, useNavigate } from 'react-router-dom';
-// import { AuthContext } from '../context/AuthContext';
-// import Card from '../components/Card';
-// import Input from '../components/Input';
-// import Button from '../components/Button';
-// import OTPInput from '../components/OTPInput';
-// import toast from 'react-hot-toast';
-
-// const Register = () => {
-//    const navigate = useNavigate();
-//    const { register } = useContext(AuthContext);
-
-//    // Form state
-//    const [step, setStep] = useState(1);
-//    const [isLoading, setIsLoading] = useState(false);
-//    const [formData, setFormData] = useState({
-//       name: '',
-//       identifier: '', // email or phone
-//       password: '',
-//       confirmPassword: '',
-//       otp: ''
-//    });
-//    const [errors, setErrors] = useState({});
-
-//    // Handle input change
-//    const handleChange = (e) => {
-//       const { name, value } = e.target;
-//       setFormData({ ...formData, [name]: value });
-
-//       // Clear error when user types
-//       if (errors[name]) {
-//          setErrors({ ...errors, [name]: '' });
-//       }
-//    };
-
-//    // Validate first step
-//    const validateStep1 = () => {
-//       const newErrors = {};
-
-//       if (!formData.name.trim()) {
-//          newErrors.name = 'Name is required';
-//       }
-
-//       if (!formData.identifier.trim()) {
-//          newErrors.identifier = 'Email or phone number is required';
-//       } else {
-//          // Simple email validation
-//          const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-//          // Simple phone validation (basic international format)
-//          const phoneRegex = /^\+?[1-9]\d{9,14}$/;
-
-//          if (!emailRegex.test(formData.identifier) && !phoneRegex.test(formData.identifier)) {
-//             newErrors.identifier = 'Please enter a valid email or phone number';
-//          }
-//       }
-
-//       setErrors(newErrors);
-//       return Object.keys(newErrors).length === 0;
-//    };
-
-//    // Validate final step
-//    const validateStep3 = () => {
-//       const newErrors = {};
-
-//       if (!formData.password) {
-//          newErrors.password = 'Password is required';
-//       } else if (formData.password.length < 6) {
-//          newErrors.password = 'Password must be at least 6 characters';
-//       }
-
-//       if (formData.password !== formData.confirmPassword) {
-//          newErrors.confirmPassword = 'Passwords do not match';
-//       }
-
-//       setErrors(newErrors);
-//       return Object.keys(newErrors).length === 0;
-//    };
-
-//    // Handle OTP verification success
-//    const handleOTPVerified = (otp) => {
-//       setFormData({ ...formData, otp });
-//       setStep(3); // Move to password step after OTP verification
-//    };
-
-//    // Handle form submission
-//    const handleSubmit = async (e) => {
-//       e.preventDefault();
-
-//       if (!validateStep3()) {
-//          return;
-//       }
-
-//       try {
-//          setIsLoading(true);
-
-//          // Register user
-//          await register({
-//             name: formData.name,
-//             identifier: formData.identifier,
-//             password: formData.password,
-//             otp: formData.otp
-//          });
-
-//          toast.success('Registration successful!');
-//          navigate('/dashboard');
-//       } catch (error) {
-//          console.error('Registration error:', error);
-//          toast.error(error.response?.data?.message || 'Registration failed');
-//       } finally {
-//          setIsLoading(false);
-//       }
-//    };
-
-//    // Handle step navigation
-//    const handleNextStep = () => {
-//       if (step === 1 && validateStep1()) {
-//          setStep(2);
-//       }
-//    };
-
-//    return (
-//       <div className=" flex items-center justify-center bg-white px-4 py-8">
-
-//          <div className="flex w-full items-center justify-center bg-white px-4 py-8">
-//             <div className="flex md:min-h-[70vh] w-full max-w-5xl shadow-[0_0_10px_rgba(0,0,0,0.1)]">
-//                {/* Left Section - Hidden on mobile */}
-//                <div className="hidden lg:block w-2/5 relative">
-//                   <img
-//                      src="/traditional indian wedding couple.png"
-//                      alt="Traditional Indian Wedding"
-//                      className="absolute inset-0 w-full h-full object-cover"
-//                   />
-//                </div>
-
-//                {/* Right Section */}
-//                <div className="w-full lg:w-3/5 p-4 sm:p-6 md:p-8 bg-white flex flex-col justify-center items-center">
-//                   <Card title="Create an Account">
-//                      {step === 1 && (
-//                         <>
-//                            <Input
-//                               label="Full Name"
-//                               name="name"
-//                               value={formData.name}
-//                               onChange={handleChange}
-//                               placeholder="John Doe"
-//                               required
-//                               error={errors.name}
-//                            />
-//                            <Input
-//                               label="Phone Number"
-//                               name="identifier"
-//                               value={formData.identifier}
-//                               onChange={handleChange}
-//                               placeholder="+1234567890"
-//                               required
-//                               error={errors.identifier}
-//                            />
-//                            <Button
-//                               onClick={handleNextStep}
-//                               className="w-full cursor-pointer mt-6"
-//                            >
-//                               Continue
-//                            </Button>
-//                         </>
-//                      )}
-
-//                      {step === 2 && (
-//                         <>
-//                            <div className="mb-6">
-//                               <h3 className="text-md font-medium text-gray-700">Verify your {formData.identifier.includes('@') ? 'Email' : 'Phone Number'}</h3>
-//                               <p className="text-sm text-gray-500 mt-1">
-//                                  We'll send a one-time password to {formData.identifier}
-//                               </p>
-//                            </div>
-
-//                            <OTPInput
-//                               identifier={formData.identifier}
-//                               purpose="registration"
-//                               onVerified={handleOTPVerified}
-//                            />
-
-//                            <Button
-//                               onClick={() => setStep(1)}
-//                               className="w-full cursor-pointer mt-4 bg-gray-200 text-gray-800 hover:bg-gray-300"
-//                            >
-//                               Back
-//                            </Button>
-//                         </>
-//                      )}
-
-//                      {step === 3 && (
-//                         <form onSubmit={handleSubmit}>
-//                            <Input
-//                               label="Password"
-//                               name="password"
-//                               type="password"
-//                               value={formData.password}
-//                               onChange={handleChange}
-//                               placeholder="••••••••"
-//                               required
-//                               error={errors.password}
-//                            />
-//                            <Input
-//                               label="Confirm Password"
-//                               name="confirmPassword"
-//                               type="password"
-//                               value={formData.confirmPassword}
-//                               onChange={handleChange}
-//                               placeholder="••••••••"
-//                               required
-//                               error={errors.confirmPassword}
-//                            />
-//                            <Button
-//                               type="submit"
-//                               isLoading={isLoading}
-//                               className="w-full mt-6 cursor-pointer"
-//                            >
-//                               Register
-//                            </Button>
-//                         </form>
-//                      )}
-
-//                      <div className="mt-6 text-center">
-//                         <p className="text-sm text-gray-600">
-//                            Already have an account?{' '}
-//                            <Link to="/login" className="text-blue-600 cursor-pointer hover:text-blue-800 font-medium">
-//                               Sign in
-//                            </Link>
-//                         </p>
-//                      </div>
-//                   </Card>
-//                </div>
-//             </div>
-//          </div>
-//       </div>
-//    );
-// };
-
-// export default Register;
-
 // client/src/pages/Register.js
+"use client";
 import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AuthContext } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const Register = () => {
-   const navigate = useNavigate();
+   const router = useRouter();
    const { register } = useContext(AuthContext);
 
    // Form state
@@ -426,7 +186,7 @@ const Register = () => {
          });
 
          toast.success('Registration successful!');
-         navigate('/dashboard');
+         router.push('/dashboard');
       } catch (error) {
          console.error('Registration error:', error);
          toast.error(error.response?.data?.message || 'Registration failed');
@@ -629,7 +389,7 @@ const Register = () => {
                      <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
                            Already have an account?{' '}
-                           <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+                           <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
                               Sign in
                            </Link>
                         </p>

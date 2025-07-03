@@ -1,12 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from 'react-icons/fa';
 
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white pt-12 pb-6">
       {/* Top gradient border */}
-      <div className="h-1 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 mb-8"></div>
+      <div className="h-1 bg-gradient-href-r from-pink-500 via-purple-500 href-pink-500 mb-8"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -37,25 +37,25 @@ const Footer = () => {
             <h4 className="text-lg font-semibold text-white mb-4 border-b border-gray-700 pb-2">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/search" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/search" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   Find Caterers
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/about" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/contact" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   Contact
                 </Link>
@@ -68,25 +68,25 @@ const Footer = () => {
             <h4 className="text-lg font-semibold text-white mb-4 border-b border-gray-700 pb-2">For Vendors</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/register?type=vendor" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/register?type=vendor" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   Join as Caterer
                 </Link>
               </li>
               <li>
-                <Link to="/how-it-works" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/how-it-works" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link to="/pricing" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/pricing" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
+                <Link href="/faq" className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start">
                   <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
                   FAQ
                 </Link>
@@ -128,13 +128,13 @@ const Footer = () => {
               &copy; {new Date().getFullYear()} Evenz.in. All rights reserved.
             </p>
             <div className="flex space-x-6">
-              <Link to="/terms" className="text-gray-400 hover:text-pink-500 text-sm transition duration-300 ease-in-out">
+              <Link href="/terms" className="text-gray-400 hover:text-pink-500 text-sm transition duration-300 ease-in-out">
                 Terms of Service
               </Link>
-              <Link to="/privacy" className="text-gray-400 hover:text-pink-500 text-sm transition duration-300 ease-in-out">
+              <Link href="/privacy" className="text-gray-400 hover:text-pink-500 text-sm transition duration-300 ease-in-out">
                 Privacy Policy
               </Link>
-              <Link to="/refund" className="text-gray-400 hover:text-pink-500 text-sm transition duration-300 ease-in-out">
+              <Link href="/refund" className="text-gray-400 hover:text-pink-500 text-sm transition duration-300 ease-in-out">
                 Refund Policy
               </Link>
             </div>
