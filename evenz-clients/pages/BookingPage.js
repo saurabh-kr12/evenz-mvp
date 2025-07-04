@@ -144,7 +144,7 @@ const BookingRequestForm = () => {
       setError('');
 
       try {
-         const catererId = window.location.hash.split("/")[2].split("?")[0];
+         const catererId = params.vendorId;
 
          const response = await fetch('http://localhost:5000/api/booking/booking-requests', {
             method: 'POST',
@@ -212,7 +212,7 @@ const BookingRequestForm = () => {
                   Your booking request has been submitted successfully. The caterer will review your request and contact you soon.
                </p>
                <Link
-                  to={'/dashboard'} 
+                  href={'/dashboard'} 
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                >
                   Go to Dashboard
@@ -429,14 +429,14 @@ const BookingRequestForm = () => {
                                           <h3 className="text-sm font-medium text-gray-900">{pkg.name}</h3>
                                           <span className="text-sm font-bold text-blue-600">₹{pkg.pricePerPlate}/plate</span>
                                        </div>
-                                       <p className="text-xs flex gap-1 sm:gap-2 text-gray-600 mt-1">
+                                       <div className="text-xs flex gap-1 sm:gap-2 text-gray-600 mt-1">
                                           {Object.entries(pkg.itemCounts).map(([type, count]) => (
                                              <div key={type} className="text-center flex justify-center items-center gap-0.5 sm:gap-1">
                                                 <div className="sm:text-sm text-sm text-gray-900">{count}</div>
                                                 <div className="text-xs text-gray-500 capitalize leading-tight">{type}</div>
                                              </div>
                                           ))}
-                                       </p>
+                                       </div>
                                     </div>
                                  </label>
                               ))}
