@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Phone, Clock, CheckCircle, AlertCircle, Eye, Package } from 'lucide-react';
+import { Calendar, MapPin, Users, Phone, Clock, CheckCircle, AlertCircle, Eye, Package, X, Trash2 } from 'lucide-react';
 
 const ClientBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancellingBookings, setCancellingBookings] = useState(new Set());
 
   useEffect(() => {
     fetchBookings();
@@ -31,6 +32,43 @@ const ClientBookings = () => {
       setError('Failed to fetch bookings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    // Add confirmation dialog
+    if (!window.confirm('Are you sure you want to cancel this booking request? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setCancellingBookings(prev => new Set(prev).add(bookingId));
+      
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`http://localhost:5000/api/booking/cancel/${bookingId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Remove the cancelled booking from the state
+        setBookings(prev => prev.filter(booking => booking._id !== bookingId));
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError('Failed to cancel booking request');
+    } finally {
+      setCancellingBookings(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bookingId);
+        return newSet;
+      });
     }
   };
 
@@ -132,25 +170,43 @@ const ClientBookings = () => {
             </div>
           </div>
         ) : (
-          <div className="space-y-6 max-w-7xl mx-auto  py-6">
+          <div className="space-y-6 max-w-7xl mx-auto py-6">
             {bookings.map((booking) => (
               <div key={booking._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {/* Header */}
                 <div className="px-4 py-4 sm:px-6 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-medium text-gray-900 truncate">
                         {booking.catererName}
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">
                         Booking ID: {booking._id.slice(-8).toUpperCase()}
                       </p>
                     </div>
-                    <div className="text-right">
-                      {getStatusBadge(booking.status)}
-                      <p className="text-sm text-gray-500 mt-1">
-                        {formatDate(booking.createdAt)}
-                      </p>
+                    <div className="flex items-center space-x-2 ml-4">
+                      <div className="text-right">
+                        {getStatusBadge(booking.status)}
+                        <p className="text-sm text-gray-500 mt-1">
+                          {formatDate(booking.createdAt)}
+                        </p>
+                      </div>
+                      {/* Cancel Button - Only show for pending status */}
+                      {booking.status === 'pending' && (
+                        <button
+                          onClick={() => handleCancelBooking(booking._id)}
+                          disabled={cancellingBookings.has(booking._id)}
+                          className="inline-flex items-center px-2 py-1 border border-red-300 shadow-sm text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed ml-2"
+                          title="Cancel booking request"
+                        >
+                          {cancellingBookings.has(booking._id) ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-500"></div>
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          <span className="ml-1 hidden sm:inline">Cancel</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -164,7 +220,7 @@ const ClientBookings = () => {
                       
                       <div className="space-y-3">
                         <div className="flex items-start">
-                          <Calendar className="h-4 w-4 text-gray-400 mt-0.5" />
+                          <Calendar className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <div className="ml-3">
                             <p className="text-sm font-medium text-gray-900">{booking.eventType}</p>
                             <p className="text-sm text-gray-500">{formatDate(booking.eventDate)}</p>
@@ -172,14 +228,14 @@ const ClientBookings = () => {
                         </div>
 
                         <div className="flex items-start">
-                          <Users className="h-4 w-4 text-gray-400 mt-0.5" />
+                          <Users className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <div className="ml-3">
                             <p className="text-sm text-gray-900">{booking.numGuests} guests</p>
                           </div>
                         </div>
 
                         <div className="flex items-start">
-                          <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+                          <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <div className="ml-3">
                             <p className="text-sm text-gray-900">{booking.eventLocation}</p>
                             {booking.venueType && (
@@ -236,7 +292,7 @@ const ClientBookings = () => {
                           <div className="space-y-1">
                             {booking.selectedLiveCounters.map((counter, index) => (
                               <p key={index} className="text-sm text-gray-600">
-                                {counter.name} - {formatCurrency(counter.cost)}
+                                {counter.name} 
                               </p>
                             ))}
                           </div>
@@ -265,17 +321,17 @@ const ClientBookings = () => {
 
                   {/* Status Information */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                       <div className="flex items-center">
                         <div className="text-sm text-gray-500">
                           {booking.status === 'pending' && (
                             <p>Your request is pending review by the caterer.</p>
                           )}
                           {booking.status === 'unlocked' && (
-                            <p>The caterer has seen your request and is reviewing it.</p>
+                            <p>The caterer has seen your request and will contact you soon after reviewing.</p>
                           )}
                           {booking.status === 'confirmed' && (
-                            <p className="text-green-600">Your booking has been confirmed! The caterer will contact you soon.</p>
+                            <p className="text-green-600">Your booking has been confirmed! </p>
                           )}
                           {booking.status === 'rejected' && (
                             <p className="text-red-600">This request was not confirmed by the caterer.</p>
