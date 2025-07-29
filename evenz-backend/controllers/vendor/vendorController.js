@@ -1,34 +1,5 @@
 // File: controllers/vendorController.js
 const Vendor = require('../../models/Vendor/Vendor');
-const bcrypt = require('bcryptjs');
-
-// Get vendor profile
-const getProfile = async (req, res) => {
-  try {
-    const vendor = await Vendor.findById(req.vendor._id);
-    
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor not found' });
-    }
-    
-    res.status(200).json({
-      _id: vendor._id,
-      ownerName: vendor.ownerName,
-      email: vendor.email,
-      mobile: vendor.mobile,
-      businessName: vendor.businessName,
-      pinCode: vendor.pinCode,
-      locality: vendor.locality,
-      city: vendor.city,
-      fullAddress: vendor.fullAddress,
-      emailVerified: vendor.emailVerified,
-      mobileVerified: vendor.mobileVerified
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Failed to fetch profile', error: error.message });
-  }
-};
 
 // Update email
 const updateEmail = async (req, res) => {
@@ -169,6 +140,35 @@ const updatePassword = async (req, res) => {
     res.status(500).json({ message: 'Failed to update password', error: error.message });
   }
 };
+
+// Get vendor profile
+const getProfile = async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.vendor._id);
+    
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found' });
+    }
+    
+    res.status(200).json({
+      _id: vendor._id,
+      ownerName: vendor.ownerName,
+      email: vendor.email,
+      mobile: vendor.mobile,
+      businessName: vendor.businessName,
+      pinCode: vendor.pinCode,
+      locality: vendor.locality,
+      city: vendor.city,
+      fullAddress: vendor.fullAddress,
+      emailVerified: vendor.emailVerified,
+      mobileVerified: vendor.mobileVerified
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Failed to fetch profile', error: error.message });
+  }
+};
+
 
 module.exports = {
   getProfile,

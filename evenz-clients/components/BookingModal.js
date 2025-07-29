@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, AlertCircle, CheckCircle, Search, X } from 'lucide-react';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const BookingModal = ({ vendor, showModal, onClose }) => {
   const [selectedDate, setSelectedDate] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [availabilityResult, setAvailabilityResult] = useState(null);
   const [error, setError] = useState('');
+  
+  const analytics = useAnalytics();
+
+  // Track modal open/close
+  useEffect(() => {
+    if (showModal) {
+      analytics.trackCustomEvent(
+        'modal_opened',
+        'booking_flow',
+        `availability_check_${vendor.businessName}`,
+        0
+      );
+    }
+  }, [showModal, vendor.businessName, analytics]);
 
   const getTodayDate = () => {
     const today = new Date();
@@ -19,6 +34,14 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
       return;
     }
 
+    // Track availability check attempt
+    analytics.trackCustomEvent(
+      'availability_check_started',
+      'booking_flow',
+      `${vendor.businessName}_${selectedDate}`,
+      0
+    );
+
     setIsChecking(true);
     setError('');
     setAvailabilityResult(null);
@@ -29,22 +52,102 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
 
       if (data.success) {
         setAvailabilityResult(data.data);
+        
+        // Track successful availability check with result
+        analytics.trackCustomEvent(
+          'availability_check_completed',
+          'booking_flow',
+          `${vendor.businessName}_${data.data.isAvailable ? 'available' : 'unavailable'}`,
+          0
+        );
       } else {
         setError(data.message || 'Failed to check availability');
+        
+        // Track availability check failure
+        analytics.trackError(
+          'availability_check_failed',
+          data.message || 'Unknown error',
+          'booking_modal'
+        );
       }
     } catch (err) {
       setError('Network error. Please try again.');
       console.error('Availability check error:', err);
+      
+      // Track network error
+      analytics.trackError(
+        'network_error',
+        'availability_check_network_failure',
+        'booking_modal'
+      );
     } finally {
       setIsChecking(false);
     }
   };
 
   const handleClose = () => {
+    // Track modal close
+    analytics.trackCustomEvent(
+      'modal_closed',
+      'booking_flow',
+      `availability_check_${vendor.businessName}`,
+      0
+    );
+    
     setSelectedDate('');
     setAvailabilityResult(null);
     setError('');
     onClose();
+  };
+
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+    setAvailabilityResult(null);
+    setError('');
+    
+    // Track date selection
+    if (newDate) {
+      analytics.trackCustomEvent(
+        'date_selected',
+        'booking_flow',
+        `${vendor.businessName}_${newDate}`,
+        0
+      );
+    }
+  };
+
+  const handleBookingRequest = () => {
+    // Track booking request initiation
+    analytics.trackBooking(
+      'booking_request_initiated',
+      vendor.businessName,
+      0
+    );
+  };
+
+  const handleTryAnotherDate = () => {
+    // Track retry attempt
+    analytics.trackCustomEvent(
+      'try_another_date_clicked',
+      'booking_flow',
+      vendor.businessName,
+      0
+    );
+    
+    setSelectedDate('');
+    setAvailabilityResult(null);
+    setError('');
+  };
+
+  const handleExploreOtherCaterers = () => {
+    // Track when users look for alternatives
+    analytics.trackCustomEvent(
+      'explore_alternatives_clicked',
+      'booking_flow',
+      `from_${vendor.businessName}`,
+      0
+    );
   };
 
   if (!showModal) return null;
@@ -82,11 +185,7 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  setAvailabilityResult(null);
-                  setError('');
-                }}
+                onChange={handleDateChange}
                 onClick={(e) => {
                   e.target.showPicker && e.target.showPicker();
                 }}
@@ -175,7 +274,8 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
                 {availabilityResult.isAvailable ? (
                   <Link
                     href={`/booking/${vendor.id}?date=${selectedDate}`}
-                    className=" w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    onClick={handleBookingRequest}
+                    className="w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Send Booking Request
@@ -183,11 +283,7 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
                 ) : (
                   <div className="space-y-3">
                     <button
-                      onClick={() => {
-                        setSelectedDate('');
-                        setAvailabilityResult(null);
-                        setError('');
-                      }}
+                      onClick={handleTryAnotherDate}
                       className="w-full cursor-pointer border border-orange-500 text-orange-600 hover:bg-orange-50 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <Calendar className="w-4 h-4" />
@@ -195,7 +291,8 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
                     </button>
                     <Link
                       href="/search"
-                      className=" w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      onClick={handleExploreOtherCaterers}
+                      className="w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <Search className="w-4 h-4" />
                       Explore Other Caterers

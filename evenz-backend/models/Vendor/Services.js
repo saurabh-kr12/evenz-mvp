@@ -28,7 +28,7 @@ const customOptionSchema = new mongoose.Schema({
   },
   selected: {
     type: Boolean,
-    default: false
+
   }
 });
 
@@ -39,14 +39,14 @@ const servicesSchema = new mongoose.Schema({
     required: true
   },
   mealServiceTypes: {
-    buffet: { type: Boolean, default: false },
-    plated: { type: Boolean, default: false },
-    liveCounters: { type: Boolean, default: false },
-    familyStyle: { type: Boolean, default: false },
-    cocktailStyle: { type: Boolean, default: false },
+    buffet: { type: Boolean },
+    plated: { type: Boolean },
+    liveCounters: { type: Boolean },
+    familyStyle: { type: Boolean },
+    cocktailStyle: { type: Boolean },
     customOptions: [customOptionSchema], // Array of custom options
     other: {
-      selected: { type: Boolean, default: false },
+      selected: { type: Boolean },
       specification: { type: String, default: '' }
     }
   },
@@ -57,15 +57,15 @@ const servicesSchema = new mongoose.Schema({
     trim: true
   },
   tableware: {
-    plates: { type: Boolean, default: false },
-    bowls: { type: Boolean, default: false },
-    cutlery: { type: Boolean, default: false },
-    glasses: { type: Boolean, default: false },
-    servingUtensils: { type: Boolean, default: false },
-    linens: { type: Boolean, default: false },
+    plates: { type: Boolean },
+    bowls: { type: Boolean },
+    cutlery: { type: Boolean },
+    glasses: { type: Boolean },
+    servingUtensils: { type: Boolean },
+    linens: { type: Boolean },
     customOptions: [customOptionSchema], // Array of custom options
     other: {
-      selected: { type: Boolean, default: false },
+      selected: { type: Boolean },
       specification: { type: String, default: '' }
     }
   },
@@ -80,15 +80,15 @@ const servicesSchema = new mongoose.Schema({
     trim: true
   },
   availableForEvents: {
-    birthday: { type: Boolean, default: false },
-    wedding: { type: Boolean, default: false },
-    corporate: { type: Boolean, default: false },
-    funerals: { type: Boolean, default: false },
-    religious: { type: Boolean, default: false },
-    smallGathering: { type: Boolean, default: false },
+    birthday: { type: Boolean },
+    wedding: { type: Boolean },
+    corporate: { type: Boolean },
+    funerals: { type: Boolean },
+    religious: { type: Boolean },
+    smallGathering: { type: Boolean },
     customOptions: [customOptionSchema], // Array of custom options
     other: {
-      selected: { type: Boolean, default: false },
+      selected: { type: Boolean },
       specification: { type: String, default: '' }
     }
   },
@@ -105,7 +105,7 @@ const servicesSchema = new mongoose.Schema({
     }
   },
   waterService: {
-    includedInPackage: { type: Boolean, default: false },
+    includedInPackage: { type: Boolean },
     jarWaterCharges: { type: Number, default: 0, min: 0 },
     bottleWaterCharges: { type: Number, default: 0, min: 0 }
   }

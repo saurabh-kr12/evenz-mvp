@@ -3,10 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const envResult = dotenv.config();
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+
 const userAuthRoutes = require('./routes/user/auth');
-const userAuthOTPs = require('./routes/user/otp');
 const vendorAuthRoutes = require('./routes/vendor/auth')
 const vendorProfileUpdateRoutes = require('./routes/vendor/vendor')
 const vendorMenuRoutes = require('./routes/vendor/menu'); // Add menu routes
@@ -24,7 +25,25 @@ const adminRoutes = require('./routes/admin/auth')
 const vendorDashboardRoutes = require('./routes/vendor/dashboardRoutes');
 
 // Load environment variables
-dotenv.config();
+
+// Debug environment loading
+if (envResult.error) {
+  console.error('Error loading .env file:', envResult.error);
+} else {
+  console.log('Environment variables loaded successfully');
+}
+
+// Debug specific environment variables
+console.log('Environment check:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'Set' : 'Not set');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not set');
+console.log('Current working directory:', process.cwd());
+console.log('.env file path:', path.resolve('.env'));
+// Add this after dotenv.config() in your server.js
+console.log('Fast2SMS API Key check:', process.env.FAST2SMS_API_KEY ? 'Set' : 'Not set');
+console.log('Fast2SMS API Key length:', process.env.FAST2SMS_API_KEY?.length || 0);
 
 // Initialize Express app
 const app = express();
@@ -44,16 +63,16 @@ app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sayenify')
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
 app.use('/api/user/auth', userAuthRoutes);
-app.use('/api/otp', userAuthOTPs);
 app.use('/api/user/shortlist',shortlist)
 app.use('/api/vendor/auth', vendorAuthRoutes)
-app.use('/api/vendor/vendor-profile', vendorProfileUpdateRoutes)
+app.use('/api/register', require('./routes/vendor/vendorRegistration')); // Use vendor registration routes
+app.use('/api/vendor-profile', vendorProfileUpdateRoutes)
 app.use('/api/vendor/menu', vendorMenuRoutes); // Add menu routes
 app.use('/api/vendor/services', serviceRoutes);
 app.use('/api/vendor/customization', customizationRoutes);
@@ -65,7 +84,7 @@ app.use('/api/vendor/dashboard', vendorDashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/caterers-details',caterersDetails)
 app.use('/api/public/availability', require('./routes/common/availabilityRoutes'));
-app.use('/api/booking',bookingRoutes),
+app.use('/api/booking',bookingRoutes);
 app.use('/api/admin',adminRoutes)
 
 // Error handling middleware

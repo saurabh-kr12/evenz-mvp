@@ -1,32 +1,72 @@
 "use client";
 import React from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { FaUtensils, FaTruck, FaConciergeBell, FaShieldAlt, FaFileContract, FaImages } from 'react-icons/fa';
 import MenuCuisinesModule from '@/components/ServicePages/MenuCuisines';
-import ServicesLogistics from '@/components/ServicePages/ServiceLogistics';
-import CustomizationTasting from '@/components/ServicePages/Customization&Tasting';
+import CounterNServices from '@/components/ServicePages/Counter&Services';
+import GuestnDietFilters from '@/components/ServicePages/GuestnDietFilters';
 import ComplianceSection from '@/components/ServicePages/Compliance';
 import LegalPaymentSection from '@/components/ServicePages/Legal';
 import ExperienceMedia from '@/components/ServicePages/Media';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const ServiceDashboard = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+  const { services, ui } = useAnalytics();
+
+  // Time tracking state
+  const [tabStartTime, setTabStartTime] = useState(Date.now());
   // Get current tab from URL search params, default to 'menu'
-  const currentTab = searchParams.get('tab') || 'menu';
+  const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || 'menu');
+
+  useEffect(() => {
+    // Track initial tab view
+    services.tabViewed(currentTab);
+    setTabStartTime(Date.now());
+
+    // Cleanup function to track time when user leaves page
+    return () => {
+      const timeSpent = Math.round((Date.now() - tabStartTime) / 1000);
+      services.tabTimeSpent(currentTab, timeSpent);
+    };
+  }, []);
+
+  // Track tab changes from URL
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') || 'menu';
+    if (urlTab !== currentTab) {
+      const timeSpent = Math.round((Date.now() - tabStartTime) / 1000);
+      services.tabTimeSpent(currentTab, timeSpent);
+
+      setCurrentTab(urlTab);
+      setTabStartTime(Date.now());
+      services.tabViewed(urlTab);
+    }
+  }, [searchParams]);
 
   const handleNavigation = (tab) => {
+    // Track time spent on previous tab
+    const timeSpent = Math.round((Date.now() - tabStartTime) / 1000); // in seconds
+    services.tabTimeSpent(currentTab, timeSpent);
+
+    // Track tab navigation
+    services.tabSwitched(currentTab, tab);
+
+    // Update state and URL
+    setCurrentTab(tab);
+    setTabStartTime(Date.now());
     router.push(`/services?tab=${tab}`);
   };
 
   const menuItems = [
     { key: 'menu', label: 'Menu & Cuisines', icon: <FaUtensils /> },
-    { key: 'services', label: 'Services & Logistics', icon: <FaTruck /> },
-    { key: 'customization', label: 'Customization & Tasting', icon: <FaConciergeBell /> },
-    { key: 'compliance', label: 'Compliance & Safety', icon: <FaShieldAlt /> },
+    { key: 'services', label: 'Counters & Services', icon: <FaTruck /> },
+    { key: 'customization', label: 'Guests & Diet Filters', icon: <FaConciergeBell /> },
+    { key: 'media', label: 'Experience & Media', icon: <FaImages /> },
     { key: 'legal', label: 'Legal & Payment', icon: <FaFileContract /> },
-    { key: 'media', label: 'Media', icon: <FaImages /> },
+    { key: 'compliance', label: 'Compliance & Safety', icon: <FaShieldAlt /> },
   ];
 
   const renderContent = () => {
@@ -34,9 +74,9 @@ const ServiceDashboard = () => {
       case 'menu':
         return <MenuCuisinesModule />;
       case 'services':
-        return <ServicesLogistics />;
+        return <CounterNServices />;
       case 'customization':
-        return <CustomizationTasting />;
+        return <GuestnDietFilters />;
       case 'compliance':
         return <ComplianceSection />;
       case 'legal':
@@ -75,15 +115,13 @@ const ServiceDashboard = () => {
                   <li key={item.key}>
                     <button
                       onClick={() => handleNavigation(item.key)}
-                      className={`w-full text-sm flex gap-y-1 items-center px-4 py-3 rounded-md cursor-pointer ${
-                        currentTab === item.key 
-                          ? 'bg-blue-50 text-blue-700' 
-                          : 'text-gray-800 hover:bg-gray-100'
-                      }`}
+                      className={`w-full text-sm flex gap-y-1 items-center px-4 py-3 rounded-md cursor-pointer ${currentTab === item.key
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-800 hover:bg-gray-100'
+                        }`}
                     >
-                      <span className={`mr-3 ${
-                        currentTab === item.key ? 'text-blue-700' : 'text-gray-500'
-                      }`}>
+                      <span className={`mr-3 ${currentTab === item.key ? 'text-blue-700' : 'text-gray-500'
+                        }`}>
                         {item.icon}
                       </span>
                       <span>{item.label}</span>

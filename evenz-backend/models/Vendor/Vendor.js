@@ -1,4 +1,4 @@
-// File: models/Vendor.js
+// 1. Updated Vendor Model (models/Vendor.js)
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -44,6 +44,12 @@ const vendorSchema = new mongoose.Schema({
     required: [true, 'City is required'],
     trim: true
   },
+  // NEW FIELD: State
+  state: {
+    type: String,
+    required: [true, 'State is required'],
+    trim: true
+  },
   fullAddress: {
     type: String,
     trim: true
@@ -62,6 +68,48 @@ const vendorSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // NEW FIELD: Registration completion status
+  isRegistered: {
+    type: Boolean,
+    default: false
+  },
+  // NEW FIELDS: Terms and Privacy Policy acceptance tracking
+  termsAccepted: {
+    type: Boolean,
+    required: [true, 'Terms acceptance is required'],
+    default: false
+  },
+  termsAcceptedAt: {
+    type: Date,
+    required: function() {
+      return this.termsAccepted;
+    }
+  },
+  status :{
+    type: String,
+    enum: ['active', 'inactive', 'suspended'],
+    default: 'active'
+  },
+  free_unlock_used: {
+    type: Boolean,
+    default: false
+  },
+  free_unlock_used_at: {
+    type: Date,
+    default: null
+  },
+  total_unlocks_purchased: {
+    type: Number,
+    default: 0
+  },
+  total_revenue_generated: {
+    type: Number,
+    default: 0
+  },
+  last_unlock_date: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -70,6 +118,8 @@ const vendorSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+},{
+  timestamps: true
 });
 
 // Middleware to hash password before save
@@ -90,6 +140,9 @@ vendorSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-const Vendor = mongoose.model('Vendor', vendorSchema);
+// Index for better query performance
+vendorSchema.index({ email: 1 });
+vendorSchema.index({ mobile: 1 });
+vendorSchema.index({ free_unlock_used: 1 });
 
-module.exports = Vendor;
+module.exports = mongoose.models.Vendor || mongoose.model('Vendor', vendorSchema);

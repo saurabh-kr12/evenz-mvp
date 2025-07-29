@@ -1,23 +1,38 @@
 'use client';
-import React from 'react';
-import { useContext } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { FaUser, FaCalendarCheck, FaHeart, FaSignOutAlt } from 'react-icons/fa';
-import { AuthContext } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const UserDashboard = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const currentPath = pathname.split('/').pop();
-  const { currentUser, logout } = useContext(AuthContext);
+  const { logout, currentUser } = useAuth();
+  const analytics = useAnalytics();
 
-  const handleNavigation = (path) => {
-    router.push(`/dashboard/${path}`);
-  };
+  // Track dashboard page views
+  useEffect(() => {
+    analytics.trackPageView('user_dashboard', 'dashboard');
+  }, []);
+
+  // Track current tab changes
+  useEffect(() => {
+    if (currentPath && currentPath !== 'dashboard') {
+      analytics.trackCustomEvent('dashboard_tab_view', 'navigation', `dashboard_${currentPath}`);
+    }
+  }, [currentPath]);
 
   const handleLogout = () => {
+    analytics.trackAuth('logout', true);
     logout();
     router.push('/');
+  };
+
+  const handleNavigation = (path) => {
+    analytics.trackCustomEvent('dashboard_navigation', 'navigation', `dashboard_${path}`);
+    router.push(`/dashboard/${path}`);
   };
 
   const menuItems = [
@@ -54,8 +69,10 @@ const UserDashboard = ({ children }) => {
               value={currentPath}
               onChange={(e) => {
                 if (e.target.value === 'logout') {
+                  analytics.trackButtonClick('mobile_logout', 'authentication');
                   handleLogout();
                 } else {
+                  analytics.trackCustomEvent('mobile_menu_select', 'navigation', `mobile_${e.target.value}`);
                   handleNavigation(e.target.value);
                 }
               }}
@@ -77,7 +94,10 @@ const UserDashboard = ({ children }) => {
                 {menuItems.map((item) => (
                   <li key={item.key}>
                     <button
-                      onClick={() => handleNavigation(item.key)}
+                      onClick={() => {
+                        analytics.trackButtonClick(`sidebar_${item.key}`, 'navigation');
+                        handleNavigation(item.key);
+                      }}
                       className={`w-full flex items-center px-4 py-3 rounded-md cursor-pointer ${currentPath === item.key ? 'bg-blue-50 text-blue-700' : 'text-gray-800 hover:bg-gray-100'}`}
                     >
                       <span className={`mr-3 ${currentPath === item.key ? 'text-blue-700' : 'text-gray-500'}`}>{item.icon}</span>
@@ -87,7 +107,10 @@ const UserDashboard = ({ children }) => {
                 ))}
                 <li className="border-t border-gray-200 pt-2 mt-2">
                   <button
-                    onClick={handleLogout}
+                    onClick={() => {
+                      analytics.trackButtonClick('sidebar_logout', 'authentication');
+                      handleLogout();
+                    }}
                     className="w-full flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100 rounded-md cursor-pointer"
                   >
                     <FaSignOutAlt className="mr-3 text-gray-500" />

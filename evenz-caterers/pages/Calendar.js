@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Calendar, Save, Edit3, ChevronDown, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const AvailabilityCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,6 +14,7 @@ const AvailabilityCalendar = () => {
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [bulkAction, setBulkAction] = useState('unavailable'); // 'available' or 'unavailable'
   const [bulkNotes, setBulkNotes] = useState('');
+  const { calendar, ui } = useAnalytics(); // Add this line
 
   // Get current date without time for comparison
   const today = new Date();
@@ -58,9 +60,12 @@ const AvailabilityCalendar = () => {
     return dateToCheck >= today;
   };
 
-  // Format date for storage key
+  // Replace the existing formatDateKey function with:
   const formatDateKey = (date) => {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Get availability status for a date
@@ -85,14 +90,22 @@ const AvailabilityCalendar = () => {
       // Only allow future dates in bulk mode
       if (!isPastDate(date)) {
         const dateKey = formatDateKey(date);
+        const wasSelected = selectedDates.includes(dateKey);
         setSelectedDates(prev =>
           prev.includes(dateKey)
             ? prev.filter(d => d !== dateKey)
             : [...prev, dateKey]
         );
+
+        // Add this analytics call:
+        ui.buttonClicked(
+          wasSelected ? 'bulk_date_deselected' : 'bulk_date_selected',
+          'availability_calendar'
+        );
       }
     } else {
       setSelectedDate(date);
+      ui.buttonClicked('single_date_selected', 'availability_calendar');
       // Initialize availability for this date if not exists and it's editable
       const dateKey = formatDateKey(date);
       if (!availability[dateKey] && isEditable(date)) {
@@ -119,6 +132,8 @@ const AvailabilityCalendar = () => {
         isAvailable
       }
     }));
+
+    calendar.availabilityStatusChanged(isAvailable ? 'available' : 'unavailable'); // Add this line
   };
 
   // Update notes for selected date
@@ -145,7 +160,8 @@ const AvailabilityCalendar = () => {
         return !isPastDate(date);
       })
       .map(dateKey => ({
-        date: dateKey,
+        // date: dateKey,
+        date: new Date(dateKey + 'T00:00:00.000Z'), // Add this
         isAvailable: bulkAction === 'available',
         notes: bulkAction === 'unavailable' ? bulkNotes : ''
       }));
@@ -164,7 +180,7 @@ const AvailabilityCalendar = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         // Update local state
         const updates = {};
@@ -178,7 +194,8 @@ const AvailabilityCalendar = () => {
 
         setMessage(`Successfully updated ${bulkUpdates.length} dates!`);
         setTimeout(() => setMessage(''), 3000);
-        
+
+        calendar.bulkAvailabilityUpdated(bulkUpdates.length, bulkAction);
         // Reset bulk mode
         setSelectedDates([]);
         setBulkMode(false);
@@ -220,6 +237,7 @@ const AvailabilityCalendar = () => {
   // Load availability on component mount and month change
   useEffect(() => {
     loadAvailability();
+    calendar.pageViewed('availability_calendar');
   }, [currentDate]);
 
   // Save availability for single date only
@@ -260,6 +278,8 @@ const AvailabilityCalendar = () => {
       if (result.success) {
         setMessage(`Availability saved for ${selectedDate.toLocaleDateString()}!`);
         setTimeout(() => setMessage(''), 3000);
+
+        calendar.singleDateAvailabilityUpdated(dateData.isAvailable ? 'available' : 'unavailable');
       } else {
         throw new Error(result.message || 'Failed to save');
       }
@@ -277,6 +297,7 @@ const AvailabilityCalendar = () => {
       newDate.setMonth(prev.getMonth() + direction);
       return newDate;
     });
+    ui.buttonClicked(direction > 0 ? 'next_month' : 'previous_month', 'availability_calendar');
   };
 
   // Handle year change
@@ -287,6 +308,8 @@ const AvailabilityCalendar = () => {
       return newDate;
     });
     setShowYearDropdown(false);
+
+    ui.buttonClicked('year_changed', 'availability_calendar');
   };
 
   // Get available years (current year + next 5 years)
@@ -304,8 +327,8 @@ const AvailabilityCalendar = () => {
   const availableYears = getAvailableYears();
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 p-2 sm:p-4">
-      <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-sm">
+    <div className="min-h-screen py-4 bg-gray-50 text-gray-800 ">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 bg-white rounded-lg shadow-sm">
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -322,16 +345,24 @@ const AvailabilityCalendar = () => {
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
               <button
+                // Find this existing onClick handler and replace it:
                 onClick={() => {
-                  setBulkMode(!bulkMode);
+                  const newBulkMode = !bulkMode;
+                  setBulkMode(newBulkMode);
                   setSelectedDates([]);
                   setBulkNotes('');
+
+                  // Add these analytics calls:
+                  if (newBulkMode) {
+                    ui.buttonClicked('bulk_edit_enabled', 'availability_calendar');
+                  } else {
+                    ui.buttonClicked('bulk_edit_disabled', 'availability_calendar');
+                  }
                 }}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  bulkMode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${bulkMode
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {bulkMode ? 'Exit Bulk' : 'Bulk Edit'}
               </button>
@@ -352,11 +383,10 @@ const AvailabilityCalendar = () => {
 
           {/* Message */}
           {message && (
-            <div className={`mt-4 p-3 rounded-md text-sm ${
-              message.includes('Error') 
-                ? 'bg-red-50 text-red-700 border border-red-200' 
-                : 'bg-green-50 text-green-700 border border-green-200'
-            }`}>
+            <div className={`mt-4 p-3 rounded-md text-sm ${message.includes('Error')
+              ? 'bg-red-50 text-red-700 border border-red-200'
+              : 'bg-green-50 text-green-700 border border-green-200'
+              }`}>
               {message}
             </div>
           )}
@@ -393,9 +423,8 @@ const AvailabilityCalendar = () => {
                           <button
                             key={year}
                             onClick={() => handleYearChange(year)}
-                            className={`w-full px-3 py-2 text-left hover:bg-gray-50 first:rounded-t-md last:rounded-b-md transition-colors ${
-                              year === currentDate.getFullYear() ? 'bg-blue-50 text-blue-600 font-medium' : ''
-                            }`}
+                            className={`w-full px-3 py-2 text-left hover:bg-gray-50 first:rounded-t-md last:rounded-b-md transition-colors ${year === currentDate.getFullYear() ? 'bg-blue-50 text-blue-600 font-medium' : ''
+                              }`}
                           >
                             {year}
                           </button>
@@ -488,7 +517,7 @@ const AvailabilityCalendar = () => {
                     <Edit3 className="w-5 h-5" />
                     Bulk Edit Mode
                   </h3>
-                  
+
                   <div className="space-y-4">
                     <p className="text-sm text-gray-600">
                       Selected {selectedDates.length} date(s) for bulk update
@@ -508,7 +537,11 @@ const AvailabilityCalendar = () => {
                                 name="bulkAction"
                                 value="available"
                                 checked={bulkAction === 'available'}
-                                onChange={(e) => setBulkAction(e.target.value)}
+                                onChange={(e) => {
+                                  setBulkAction(e.target.value);
+                                  ui.buttonClicked('bulk_action_available_selected', 'availability_calendar'); // Add this line
+                                }}
+
                                 className="mr-2"
                               />
                               <span className="text-sm">Mark as Available</span>
@@ -519,7 +552,10 @@ const AvailabilityCalendar = () => {
                                 name="bulkAction"
                                 value="unavailable"
                                 checked={bulkAction === 'unavailable'}
-                                onChange={(e) => setBulkAction(e.target.value)}
+                                onChange={(e) => {
+                                  setBulkAction(e.target.value);
+                                  ui.buttonClicked('bulk_action_unavailable_selected', 'availability_calendar'); // Add this line
+                                }}
                                 className="mr-2"
                               />
                               <span className="text-sm">Mark as Unavailable</span>
@@ -551,11 +587,10 @@ const AvailabilityCalendar = () => {
                         <button
                           onClick={handleBulkUpdate}
                           disabled={loading}
-                          className={`w-full px-4 py-2 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 ${
-                            bulkAction === 'available' 
-                              ? 'bg-green-600 hover:bg-green-700' 
-                              : 'bg-red-600 hover:bg-red-700'
-                          }`}
+                          className={`w-full px-4 py-2 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-50 ${bulkAction === 'available'
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-red-600 hover:bg-red-700'
+                            }`}
                         >
                           {loading ? 'Updating...' : `Mark ${selectedDates.length} dates as ${bulkAction}`}
                         </button>
@@ -592,9 +627,8 @@ const AvailabilityCalendar = () => {
                         Availability Status
                       </label>
                       <div className="space-y-2">
-                        <label className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${
-                          selectedDateData?.isAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                        } ${!isEditable(selectedDate) ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                        <label className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${selectedDateData?.isAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                          } ${!isEditable(selectedDate) ? 'opacity-60 cursor-not-allowed' : ''}`}>
                           <input
                             type="radio"
                             name="availability"
@@ -608,10 +642,9 @@ const AvailabilityCalendar = () => {
                             <div className="text-xs text-green-600">Ready to accept bookings</div>
                           </div>
                         </label>
-                        
-                        <label className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${
-                          selectedDateData?.isAvailable === false ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                        } ${!isEditable(selectedDate) ? 'opacity-60 cursor-not-allowed' : ''}`}>
+
+                        <label className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${selectedDateData?.isAvailable === false ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          } ${!isEditable(selectedDate) ? 'opacity-60 cursor-not-allowed' : ''}`}>
                           <input
                             type="radio"
                             name="availability"
@@ -637,14 +670,13 @@ const AvailabilityCalendar = () => {
                         <textarea
                           value={selectedDateData?.notes || ''}
                           onChange={(e) => updateNotes(e.target.value)}
-                          placeholder={isEditable(selectedDate) 
-                            ? "e.g., Already booked, Personal event, Equipment maintenance" 
+                          placeholder={isEditable(selectedDate)
+                            ? "e.g., Already booked, Personal event, Equipment maintenance"
                             : "No notes available"
                           }
                           disabled={!isEditable(selectedDate)}
-                          className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            !isEditable(selectedDate) ? 'bg-gray-100 cursor-not-allowed' : ''
-                          }`}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${!isEditable(selectedDate) ? 'bg-gray-100 cursor-not-allowed' : ''
+                            }`}
                           rows="3"
                           maxLength="500"
                         />

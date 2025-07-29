@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import { ChevronDown, ChevronUp, Plus, Edit, Trash2, Save, X, Check, AlertTriangle } from 'lucide-react';
+import useAnalytics from '@/hooks/useAnalytics';
 
 // Confirmation Dialog Component
 const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, message, confirmText, cancelText, type }) => {
@@ -59,6 +61,8 @@ const MenuCuisinesModule = () => {
    const [isLoading, setIsLoading] = useState(false);
    const [error, setError] = useState('');
    const [showCuisineForm, setShowCuisineForm] = useState(false);
+   // Analytics
+   const { services, ui } = useAnalytics();
 
    // Confirmation dialog state
    const [confirmDialog, setConfirmDialog] = useState({
@@ -186,6 +190,7 @@ const MenuCuisinesModule = () => {
    // Load existing data on component mount
    useEffect(() => {
       loadExistingData();
+      services.tabViewed('menu_cuisines');
    }, []);
 
    const loadExistingData = async () => {
@@ -214,6 +219,12 @@ const MenuCuisinesModule = () => {
 
    // Cuisine selection handlers
    const handleCuisineChange = (cuisine) => {
+      // Track cuisine selection
+      const isSelecting = !selectedCuisines.includes(cuisine);
+      if (isSelecting && cuisine !== 'Other') {
+         services.cuisineSelected(cuisine, 'menu_cuisines');
+      }
+
       if (cuisine === 'Other') {
          setShowOtherInput(!showOtherInput);
          if (!showOtherInput) {
@@ -248,6 +259,9 @@ const MenuCuisinesModule = () => {
             setShowOtherInput(false);
             setOtherCuisine('');
             setShowCuisineForm(false);
+
+            // Track successful cuisine save
+            services.sectionCompleted('menu_cuisines', 'cuisines', cuisinesToSave.length);
          }
       } catch (error) {
          console.error('Failed to save cuisines:', error);
@@ -290,6 +304,13 @@ const MenuCuisinesModule = () => {
 
             setPackageForm(initialPackageForm);
             setShowPackageForm(prev => ({ ...prev, [cuisine]: false }));
+
+            // Track package action
+            if (editingPackage) {
+               services.sectionUpdated('menu_cuisines', 'package', 'edit');
+            } else {
+               services.packageCreated(packageForm.type, packageForm.pricePerPlate);
+            }
             setEditingPackage(null);
          }
       } catch (error) {
@@ -349,6 +370,14 @@ const MenuCuisinesModule = () => {
 
             setItemForm(initialItemForm);
             setShowItemForm(prev => ({ ...prev, [`${cuisine}-${packageData._id}`]: false }));
+
+            // Track menu item action
+            if (editingItem) {
+               services.sectionUpdated('menu_cuisines', 'menu_item', 'edit');
+            } else {
+               services.menuItemAdded(itemForm.type, 'menu_cuisines');
+            }
+
             setEditingItem(null);
          }
       } catch (error) {
@@ -396,8 +425,10 @@ const MenuCuisinesModule = () => {
 
    return (
       <div className="w-full max-w-none sm:max-w-6xl mx-auto p-3 sm:p-6 bg-white shadow-lg rounded-lg text-gray-700">
-         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">Menu & Cuisines Management</h2>
-
+         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 flex ">
+            <span>Menu & Cuisines Management</span>
+            <SectionHeaderWithTooltip priority="high" />
+         </h2>
          {/* Confirmation Dialog */}
          <ConfirmationDialog
             isOpen={confirmDialog.isOpen}
@@ -427,7 +458,10 @@ const MenuCuisinesModule = () => {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
                <h3 className="text-lg sm:text-xl font-semibold text-gray-700">Your Saved Cuisines</h3>
                <button
-                  onClick={() => setShowCuisineForm(!showCuisineForm)}
+                  onClick={() => {
+                     setShowCuisineForm(!showCuisineForm)
+                     ui.buttonClicked('add_cuisines', 'menu_cuisines');
+                  }}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center cursor-pointer text-sm sm:text-base self-start sm:self-auto"
                >
                   <Plus className="w-4 h-4 mr-2" />
@@ -518,14 +552,23 @@ const MenuCuisinesModule = () => {
          {/* Packages Section */}
          {savedCuisines.length > 0 && (
             <div>
-               <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-700">Manage Packages by Cuisine</h3>
+               <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-700 flex">
+                  <span>
+                     Manage Packages by Cuisine
+                  </span>
+                  <SectionHeaderWithTooltip priority="high" />
+
+               </h3>
 
                {savedCuisines.map(cuisine => (
                   <div key={cuisine} className="mb-6 sm:mb-8 border border-gray-200 rounded-lg p-3 sm:p-4">
                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
                         <h4 className="text-base sm:text-lg font-semibold text-gray-800">{cuisine}</h4>
                         <button
-                           onClick={() => setShowPackageForm(prev => ({ ...prev, [cuisine]: !prev[cuisine] }))}
+                           onClick={() => {
+                              setShowPackageForm(prev => ({ ...prev, [cuisine]: !prev[cuisine] }))
+                              ui.buttonClicked('add_package', `menu_cuisines_${cuisine}`);
+                           }}
                            className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded hover:bg-green-700 flex items-center cursor-pointer text-sm sm:text-base self-start sm:self-auto"
                         >
                            <Plus className="w-4 h-4 mr-2" />
@@ -645,7 +688,10 @@ const MenuCuisinesModule = () => {
                                  </div>
                                  <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-center">
                                     <button
-                                       onClick={() => setShowItemForm(prev => ({ ...prev, [`${cuisine}-${pkg._id}`]: !prev[`${cuisine}-${pkg._id}`] }))}
+                                       onClick={() => {
+                                          setShowItemForm(prev => ({ ...prev, [`${cuisine}-${pkg._id}`]: !prev[`${cuisine}-${pkg._id}`] }))
+                                          ui.buttonClicked('add_menu_item', `menu_cuisines_${cuisine}_${pkg.name}`);
+                                       }}
                                        className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center cursor-pointer text-xs sm:text-sm"
                                     >
                                        <Plus className="w-3 h-3 mr-1" />
@@ -744,7 +790,7 @@ const MenuCuisinesModule = () => {
 
                            {/* Menu Items Display */}
                            {expandedPackages[`${cuisine}-${pkg._id}`] && (
-                              <div className="p-3 sm:p-4 border-t">                               
+                              <div className="p-3 sm:p-4 border-t">
                                  {/* Menu Items List */}
                                  {pkg.menuItems && pkg.menuItems.length > 0 ? (
                                     <div>

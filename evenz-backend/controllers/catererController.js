@@ -27,12 +27,16 @@ const getCatererProfile = async (req, res) => {
       });
     }
 
-    // Check if vendor exists
-    const vendor = await Vendor.findById(catererId);
+     // Check if vendor exists AND is active
+    const vendor = await Vendor.findOne({ 
+      _id: catererId, 
+      status: 'active' // Only active vendors
+    });
+
     if (!vendor) {
       return res.status(404).json({
         success: false,
-        message: 'Caterer not found'
+        message: 'Caterer not found or not available'
       });
     }
 
@@ -49,9 +53,29 @@ const getCatererProfile = async (req, res) => {
       Services.findOne({ vendor: catererId }),
       Legal.findOne({ vendor: catererId }),
       Compliance.findOne({ vendorId: catererId }),
-      Media.find({ vendor: catererId }).sort({ uploadedAt: -1 }),
+      Media.findVendorProfile(catererId),
       Customization.findOne({ vendor: catererId })
     ]);
+
+
+    // FIXED: Better experience filtering
+    // const getExperienceValue = () => {
+    //   if (!media || media.length === 0) return null;
+
+    //   // Try multiple approaches to find experience data
+    //   let experienceItem = media.find(m => m.experience !== undefined && m.experience !== null);
+
+    //   if (!experienceItem) {
+    //     experienceItem = media.find(m => m.size === 0 && m.mimetype === 'application/json');
+    //   }
+
+    //   if (!experienceItem) {
+    //     experienceItem = media.find(m => m.originalName && m.originalName.includes('experience'));
+    //   }
+
+    //   console.log('Experience item found:', experienceItem);
+    //   return experienceItem ? experienceItem.experience : null;
+    // };
 
     // Structure the response data
     const profileData = {
@@ -71,11 +95,14 @@ const getCatererProfile = async (req, res) => {
         createdAt: vendor.createdAt
       },
 
-      // Gallery & Media
+      // Gallery & Media - FIXED experience logic
       gallery: {
-        coverImage: media && media.length > 0 ? media.find(m => m.isCoverImage) || null : null,
-        images: media ? media.filter(m => m.mimetype && m.mimetype.startsWith('image/')) : [],
-        videos: media ? media.filter(m => m.mimetype && m.mimetype.startsWith('video/')) : []
+        cloudinaryUrl: media ? media.cloudinaryUrl : null,
+        experience: media ? media.experience : null,
+        originalName: media ? media.originalName : null,
+        mimetype: media ? media.mimetype : null,
+        size: media ? media.size : null,
+        uploadedAt: media ? media.uploadedAt : null
       },
 
       // Menu & Cuisines
@@ -133,6 +160,9 @@ const getCatererProfile = async (req, res) => {
       } : null
     };
 
+    console.log('Media data:', media);
+    console.log('Gallery data:', profileData.gallery);
+
     res.status(200).json({
       success: true,
       data: profileData
@@ -152,9 +182,11 @@ const getCatererProfile = async (req, res) => {
 const getAllCaterers = async (req, res) => {
   try {
     const { page = 1, limit = 10, city, cuisine, minPrice, maxPrice } = req.query;
-    
-    let matchConditions = {};
-    
+
+    let matchConditions = {
+      status: 'active' // Only active vendors
+    };
+
     // Filter by city if provided
     if (city) {
       matchConditions.city = new RegExp(city, 'i');
@@ -168,7 +200,7 @@ const getAllCaterers = async (req, res) => {
 
     // Get additional data for each vendor
     const vendorIds = vendors.map(v => v._id);
-    
+
     const [menus, media, legal] = await Promise.all([
       Menu.find({ vendor: { $in: vendorIds } }).select('vendor cuisines packages'),
       Media.find({ vendor: { $in: vendorIds }, isCoverImage: true }),
@@ -180,7 +212,7 @@ const getAllCaterers = async (req, res) => {
       const vendorMenu = menus.find(m => m.vendor.toString() === vendor._id.toString());
       const vendorMedia = media.find(m => m.vendor.toString() === vendor._id.toString());
       const vendorLegal = legal.find(l => l.vendor.toString() === vendor._id.toString());
-      
+
       // Calculate price range from packages
       let minPrice = null, maxPrice = null;
       if (vendorMenu && vendorMenu.packages) {
@@ -231,7 +263,147 @@ const getAllCaterers = async (req, res) => {
   }
 };
 
+const getProfileStatus = async (req, res) => {
+  try {
+    const catererId = req.vendor._id; // From JWT middleware
+
+    console.log('Caterer ID:', catererId);
+
+    // Check if vendor exists
+    const vendor = await Vendor.findById(catererId);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Caterer not found'
+      });
+    }
+
+    // Fetch all related data in parallel
+    const [
+      menu,
+      services,
+      legal,
+      compliance,
+      media,
+      customization
+    ] = await Promise.all([
+      Menu.findOne({ vendor: catererId }),
+      Services.findOne({ vendor: catererId }),
+      Legal.findOne({ vendor: catererId }),
+      Compliance.findOne({ vendorId: catererId }),
+      Media.find({ vendor: catererId }),
+      Customization.findOne({ vendor: catererId })
+    ]);
+
+    // Helper function to check if array/object has meaningful data
+    const hasData = (data) => {
+      if (!data) return false;
+      if (Array.isArray(data)) return data.length > 0;
+      if (typeof data === 'object') return Object.keys(data).length > 0;
+      return Boolean(data);
+    };
+
+    // HIGH PRIORITY CHECKS
+
+    // 1. Packages and Cuisines Saved
+    const packagesAndCuisinesSaved =
+      menu &&
+      Array.isArray(menu.cuisines) &&
+      menu.cuisines.length > 0 &&
+      menu.packages instanceof Map &&
+      menu.packages.size > 0 &&
+      [...menu.packages.values()].some(
+        (pkgArray) => Array.isArray(pkgArray) && pkgArray.length > 0
+      );
+
+    console.log('Packages and Cuisines Saved:', packagesAndCuisinesSaved);
+
+    // 2. Min/Max Guests and Available for Events
+    const minMaxGuestsAvailableForEventsFilled = legal &&
+      legal.minGuests &&
+      legal.maxGuests &&
+      services &&
+      hasData(services.availableForEvents);
+
+    // 3. Cover Image Uploaded
+    const coverImageUploaded = media &&
+      media.some(m => m.isCoverImage === true);
+
+    // MEDIUM PRIORITY CHECKS
+
+    // 4. Live Counters and Service Types
+    const liveCountersServiceTypesFilled = services &&
+      hasData(services.liveCounters) &&
+      hasData(services.mealServiceTypes);
+
+    // 5. Staff Details and Tableware
+    const staffDetailsTablewareFilled = services &&
+      hasData(services.staffDetails) &&
+      services.tableware !== undefined &&
+      services.tableware !== null;
+
+    // 6. Dietary Filters and Customization
+    const dietaryFiltersCustomizationFilled = customization &&
+      customization.allowCustomization !== undefined &&
+      hasData(customization.dietaryFilters);
+
+    // 7. Experience Information
+    const experienceFilled = media &&
+      media.some(m => m.experience !== undefined && m.experience !== null);
+
+    // LOW PRIORITY CHECKS
+
+    // 8. Legal Details
+    const legalDetailsFilled = legal &&
+      legal.gstRegistrationNumber &&
+      hasData(legal.acceptedPaymentModes) &&
+      legal.bookingAdvance !== undefined &&
+      legal.minimumNoticeDays !== undefined;
+
+    // 9. Compliance Details
+    const complianceDetailsFilled = compliance &&
+      compliance.fssaiLicense &&
+      hasData(compliance.hygieneAudits) &&
+      hasData(compliance.ingredientSourcing);
+
+    // Construct response
+    const profileStatus = {
+      packagesAndCuisinesSaved,
+      minMaxGuestsAvailableForEventsFilled,
+      coverImageUploaded,
+      liveCountersServiceTypesFilled,
+      staffDetailsTablewareFilled,
+      dietaryFiltersCustomizationFilled,
+      experienceFilled,
+      legalDetailsFilled,
+      complianceDetailsFilled
+    };
+
+    // Add completion percentage for analytics
+    const totalFields = Object.keys(profileStatus).length;
+    const completedFields = Object.values(profileStatus).filter(Boolean).length;
+    const completionPercentage = Math.round((completedFields / totalFields) * 100);
+
+    res.status(200).json({
+      success: true,
+      profileStatus,
+      completionPercentage,
+      completedFields,
+      totalFields
+    });
+
+  } catch (error) {
+    console.error('Error fetching profile status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    });
+  }
+};
+
 module.exports = {
   getCatererProfile,
-  getAllCaterers
+  getAllCaterers,
+  getProfileStatus
 };

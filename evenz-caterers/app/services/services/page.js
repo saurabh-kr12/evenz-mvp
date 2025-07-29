@@ -1,5 +1,5 @@
 import ProtectedRoute from '@/components/ProtectedRoute'
-import ServicesLogistics from '@/components/ServicePages/ServiceLogistics'
+import ServicesLogistics from '@/components/ServicePages/Counter&Services'
 
 export default function ServicesLogisticsPage() {
   return (

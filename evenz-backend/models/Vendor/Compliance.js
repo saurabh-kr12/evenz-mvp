@@ -50,7 +50,6 @@ const complianceSchema = new mongoose.Schema({
   insurance: {
     provided: {
       type: Boolean,
-      default: false
     },
     details: {
       type: String,

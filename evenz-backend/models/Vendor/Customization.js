@@ -1,70 +1,3 @@
-// // File: models/Customization.js
-// const mongoose = require('mongoose');
-
-// const customizationSchema = new mongoose.Schema({
-//   vendor: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'Vendor',
-//     required: true,
-//     unique: true
-//   },
-//   allowCustomization: {
-//     type: Boolean,
-//     default: false
-//   },
-//   customizationCharges: {
-//     hasCharges: {
-//       type: Boolean,
-//       default: false
-//     },
-//     chargeType: {
-//       type: String,
-//       enum: ['per_plate', 'fixed'],
-//       default: 'per_plate'
-//     },
-//     amount: {
-//       type: Number,
-//       min: 0,
-//       default: 0
-//     }
-//   },
-//   specialMenus: {
-//     type: String,
-//     trim: true,
-//     maxlength: 1000
-//   },
-//   dietaryFilters: {
-//     vegan: { type: Boolean, default: false },
-//     jain: { type: Boolean, default: false },
-//     vegetarian: { type: Boolean, default: false },
-//     glutenFree: { type: Boolean, default: false },
-//     diabeticFriendly: { type: Boolean, default: false },
-//     lowSodium: { type: Boolean, default: false },
-//     other: {
-//       enabled: { type: Boolean, default: false },
-//       values: [{ type: String, trim: true }]
-//     }
-//   },
-//   tastingSession: {
-//     allowed: {
-//       type: Boolean,
-//       default: false
-//     },
-//     description: {
-//       type: String,
-//       trim: true,
-//       maxlength: 500
-//     }
-//   }
-// }, {
-//   timestamps: true
-// });
-
-// // Index for efficient vendor lookups
-// customizationSchema.index({ vendor: 1 });
-
-// module.exports = mongoose.model('Customization', customizationSchema);
-
 // File: models/Vendor/Customization.js
 const mongoose = require('mongoose');
 
@@ -77,12 +10,12 @@ const customizationSchema = new mongoose.Schema({
   },
   allowCustomization: {
     type: Boolean,
-    default: false
+
   },
   customizationCharges: {
     hasCharges: {
       type: Boolean,
-      default: false
+
     },
     chargeType: {
       type: String,
@@ -101,29 +34,29 @@ const customizationSchema = new mongoose.Schema({
     maxlength: [1000, 'Special menus description cannot exceed 1000 characters']
   },
   dietaryFilters: {
-    vegan: { 
-      type: Boolean, 
-      default: false 
+    vegan: {
+      type: Boolean,
+
     },
-    jain: { 
-      type: Boolean, 
-      default: false 
+    jain: {
+      type: Boolean,
+
     },
-    vegetarian: { 
-      type: Boolean, 
-      default: false 
+    vegetarian: {
+      type: Boolean,
+
     },
-    glutenFree: { 
-      type: Boolean, 
-      default: false 
+    glutenFree: {
+      type: Boolean,
+
     },
-    diabeticFriendly: { 
-      type: Boolean, 
-      default: false 
+    diabeticFriendly: {
+      type: Boolean,
+
     },
-    lowSodium: { 
-      type: Boolean, 
-      default: false 
+    lowSodium: {
+      type: Boolean,
+
     },
     custom: [{
       type: String,
@@ -134,7 +67,7 @@ const customizationSchema = new mongoose.Schema({
   tastingSession: {
     allowed: {
       type: Boolean,
-      default: false
+
     },
     description: {
       type: String,
@@ -150,7 +83,7 @@ const customizationSchema = new mongoose.Schema({
 customizationSchema.index({ vendor: 1 });
 
 // Middleware to clean up custom dietary filters before saving
-customizationSchema.pre('save', function(next) {
+customizationSchema.pre('save', function (next) {
   if (this.dietaryFilters && this.dietaryFilters.custom) {
     // Remove empty strings and duplicates
     this.dietaryFilters.custom = [...new Set(
@@ -163,7 +96,7 @@ customizationSchema.pre('save', function(next) {
 });
 
 // Middleware to clean up custom dietary filters before update
-customizationSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], function(next) {
+customizationSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], function (next) {
   const update = this.getUpdate();
   if (update.dietaryFilters && update.dietaryFilters.custom) {
     // Remove empty strings and duplicates
@@ -177,82 +110,82 @@ customizationSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], functio
 });
 
 // Virtual to get total custom filters count
-customizationSchema.virtual('customFiltersCount').get(function() {
+customizationSchema.virtual('customFiltersCount').get(function () {
   return this.dietaryFilters.custom ? this.dietaryFilters.custom.length : 0;
 });
 
 // Virtual to check if any dietary filters are enabled
-customizationSchema.virtual('hasDietaryFilters').get(function() {
+customizationSchema.virtual('hasDietaryFilters').get(function () {
   const filters = this.dietaryFilters;
-  return filters.vegan || filters.jain || filters.vegetarian || 
-         filters.glutenFree || filters.diabeticFriendly || filters.lowSodium || 
-         (filters.custom && filters.custom.length > 0);
+  return filters.vegan || filters.jain || filters.vegetarian ||
+    filters.glutenFree || filters.diabeticFriendly || filters.lowSodium ||
+    (filters.custom && filters.custom.length > 0);
 });
 
 // Method to get all active dietary filters
-customizationSchema.methods.getActiveDietaryFilters = function() {
+customizationSchema.methods.getActiveDietaryFilters = function () {
   const filters = this.dietaryFilters;
   const active = [];
-  
+
   if (filters.vegan) active.push('Vegan');
   if (filters.jain) active.push('Jain');
   if (filters.vegetarian) active.push('Vegetarian');
   if (filters.glutenFree) active.push('Gluten Free');
   if (filters.diabeticFriendly) active.push('Diabetic Friendly');
   if (filters.lowSodium) active.push('Low Sodium');
-  
+
   if (filters.custom && filters.custom.length > 0) {
     active.push(...filters.custom);
   }
-  
+
   return active;
 };
 
 // Method to add custom dietary filter
-customizationSchema.methods.addCustomDietaryFilter = function(filter) {
+customizationSchema.methods.addCustomDietaryFilter = function (filter) {
   if (!filter || typeof filter !== 'string') return false;
-  
+
   const trimmedFilter = filter.trim();
   if (trimmedFilter.length === 0 || trimmedFilter.length > 50) return false;
-  
+
   if (!this.dietaryFilters.custom) {
     this.dietaryFilters.custom = [];
   }
-  
+
   // Check if filter already exists (case insensitive)
   const exists = this.dietaryFilters.custom.some(
     existing => existing.toLowerCase() === trimmedFilter.toLowerCase()
   );
-  
+
   if (!exists) {
     this.dietaryFilters.custom.push(trimmedFilter);
     return true;
   }
-  
+
   return false;
 };
 
 // Method to remove custom dietary filter
-customizationSchema.methods.removeCustomDietaryFilter = function(filter) {
+customizationSchema.methods.removeCustomDietaryFilter = function (filter) {
   if (!filter || !this.dietaryFilters.custom) return false;
-  
+
   const initialLength = this.dietaryFilters.custom.length;
   this.dietaryFilters.custom = this.dietaryFilters.custom.filter(
     existing => existing.toLowerCase() !== filter.toLowerCase()
   );
-  
+
   return this.dietaryFilters.custom.length < initialLength;
 };
 
 // Static method to get customization with defaults
-customizationSchema.statics.getWithDefaults = async function(vendorId) {
+customizationSchema.statics.getWithDefaults = async function (vendorId) {
   let customization = await this.findOne({ vendor: vendorId });
-  
+
   if (!customization) {
     customization = new this({ vendor: vendorId });
     await customization.save();
   }
-  
+
   return customization;
 };
 

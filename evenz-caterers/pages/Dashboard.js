@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  User, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
-  DollarSign, 
+import {
+  User,
+  Calendar,
+  Clock,
+  CheckCircle,
+  DollarSign,
   CalendarX,
   Eye,
   Settings,
@@ -16,15 +16,22 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react';
+import ProfileCompletionCard from '@/components/ProfileCompletionCard';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const CatererDashboard = () => {
   const navigate = useRouter().push;
+  const { dashboard, ui } = useAnalytics();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Mock auth context - replace with your actual auth implementation
   const authToken = localStorage.getItem('token');
+
+  useEffect(() => {
+    dashboard.pageViewed('caterer_dashboard');
+  }, [dashboard]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -82,6 +89,9 @@ const CatererDashboard = () => {
   };
 
   const handleCardClick = (filterType) => {
+    // Track card click
+    ui.buttonClicked(`${filterType}_leads_card`, 'dashboard');
+
     // Navigate to bookings page with filter
     navigate(`/bookings`);
   };
@@ -137,10 +147,13 @@ const CatererDashboard = () => {
           <p className="text-gray-600">Ready to review your new leads and manage your catering business?</p>
         </div>
 
+        {/* Profile Completion Card */}
+        <ProfileCompletionCard />
+
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
           {/* New/Pending Leads */}
-          <div 
+          <div
             onClick={() => handleCardClick('pending')}
             className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-yellow-500"
           >
@@ -163,7 +176,7 @@ const CatererDashboard = () => {
           </div>
 
           {/* Leads in Progress */}
-          <div 
+          <div
             onClick={() => handleCardClick('unlocked')}
             className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-blue-500"
           >
@@ -186,7 +199,7 @@ const CatererDashboard = () => {
           </div>
 
           {/* Confirmed Bookings */}
-          <div 
+          <div
             onClick={() => handleCardClick('confirmed')}
             className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-green-500"
           >
@@ -226,8 +239,11 @@ const CatererDashboard = () => {
           </div>
 
           {/* Days Unavailable */}
-          <div 
-            onClick={() => navigate('/calendar')}
+          <div
+            onClick={() => {
+              ui.buttonClicked('unavailable_days_card', 'dashboard');
+              navigate('/calendar');
+            }}
             className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-red-500"
           >
             <div className="flex items-center justify-between mb-4">
@@ -260,15 +276,21 @@ const CatererDashboard = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <button 
-                onClick={() => navigate('/your-profile')}
+              <button
+                onClick={() => {
+                  ui.buttonClicked('update_profile_quick_action', 'dashboard');
+                  navigate('/your-profile')
+                }}
                 className="w-full text-left text-sm text-indigo-600 hover:text-indigo-800 flex items-center justify-between p-2 hover:bg-indigo-50 rounded"
               >
                 <span>Update Profile</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-              <button 
-                onClick={() => navigate('/calendar')}
+              <button
+                onClick={() => {
+                  ui.buttonClicked('manage_availability_quick_action', 'dashboard');
+                  navigate('/calendar');
+                }}
                 className="w-full text-left text-sm text-indigo-600 hover:text-indigo-800 flex items-center justify-between p-2 hover:bg-indigo-50 rounded"
               >
                 <span>Manage Availability</span>
@@ -287,7 +309,7 @@ const CatererDashboard = () => {
             </h2>
             <p className="text-gray-600 text-sm mt-1">Latest requests from clients</p>
           </div>
-          
+
           <div className="divide-y divide-gray-200">
             {dashboardData?.recentBookings?.length > 0 ? (
               dashboardData.recentBookings.map((booking) => (
@@ -335,10 +357,13 @@ const CatererDashboard = () => {
               </div>
             )}
           </div>
-          
+
           <div className="p-6 border-t border-gray-200">
             <button
-              onClick={() => navigate('/bookings')}
+              onClick={() => {
+                ui.buttonClicked('view_all_bookings_main', 'dashboard');
+                navigate('/bookings');
+              }}
               className="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
             >
               <Eye className="w-4 h-4" />
@@ -350,7 +375,10 @@ const CatererDashboard = () => {
         {/* Quick Links Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
-            onClick={() => navigate('/bookings')}
+            onClick={() => {
+              ui.buttonClicked('view_all_bookings_quick_link', 'dashboard');
+              navigate('/bookings');
+            }}
             className="bg-white rounded-lg shadow-md p-6 text-left hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center space-x-3 mb-3">
@@ -363,7 +391,10 @@ const CatererDashboard = () => {
           </button>
 
           <button
-            onClick={() => navigate('/your-profile')}
+            onClick={() => {
+              ui.buttonClicked('manage_profile_quick_link', 'dashboard');
+              navigate('/your-profile');
+            }}
             className="bg-white rounded-lg shadow-md p-6 text-left hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center space-x-3 mb-3">
@@ -376,7 +407,10 @@ const CatererDashboard = () => {
           </button>
 
           <button
-            onClick={() => navigate('/calendar')}
+            onClick={() => {
+              ui.buttonClicked('update_availability_quick_link', 'dashboard');
+              navigate('/calendar');
+            }}
             className="bg-white rounded-lg shadow-md p-6 text-left hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center space-x-3 mb-3">
@@ -389,7 +423,10 @@ const CatererDashboard = () => {
           </button>
 
           <button
-            onClick={() => navigate('/support')}
+            onClick={() => {
+              ui.buttonClicked('help_support_quick_link', 'dashboard');
+              navigate('/support');
+            }}
             className="bg-white rounded-lg shadow-md p-6 text-left hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center space-x-3 mb-3">

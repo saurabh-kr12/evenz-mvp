@@ -29,11 +29,11 @@ const legalSchema = new mongoose.Schema({
   },
   // Payment modes
   acceptedPaymentModes: {
-    upi: { type: Boolean, default: false },
-    cash: { type: Boolean, default: false },
-    card: { type: Boolean, default: false },
-    netBanking: { type: Boolean, default: false },
-    wallet: { type: Boolean, default: false }
+    upi: { type: Boolean },
+    cash: { type: Boolean },
+    card: { type: Boolean },
+    netBanking: { type: Boolean },
+    wallet: { type: Boolean }
   },
   // Booking advance
   bookingAdvance: {

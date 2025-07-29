@@ -38,19 +38,19 @@ const getDashboardSummary = async (req, res) => {
       // Count pending leads
       BookingRequest.countDocuments({
         catererId: vendorId,
-        status: 'pending'
+        status: 'PENDING'
       }),
 
       // Count leads in progress (unlocked)
       BookingRequest.countDocuments({
         catererId: vendorId,
-        status: 'unlocked'
+        status: 'UNLOCKED' || 'PAYMENT_PENDING'
       }),
 
       // Count confirmed bookings in last 30 days
       BookingRequest.countDocuments({
         catererId: vendorId,
-        status: 'confirmed',
+        status: 'CONFIRMED',
         createdAt: { $gte: thirtyDaysAgo }
       }),
 
@@ -59,7 +59,7 @@ const getDashboardSummary = async (req, res) => {
         {
           $match: {
             catererId: vendorId,
-            status: 'confirmed',
+            status: 'CONFIRMED',
             createdAt: { $gte: thirtyDaysAgo }
           }
         },

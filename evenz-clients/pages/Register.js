@@ -1,405 +1,519 @@
-// client/src/pages/Register.js
 "use client";
-import React, { useState, useContext } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthContext } from '../context/AuthContext';
+import Link from 'next/link';
+import { CheckCircle, Phone, Mail, User, Lock } from 'lucide-react';
+import useFormValidation from '@/hooks/useFormValidation';
+import validationRules from '@/utils/validationRules';
+import InputField from '@/components/InputField';
+import Button from '@/components/Button';
+import Timer from '@/components/Timer';
+import AuthLayout from '@/components/AuthLayout';
+import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import * as gtag from '@/lib/gtag';
 
-const Register = () => {
-   const router = useRouter();
-   const { register } = useContext(AuthContext);
+const RegisterPage = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
-   // Form state
-   const [step, setStep] = useState(1);
-   const [isLoading, setIsLoading] = useState(false);
-   const [otpLoading, setOtpLoading] = useState(false);
-   const [formData, setFormData] = useState({
-      name: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      otp: ''
-   });
-   const [errors, setErrors] = useState({});
-   const [otpSent, setOtpSent] = useState(false);
-   const [resendTimer, setResendTimer] = useState(0);
+  const router = useRouter();
+  const { 
+    register, 
+    sendOTP, 
+    verifyOTP, 
+    resendOTP, 
+    resetOTPState,
+    otpSent, 
+    otpVerified, 
+    attemptsLeft, 
+    canResendOtp,
+    currentUser
+  } = useAuth();
 
-   // Handle input change
-   const handleChange = (e) => {
-      const { name, value } = e.target;
-      setFormData({ ...formData, [name]: value });
+  const { values, errors, touched, setValue, setTouched, validateAll } = useFormValidation({
+    name: '',
+    email: '',
+    mobile: '',
+    password: '',
+    confirmPassword: '',
+    otp: '',
+    agreeToTerms: false
+  }, validationRules);
 
-      // Clear error when user types
-      if (errors[name]) {
-         setErrors({ ...errors, [name]: '' });
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (currentUser) {
+      router.push('/dashboard');
+    }
+  }, [currentUser, router]);
+
+  // Reset OTP state when component mounts
+  useEffect(() => {
+    resetOTPState();
+    
+    // Track page view
+    gtag.event({
+      action: 'page_view',
+      category: 'registration',
+      label: 'register_page_loaded'
+    });
+  }, []);
+
+  // Move to step 2 when OTP is verified
+  useEffect(() => {
+    if (otpVerified) {
+      setCurrentStep(2);
+      
+      // Track OTP verification success
+      gtag.event({
+        action: 'otp_verified',
+        category: 'registration',
+        label: 'mobile_verification_success'
+      });
+    }
+  }, [otpVerified]);
+
+  const handleSendOTP = async () => {
+    if (!values.mobile || errors.mobile) {
+      return;
+    }
+
+    setOtpLoading(true);
+    
+    // Track OTP send attempt
+    gtag.event({
+      action: 'otp_send_attempt',
+      category: 'registration',
+      label: 'whatsapp_otp_requested'
+    });
+
+    try {
+      await sendOTP(values.mobile);
+      
+      // Track successful OTP send
+      gtag.event({
+        action: 'otp_sent',
+        category: 'registration',
+        label: 'whatsapp_otp_sent_success'
+      });
+    } catch (error) {
+      // Track OTP send failure
+      gtag.event({
+        action: 'otp_send_failed',
+        category: 'registration',
+        label: 'whatsapp_otp_send_error'
+      });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!values.otp || errors.otp) {
+      return;
+    }
+
+    setLoading(true);
+    
+    // Track OTP verification attempt
+    gtag.event({
+      action: 'otp_verify_attempt',
+      category: 'registration',
+      label: 'mobile_verification_attempt'
+    });
+
+    try {
+      await verifyOTP(values.mobile, values.otp);
+      // Success tracking is handled in the useEffect above
+    } catch (error) {
+      // Track OTP verification failure
+      gtag.event({
+        action: 'otp_verify_failed',
+        category: 'registration',
+        label: 'mobile_verification_failed'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setOtpLoading(true);
+    
+    // Track OTP resend attempt
+    gtag.event({
+      action: 'otp_resend',
+      category: 'registration',
+      label: 'whatsapp_otp_resend_attempt'
+    });
+
+    try {
+      await resendOTP();
+      
+      // Track successful OTP resend
+      gtag.event({
+        action: 'otp_resent',
+        category: 'registration',
+        label: 'whatsapp_otp_resend_success'
+      });
+    } catch (error) {
+      // Track OTP resend failure
+      gtag.event({
+        action: 'otp_resend_failed',
+        category: 'registration',
+        label: 'whatsapp_otp_resend_error'
+      });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    if (!validateAll()) return;
+
+    if (values.password !== values.confirmPassword) {
+      toast.error('Passwords do not match');
+      
+      // Track password mismatch error
+      gtag.event({
+        action: 'form_validation_error',
+        category: 'registration',
+        label: 'password_mismatch'
+      });
+      return;
+    }
+
+    if (!values.agreeToTerms) {
+      toast.error('You must agree to the Terms and Conditions and Privacy Policy');
+      
+      // Track terms agreement error
+      gtag.event({
+        action: 'form_validation_error',
+        category: 'registration',
+        label: 'terms_not_agreed'
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    // Track registration attempt
+    gtag.event({
+      action: 'registration_attempt',
+      category: 'registration',
+      label: 'account_creation_started'
+    });
+
+    try {
+      const result = await register({
+        name: values.name,
+        email: values.email,
+        mobile: values.mobile,
+        password: values.password,
+        otp: values.otp,
+        agreeToTerms: values.agreeToTerms
+      });
+
+      if (result.success) {
+        // Track successful registration
+        gtag.event({
+          action: 'registration_success',
+          category: 'registration',
+          label: 'account_created_successfully'
+        });
+        
+        // Track conversion event
+        gtag.event({
+          action: 'sign_up',
+          category: 'engagement',
+          label: 'user_registered'
+        });
+        
+        router.push('/dashboard');
       }
-   };
+      // Error messages are handled by AuthContext
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      // Track registration failure
+      gtag.event({
+        action: 'registration_failed',
+        category: 'registration',
+        label: 'account_creation_error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-   // Validate first step
-   const validateStep1 = () => {
-      const newErrors = {};
+  // Track form field interactions
+  const handleFieldFocus = (fieldName) => {
+    gtag.event({
+      action: 'form_field_focus',
+      category: 'registration',
+      label: `${fieldName}_field_focused`
+    });
+  };
 
-      if (!formData.name.trim()) {
-         newErrors.name = 'Name is required';
-      }
+  // Track step progression
+  const trackStepView = (step) => {
+    gtag.event({
+      action: 'registration_step_view',
+      category: 'registration',
+      label: `step_${step}_viewed`,
+      value: step
+    });
+  };
 
-      if (!formData.phone.trim()) {
-         newErrors.phone = 'Phone number is required';
-      } else {
-         // Phone validation (international format)
-         const phoneRegex = /^\+?[1-9]\d{9,14}$/;
-         if (!phoneRegex.test(formData.phone)) {
-            newErrors.phone = 'Please enter a valid phone number (e.g., +1234567890)';
-         }
-      }
+  // Track step when it changes
+  useEffect(() => {
+    trackStepView(currentStep);
+  }, [currentStep]);
 
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-   };
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      <InputField
+        label="Full Name"
+        name="name"
+        value={values.name}
+        onChange={setValue}
+        onBlur={setTouched}
+        onFocus={() => handleFieldFocus('name')}
+        error={touched.name && errors.name}
+        placeholder="Enter your full name"
+        icon={User}
+      />
 
-   // Validate final step
-   const validateStep3 = () => {
-      const newErrors = {};
+      <InputField
+        label="Email Address"
+        type="email"
+        name="email"
+        value={values.email}
+        onChange={setValue}
+        onBlur={setTouched}
+        onFocus={() => handleFieldFocus('email')}
+        error={touched.email && errors.email}
+        placeholder="Enter your email"
+        icon={Mail}
+      />
 
-      if (!formData.password) {
-         newErrors.password = 'Password is required';
-      } else if (formData.password.length < 6) {
-         newErrors.password = 'Password must be at least 6 characters';
-      }
+      <InputField
+        label="Mobile Number (WhatsApp)"
+        type="tel"
+        name="mobile"
+        value={values.mobile}
+        onChange={setValue}
+        onBlur={setTouched}
+        onFocus={() => handleFieldFocus('mobile')}
+        error={touched.mobile && errors.mobile}
+        placeholder="Enter 10-digit mobile number"
+        icon={Phone}
+        maxLength="10"
+      />
 
-      if (formData.password !== formData.confirmPassword) {
-         newErrors.confirmPassword = 'Passwords do not match';
-      }
-
-      if (!formData.otp) {
-         newErrors.otp = 'OTP is required';
-      }
-
-      setErrors(newErrors);
-      return Object.keys(newErrors).length === 0;
-   };
-
-   // Send OTP
-   const sendOTP = async () => {
-      try {
-         setOtpLoading(true);
-         
-         await api.post('/api/otp/send', {
-            phone: formData.phone,
-            purpose: 'registration'
-         });
-
-         setOtpSent(true);
-         toast.success('OTP sent to your phone number');
-         startResendTimer();
-         
-      } catch (error) {
-         console.error('Send OTP error:', error);
-         toast.error(error.response?.data?.message || 'Failed to send OTP');
-      } finally {
-         setOtpLoading(false);
-      }
-   };
-
-   // Resend OTP
-   const resendOTP = async () => {
-      try {
-         setOtpLoading(true);
-         
-         await api.post('/api/otp/resend', {
-            phone: formData.phone,
-            purpose: 'registration'
-         });
-
-         toast.success('OTP resent successfully');
-         startResendTimer();
-         
-      } catch (error) {
-         console.error('Resend OTP error:', error);
-         toast.error(error.response?.data?.message || 'Failed to resend OTP');
-      } finally {
-         setOtpLoading(false);
-      }
-   };
-
-   // Start resend timer
-   const startResendTimer = () => {
-      setResendTimer(30);
-      const timer = setInterval(() => {
-         setResendTimer((prev) => {
-            if (prev <= 1) {
-               clearInterval(timer);
-               return 0;
-            }
-            return prev - 1;
-         });
-      }, 1000);
-   };
-
-   // Verify OTP
-   const verifyOTP = async () => {
-      if (!formData.otp) {
-         setErrors({ otp: 'Please enter the OTP' });
-         return false;
-      }
-
-      try {
-         await api.post('/api/otp/verify', {
-            phone: formData.phone,
-            otp: formData.otp,
-            purpose: 'registration'
-         });
-
-         return true;
-      } catch (error) {
-         console.error('Verify OTP error:', error);
-         setErrors({ otp: error.response?.data?.message || 'Invalid OTP' });
-         return false;
-      }
-   };
-
-   // Handle form submission
-   const handleSubmit = async (e) => {
-      e.preventDefault();
-
-      if (!validateStep3()) {
-         return;
-      }
-
-      // Verify OTP first
-      const isOtpValid = await verifyOTP();
-      if (!isOtpValid) {
-         return;
-      }
-
-      try {
-         setIsLoading(true);
-
-         // Register user
-         await register({
-            name: formData.name,
-            phone: formData.phone,
-            password: formData.password,
-            otp: formData.otp
-         });
-
-         toast.success('Registration successful!');
-         router.push('/dashboard');
-      } catch (error) {
-         console.error('Registration error:', error);
-         toast.error(error.response?.data?.message || 'Registration failed');
-      } finally {
-         setIsLoading(false);
-      }
-   };
-
-   // Handle step navigation
-   const handleNextStep = async () => {
-      if (step === 1 && validateStep1()) {
-         setStep(2);
-         // Automatically send OTP when moving to step 2
-         await sendOTP();
-      } else if (step === 2 && formData.otp) {
-         const isOtpValid = await verifyOTP();
-         if (isOtpValid) {
-            setStep(3);
-         }
-      }
-   };
-
-   return (
-      <div className="flex items-center text-gray-700 justify-center bg-white px-4 py-8">
-         <div className="flex w-full items-center justify-center bg-white px-4 py-8">
-            <div className="flex md:min-h-[70vh] w-full max-w-5xl shadow-[0_0_10px_rgba(0,0,0,0.1)]">
-               {/* Left Section - Hidden on mobile */}
-               <div className="hidden lg:block w-2/5 relative">
-                  <img
-                     src="/traditional indian wedding couple.png"
-                     alt="Traditional Indian Wedding"
-                     className="absolute inset-0 w-full h-full object-cover"
-                  />
-               </div>
-
-               {/* Right Section */}
-               <div className="w-full lg:w-3/5 p-4 sm:p-6 md:p-8 bg-white flex flex-col justify-center items-center">
-                  <div className="w-full max-w-md bg-white rounded-lg p-6">
-                     <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-                        Create an Account
-                     </h2>
-
-                     {/* Step 1: Basic Info */}
-                     {step === 1 && (
-                        <>
-                           <div className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                 Full Name *
-                              </label>
-                              <input
-                                 type="text"
-                                 name="name"
-                                 value={formData.name}
-                                 onChange={handleChange}
-                                 placeholder="Enter your full name"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                              {errors.name && (
-                                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                              )}
-                           </div>
-
-                           <div className="mb-6">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                 Phone Number *
-                              </label>
-                              <input
-                                 type="tel"
-                                 name="phone"
-                                 value={formData.phone}
-                                 onChange={handleChange}
-                                 placeholder="+1234567890"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                              {errors.phone && (
-                                 <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                              )}
-                           </div>
-
-                           <button
-                              onClick={handleNextStep}
-                              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-                           >
-                              Continue
-                           </button>
-                        </>
-                     )}
-
-                     {/* Step 2: OTP Verification */}
-                     {step === 2 && (
-                        <>
-                           <div className="mb-6 text-center">
-                              <h3 className="text-lg font-medium text-gray-700 mb-2">
-                                 Verify Your Phone Number
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                 We've sent a 6-digit code to {formData.phone}
-                              </p>
-                           </div>
-
-                           <div className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                 Enter OTP *
-                              </label>
-                              <input
-                                 type="text"
-                                 name="otp"
-                                 value={formData.otp}
-                                 onChange={handleChange}
-                                 placeholder="Enter 6-digit OTP"
-                                 maxLength="6"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
-                              />
-                              {errors.otp && (
-                                 <p className="mt-1 text-sm text-red-600">{errors.otp}</p>
-                              )}
-                           </div>
-
-                           <div className="mb-6 text-center">
-                              {resendTimer > 0 ? (
-                                 <p className="text-sm text-gray-500">
-                                    Resend OTP in {resendTimer} seconds
-                                 </p>
-                              ) : (
-                                 <button
-                                    onClick={resendOTP}
-                                    disabled={otpLoading}
-                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                 >
-                                    {otpLoading ? 'Sending...' : 'Resend OTP'}
-                                 </button>
-                              )}
-                           </div>
-
-                           <div className="flex gap-3">
-                              <button
-                                 onClick={() => setStep(1)}
-                                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-200"
-                              >
-                                 Back
-                              </button>
-                              <button
-                                 onClick={handleNextStep}
-                                 disabled={!formData.otp || formData.otp.length !== 6}
-                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 disabled:bg-gray-400"
-                              >
-                                 Verify
-                              </button>
-                           </div>
-                        </>
-                     )}
-
-                     {/* Step 3: Password */}
-                     {step === 3 && (
-                        <form onSubmit={handleSubmit}>
-                           <div className="mb-4">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                 Password *
-                              </label>
-                              <input
-                                 type="password"
-                                 name="password"
-                                 value={formData.password}
-                                 onChange={handleChange}
-                                 placeholder="Create a password"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                              {errors.password && (
-                                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-                              )}
-                           </div>
-
-                           <div className="mb-6">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                 Confirm Password *
-                              </label>
-                              <input
-                                 type="password"
-                                 name="confirmPassword"
-                                 value={formData.confirmPassword}
-                                 onChange={handleChange}
-                                 placeholder="Confirm your password"
-                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                              {errors.confirmPassword && (
-                                 <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-                              )}
-                           </div>
-
-                           <button
-                              type="submit"
-                              disabled={isLoading}
-                              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 disabled:bg-gray-400"
-                           >
-                              {isLoading ? 'Creating Account...' : 'Create Account'}
-                           </button>
-                        </form>
-                     )}
-
-                     <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600">
-                           Already have an account?{' '}
-                           <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
-                              Sign in
-                           </Link>
-                        </p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <p className="text-sm text-yellow-800">
+          <strong>Important:</strong> Please enter a mobile number that is also your active WhatsApp number. 
+          You will receive the OTP on WhatsApp for verification.
+        </p>
       </div>
-   );
+
+      {!otpSent ? (
+        <Button
+          onClick={handleSendOTP}
+          loading={otpLoading}
+          disabled={!values.mobile || errors.mobile}
+        >
+          Send OTP via WhatsApp
+        </Button>
+      ) : (
+        <div className="space-y-4">
+          <InputField
+            label="Enter OTP"
+            name="otp"
+            value={values.otp}
+            onChange={setValue}
+            onBlur={setTouched}
+            onFocus={() => handleFieldFocus('otp')}
+            error={touched.otp && errors.otp}
+            placeholder="Enter 6-digit OTP"
+            maxLength="6"
+          />
+
+          <Button
+            onClick={handleVerifyOTP}
+            loading={loading}
+            disabled={!values.otp || errors.otp}
+          >
+            Verify OTP
+          </Button>
+
+          {!canResendOtp && (
+            <Timer 
+              initialTime={30} 
+              onComplete={() => {}} 
+            />
+          )}
+
+          {canResendOtp && (
+            <Button
+              onClick={handleResendOTP}
+              variant="secondary"
+              loading={otpLoading}
+              disabled={attemptsLeft <= 0}
+            >
+              Resend OTP ({attemptsLeft} attempts left)
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-2" />
+        <h3 className="text-lg font-medium text-gray-900">Mobile Verified!</h3>
+        <p className="text-sm text-gray-600">Now create a strong password for your account</p>
+      </div>
+
+      <InputField
+        label="Password"
+        type="password"
+        name="password"
+        value={values.password}
+        onChange={setValue}
+        onBlur={setTouched}
+        onFocus={() => handleFieldFocus('password')}
+        error={touched.password && errors.password}
+        placeholder="Create a strong password"
+        icon={Lock}
+      />
+
+      <InputField
+        label="Confirm Password"
+        type="password"
+        name="confirmPassword"
+        value={values.confirmPassword}
+        onChange={setValue}
+        onBlur={setTouched}
+        onFocus={() => handleFieldFocus('confirmPassword')}
+        error={touched.confirmPassword && errors.confirmPassword}
+        placeholder="Confirm your password"
+        icon={Lock}
+      />
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Password Requirements:</strong>
+          <br />• At least 8 characters long
+          <br />• Contains uppercase and lowercase letters
+          <br />• Contains at least one number
+        </p>
+      </div>
+
+      {/* Terms and Conditions Consent Checkbox */}
+      <div className="space-y-3">
+        <div className="flex items-start space-x-3">
+          <input
+            type="checkbox"
+            id="agreeToTerms"
+            name="agreeToTerms"
+            checked={values.agreeToTerms}
+            onChange={(e) => {
+              setValue('agreeToTerms', e.target.checked);
+              // Track terms agreement interaction
+              gtag.event({
+                action: 'terms_agreement_toggle',
+                category: 'registration',
+                label: e.target.checked ? 'terms_agreed' : 'terms_disagreed'
+              });
+            }}
+            onFocus={() => handleFieldFocus('agreeToTerms')}
+            className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="agreeToTerms" className="text-sm text-gray-700 leading-5">
+            I agree to the{' '}
+            <Link 
+              href="/terms" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline font-medium"
+              onClick={() => {
+                gtag.event({
+                  action: 'terms_link_click',
+                  category: 'registration',
+                  label: 'terms_conditions_opened'
+                });
+              }}
+            >
+              Terms and Conditions
+            </Link>
+            {' '}and{' '}
+            <Link 
+              href="/privacy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline font-medium"
+              onClick={() => {
+                gtag.event({
+                  action: 'privacy_link_click',
+                  category: 'registration',
+                  label: 'privacy_policy_opened'
+                });
+              }}
+            >
+              Privacy Policy
+            </Link>
+          </label>
+        </div>
+        {!values.agreeToTerms && touched.agreeToTerms && (
+          <p className="text-red-500 text-xs">You must agree to the Terms and Conditions and Privacy Policy</p>
+        )}
+      </div>
+
+      <Button
+        onClick={handleRegistration}
+        loading={loading}
+        disabled={!values.password || !values.confirmPassword || errors.password || errors.confirmPassword || !values.agreeToTerms}
+      >
+        Create Account
+      </Button>
+    </div>
+  );
+
+  return (
+    <AuthLayout
+      title="Create Account"
+      subtitle="Join our catering platform as a client"
+      showProgressBar={true}
+      currentStep={currentStep}
+    >
+      {currentStep === 1 ? renderStep1() : renderStep2()}
+      
+      <div className="text-center mt-6">
+        <p className="text-sm text-gray-600">
+          Already have an account?{' '}
+          <Link 
+            href="/login" 
+            className="text-blue-600 hover:text-blue-800 font-medium"
+            onClick={() => {
+              gtag.event({
+                action: 'login_link_click',
+                category: 'registration',
+                label: 'switch_to_login'
+              });
+            }}
+          >
+            Sign in here
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
+  );
 };
 
-export default Register;
+export default RegisterPage;

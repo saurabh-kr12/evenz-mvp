@@ -18,8 +18,8 @@ const getAvailability = async (req, res) => {
       end = new Date(year, month, 0);
     } else if (startDate && endDate) {
       // Get custom date range
-      start = new Date(startDate);
-      end = new Date(endDate);
+      start = new Date(startDate + 'T00:00:00.000Z');
+      end = new Date(endDate + 'T23:59:59.999Z');
     } else {
       // Default to current month
       const now = new Date();
@@ -123,7 +123,7 @@ const saveAvailability = async (req, res) => {
     if (bulkUpdate && Array.isArray(bulkUpdate)) {
       // Handle bulk update
       const updates = bulkUpdate.map(item => ({
-        date: new Date(item.date),
+        date: new Date(item.date + (item.date.includes('T') ? '' : 'T00:00:00.000Z')), // Add this check
         isAvailable: item.isAvailable,
         notes: item.notes || ''
       }));
@@ -142,7 +142,7 @@ const saveAvailability = async (req, res) => {
       const updates = [];
       
       for (const [dateKey, data] of Object.entries(availability)) {
-        const date = new Date(dateKey);
+        const date = new Date(dateKey + 'T00:00:00.000Z'); // Ensure date is in UTC format
         if (!isNaN(date.getTime())) {
           updates.push({
             date,

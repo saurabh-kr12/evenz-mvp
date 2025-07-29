@@ -1,286 +1,842 @@
+// // File: routes/vendor/experience.js
+// const express = require('express');
+// const { protect } = require('../../middleware/vendor/auth');
+// const Media = require('../../models/Vendor/media');
+// const { cloudinary, upload } = require('../../config/cloudinary');
+
+// const router = express.Router();
+
+// // @desc    Get vendor's profile (image and experience)
+// // @route   GET /api/vendor/experience
+// // @access  Private (Vendor)
+// router.get('/', protect, async (req, res) => {
+//   try {
+//     const profile = await Media.findVendorProfile(req.vendor._id);
+    
+//     res.json({
+//       success: true,
+//       data: profile
+//     });
+//   } catch (error) {
+//     console.error('Error fetching vendor profile:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // @desc    Get vendor's profile image
+// // @route   GET /api/vendor/experience/image
+// // @access  Private (Vendor)
+// router.get('/image', protect, async (req, res) => {
+//   try {
+//     const profile = await Media.findVendorProfile(req.vendor._id);
+    
+//     if (!profile) {
+//       return res.json({
+//         success: true,
+//         data: null
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       data: {
+//         cloudinaryUrl: profile.cloudinaryUrl,
+//         originalName: profile.originalName,
+//         uploadedAt: profile.uploadedAt
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error fetching profile image:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // @desc    Upload/Update profile image and experience
+// // @route   POST /api/vendor/experience/upload
+// // @access  Private (Vendor)
+// router.post('/upload', protect, upload.single('photo'), async (req, res) => {
+//   try {
+//     const { experience } = req.body;
+
+//     // Validate experience
+//     if (!experience || isNaN(experience) || parseFloat(experience) < 0) {
+//       // If file was uploaded, delete it from Cloudinary
+//       if (req.file) {
+//         await cloudinary.uploader.destroy(req.file.public_id);
+//       }
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Please provide a valid experience value (number of years)'
+//       });
+//     }
+
+//     const experienceValue = parseFloat(experience);
+
+//     // Check if vendor already has a profile
+//     const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+//     if (existingProfile && req.file) {
+//       // Delete old image from Cloudinary
+//       try {
+//         await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+//       } catch (cloudinaryError) {
+//         console.error('Error deleting old image from Cloudinary:', cloudinaryError);
+//         // Continue with the update even if old image deletion fails
+//       }
+//     }
+
+//     // Prepare profile data
+//     const profileData = {
+//       vendor: req.vendor._id,
+//       experience: experienceValue
+//     };
+
+//     // Add image data if uploaded
+//     if (req.file) {
+//       profileData.cloudinaryUrl = req.file.path;
+//       profileData.cloudinaryPublicId = req.file.public_id;
+//       profileData.originalName = req.file.originalname;
+//       profileData.size = req.file.bytes;
+//       profileData.mimetype = req.file.mimetype;
+//       profileData.uploadedAt = new Date();
+//     }
+
+//     // Update or create profile
+//     const updatedProfile = await Media.updateVendorProfile(req.vendor._id, profileData);
+
+//     res.status(existingProfile ? 200 : 201).json({
+//       success: true,
+//       message: existingProfile ? 'Profile updated successfully' : 'Profile created successfully',
+//       data: updatedProfile
+//     });
+
+//   } catch (error) {
+//     console.error('Error uploading profile:', error);
+    
+//     // Clean up uploaded file on error
+//     if (req.file) {
+//       try {
+//         await cloudinary.uploader.destroy(req.file.public_id);
+//       } catch (cloudinaryError) {
+//         console.error('Error deleting file from Cloudinary:', cloudinaryError);
+//       }
+//     }
+
+//     if (error.name === 'MulterError') {
+//       if (error.code === 'LIMIT_FILE_SIZE') {
+//         return res.status(400).json({ message: 'File size too large. Maximum 5MB per file.' });
+//       }
+//       if (error.code === 'LIMIT_FILE_COUNT') {
+//         return res.status(400).json({ message: 'Only one file allowed.' });
+//       }
+//     }
+
+//     res.status(500).json({ message: 'Server error during profile upload' });
+//   }
+// });
+
+// // @desc    Update experience only
+// // @route   PUT /api/vendor/experience
+// // @access  Private (Vendor)
+// router.put('/', protect, async (req, res) => {
+//   try {
+//     const { experience } = req.body;
+
+//     // Validate experience
+//     if (!experience || isNaN(experience) || parseFloat(experience) < 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Please provide a valid experience value (number of years)'
+//       });
+//     }
+
+//     const experienceValue = parseFloat(experience);
+
+//     // Find existing profile
+//     const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+//     if (!existingProfile) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Profile not found. Please upload a profile image first.'
+//       });
+//     }
+
+//     // Update only experience
+//     const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+//       experience: experienceValue
+//     });
+
+//     res.json({
+//       success: true,
+//       message: 'Experience updated successfully',
+//       data: updatedProfile
+//     });
+
+//   } catch (error) {
+//     console.error('Error updating experience:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error',
+//       error: error.message
+//     });
+//   }
+// });
+
+// // @desc    Update profile image only
+// // @route   PUT /api/vendor/experience/image
+// // @access  Private (Vendor)
+// router.put('/image', protect, upload.single('photo'), async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Please select an image to upload'
+//       });
+//     }
+
+//     // Find existing profile
+//     const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+//     if (!existingProfile) {
+//       // Delete uploaded file since we're rejecting the request
+//       await cloudinary.uploader.destroy(req.file.public_id);
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Profile not found. Please create profile with experience first.'
+//       });
+//     }
+
+//     // Delete old image from Cloudinary
+//     try {
+//       await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+//     } catch (cloudinaryError) {
+//       console.error('Error deleting old image from Cloudinary:', cloudinaryError);
+//       // Continue with the update even if old image deletion fails
+//     }
+
+//     // Update profile with new image
+//     const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+//       cloudinaryUrl: req.file.path,
+//       cloudinaryPublicId: req.file.public_id,
+//       originalName: req.file.originalname,
+//       size: req.file.bytes,
+//       mimetype: req.file.mimetype,
+//       uploadedAt: new Date()
+//     });
+
+//     res.json({
+//       success: true,
+//       message: 'Profile image updated successfully',
+//       data: updatedProfile
+//     });
+
+//   } catch (error) {
+//     console.error('Error updating profile image:', error);
+    
+//     // Clean up uploaded file on error
+//     if (req.file) {
+//       try {
+//         await cloudinary.uploader.destroy(req.file.public_id);
+//       } catch (cloudinaryError) {
+//         console.error('Error deleting file from Cloudinary:', cloudinaryError);
+//       }
+//     }
+
+//     res.status(500).json({ message: 'Server error during image update' });
+//   }
+// });
+
+// // @desc    Delete profile image (keep experience)
+// // @route   DELETE /api/vendor/experience/image
+// // @access  Private (Vendor)
+// router.delete('/image', protect, async (req, res) => {
+//   try {
+//     const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+//     if (!existingProfile) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Profile not found'
+//       });
+//     }
+
+//     // Delete image from Cloudinary
+//     try {
+//       await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+//     } catch (cloudinaryError) {
+//       console.error('Error deleting image from Cloudinary:', cloudinaryError);
+//       // Continue with database update even if Cloudinary deletion fails
+//     }
+
+//     // Remove image fields but keep experience
+//     const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+//       $unset: {
+//         cloudinaryUrl: 1,
+//         cloudinaryPublicId: 1,
+//         originalName: 1,
+//         size: 1,
+//         mimetype: 1
+//       }
+//     });
+
+//     res.json({
+//       success: true,
+//       message: 'Profile image deleted successfully',
+//       data: updatedProfile
+//     });
+
+//   } catch (error) {
+//     console.error('Error deleting profile image:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // @desc    Delete entire profile (image and experience)
+// // @route   DELETE /api/vendor/experience
+// // @access  Private (Vendor)
+// router.delete('/', protect, async (req, res) => {
+//   try {
+//     const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+//     if (!existingProfile) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Profile not found'
+//       });
+//     }
+
+//     // Delete image from Cloudinary if exists
+//     if (existingProfile.cloudinaryPublicId) {
+//       try {
+//         await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+//       } catch (cloudinaryError) {
+//         console.error('Error deleting image from Cloudinary:', cloudinaryError);
+//         // Continue with database deletion even if Cloudinary deletion fails
+//       }
+//     }
+
+//     // Delete from database
+//     await Media.findByIdAndDelete(existingProfile._id);
+
+//     res.json({
+//       success: true,
+//       message: 'Profile deleted successfully'
+//     });
+
+//   } catch (error) {
+//     console.error('Error deleting profile:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // @desc    Get experience only
+// // @route   GET /api/vendor/experience/get-experience
+// // @access  Private (Vendor)
+// router.get('/get-experience', protect, async (req, res) => {
+//   try {
+//     const profile = await Media.findVendorProfile(req.vendor._id);
+
+//     if (!profile) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'No experience data found for this vendor',
+//         data: null
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Experience data retrieved successfully',
+//       data: {
+//         experience: profile.experience,
+//         vendor: profile.vendor,
+//         createdAt: profile.createdAt,
+//         updatedAt: profile.updatedAt
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error in get-experience:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Internal server error',
+//       error: error.message
+//     });
+//   }
+// });
+
+// // Legacy route for adding experience (now handled by upload route)
+// // @desc    Add or update experience
+// // @route   POST /api/vendor/experience/add-experience
+// // @access  Private (Vendor)
+// router.post('/add-experience', protect, async (req, res) => {
+//   try {
+//     const { experience } = req.body;
+
+//     // Validate experience value
+//     if (!experience || typeof experience !== 'number' || experience < 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Please provide a valid experience value (number of years)'
+//       });
+//     }
+
+//     // Update or create profile with experience only
+//     const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+//       vendor: req.vendor._id,
+//       experience: experience
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: updatedProfile.createdAt === updatedProfile.updatedAt ? 'Experience added successfully' : 'Experience updated successfully',
+//       data: {
+//         experience: updatedProfile.experience,
+//         vendor: updatedProfile.vendor,
+//         createdAt: updatedProfile.createdAt,
+//         updatedAt: updatedProfile.updatedAt
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error in add-experience:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Internal server error',
+//       error: error.message
+//     });
+//   }
+// });
+
+// module.exports = router;
+
 // File: routes/vendor/experience.js
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const { protect } = require('../../middleware/vendor/auth');
 const Media = require('../../models/Vendor/media');
+const { cloudinary, upload } = require('../../config/cloudinary');
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = 'uploads/vendor/experience';
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  // Accept only image files
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files are allowed!'), false);
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit per file
-    files: 20 // Maximum 20 files
-  }
-});
-
-// @desc    Get vendor's experience media
+// @desc    Get vendor's profile (image and experience)
 // @route   GET /api/vendor/experience
 // @access  Private (Vendor)
 router.get('/', protect, async (req, res) => {
   try {
-    const mediaItems = await Media.find({ vendor: req.vendor._id }).sort({ uploadedAt: -1 });
+    const profile = await Media.findVendorProfile(req.vendor._id);
     
     res.json({
       success: true,
-      data: mediaItems
+      data: profile
     });
   } catch (error) {
-    console.error('Error fetching experience media:', error);
+    console.error('Error fetching vendor profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @desc    Get vendor's cover image
-// @route   GET /api/vendor/experience/cover
+// @desc    Get vendor's profile image
+// @route   GET /api/vendor/experience/image
 // @access  Private (Vendor)
-router.get('/cover', protect, async (req, res) => {
+router.get('/image', protect, async (req, res) => {
   try {
-    const coverImage = await Media.findOne({ 
-      vendor: req.vendor._id, 
-      isCoverImage: true 
-    });
+    const profile = await Media.findVendorProfile(req.vendor._id);
     
-    res.json({
-      success: true,
-      data: coverImage
-    });
-  } catch (error) {
-    console.error('Error fetching cover image:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @desc    Set cover image
-// @route   PUT /api/vendor/experience/cover/:mediaId
-// @access  Private (Vendor)
-router.put('/cover/:mediaId', protect, async (req, res) => {
-  try {
-    const { mediaId } = req.params;
-    
-    // Find and verify the media belongs to the authenticated vendor
-    const mediaItem = await Media.findOne({ 
-      _id: mediaId, 
-      vendor: req.vendor._id 
-    });
-
-    if (!mediaItem) {
-      return res.status(404).json({ message: 'Media not found or unauthorized' });
+    if (!profile) {
+      return res.json({
+        success: true,
+        data: null
+      });
     }
 
-    // Remove cover image status from all other images of this vendor
-    await Media.updateMany(
-      { vendor: req.vendor._id },
-      { $set: { isCoverImage: false } }
-    );
-
-    // Set this image as cover image
-    mediaItem.isCoverImage = true;
-    await mediaItem.save();
-
     res.json({
       success: true,
-      message: 'Cover image updated successfully',
-      data: mediaItem
+      data: {
+        cloudinaryUrl: profile.cloudinaryUrl,
+        originalName: profile.originalName,
+        uploadedAt: profile.uploadedAt
+      }
     });
-
   } catch (error) {
-    console.error('Error setting cover image:', error);
+    console.error('Error fetching profile image:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @desc    Remove cover image
-// @route   DELETE /api/vendor/experience/cover
-// @access  Private (Vendor)
-router.delete('/cover', protect, async (req, res) => {
-  try {
-    // Remove cover image status from all images of this vendor
-    await Media.updateMany(
-      { vendor: req.vendor._id },
-      { $set: { isCoverImage: false } }
-    );
-
-    res.json({
-      success: true,
-      message: 'Cover image removed successfully'
-    });
-
-  } catch (error) {
-    console.error('Error removing cover image:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @desc    Upload experience media
+// @desc    Upload/Update profile image and experience
 // @route   POST /api/vendor/experience/upload
 // @access  Private (Vendor)
-router.post('/upload', protect, upload.array('photos', 20), async (req, res) => {
+router.post('/upload', protect, upload.single('photo'), async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No files uploaded' });
-    }
+    const { experience } = req.body;
 
-    // Check current media count for this vendor
-    const currentMediaCount = await Media.countDocuments({ vendor: req.vendor._id });
-    const newFilesCount = req.files.length;
-    
-    if (currentMediaCount + newFilesCount > 20) {
-      // Delete uploaded files since we're rejecting the request
-      req.files.forEach(file => {
-        fs.unlinkSync(file.path);
-      });
-      
-      return res.status(400).json({ 
-        message: `Cannot upload ${newFilesCount} files. Maximum 20 photos allowed. You currently have ${currentMediaCount} photos.` 
+    // Validate experience
+    if (!experience || isNaN(experience) || parseFloat(experience) < 0) {
+      // If file was uploaded, delete it from Cloudinary
+      if (req.file) {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid experience value (number of years)'
       });
     }
 
-    // Check if vendor has any existing media (for auto-setting first image as cover)
-    const hasExistingMedia = currentMediaCount > 0;
+    const experienceValue = parseFloat(experience);
 
-    // Process uploaded files and create media documents
-    const mediaDocuments = req.files.map((file, index) => ({
+    // Check if vendor already has a profile
+    const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+    if (existingProfile && req.file) {
+      // Delete old image from Cloudinary
+      try {
+        await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+      } catch (cloudinaryError) {
+        console.error('Error deleting old image from Cloudinary:', cloudinaryError);
+        // Continue with the update even if old image deletion fails
+      }
+    }
+
+    // Prepare profile data
+    const profileData = {
       vendor: req.vendor._id,
-      filename: file.filename,
-      originalName: file.originalname,
-      path: file.path,
-      size: file.size,
-      mimetype: file.mimetype,
-      isCoverImage: !hasExistingMedia && index === 0, // Set first image as cover if no existing media
-      uploadedAt: new Date()
-    }));
+      experience: experienceValue
+    };
 
-    // Save to database
-    const savedMedia = await Media.insertMany(mediaDocuments);
+    // Add image data if uploaded
+    if (req.file) {
+      profileData.cloudinaryUrl = req.file.path;
+      profileData.cloudinaryPublicId = req.file.public_id;
+      profileData.originalName = req.file.originalname;
+      profileData.size = req.file.bytes;
+      profileData.mimetype = req.file.mimetype;
+      profileData.uploadedAt = new Date();
+    }
 
-    res.status(201).json({
+    // Update or create profile
+    const updatedProfile = await Media.updateVendorProfile(req.vendor._id, profileData);
+
+    res.status(existingProfile ? 200 : 201).json({
       success: true,
-      message: `${newFilesCount} photo(s) uploaded successfully`,
-      data: savedMedia
+      message: existingProfile ? 'Profile updated successfully' : 'Profile created successfully',
+      data: updatedProfile
     });
 
   } catch (error) {
-    console.error('Error uploading experience media:', error);
+    console.error('Error uploading profile:', error);
     
-    // Clean up uploaded files on error
-    if (req.files) {
-      req.files.forEach(file => {
-        try {
-          fs.unlinkSync(file.path);
-        } catch (unlinkError) {
-          console.error('Error deleting file:', unlinkError);
-        }
-      });
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      } catch (cloudinaryError) {
+        console.error('Error deleting file from Cloudinary:', cloudinaryError);
+      }
     }
 
-    if (error instanceof multer.MulterError) {
+    if (error.name === 'MulterError') {
       if (error.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ message: 'File size too large. Maximum 5MB per file.' });
       }
       if (error.code === 'LIMIT_FILE_COUNT') {
-        return res.status(400).json({ message: 'Too many files. Maximum 20 files allowed.' });
+        return res.status(400).json({ message: 'Only one file allowed.' });
       }
     }
 
-    res.status(500).json({ message: 'Server error during file upload' });
+    res.status(500).json({ message: 'Server error during profile upload' });
   }
 });
 
-// @desc    Delete experience media
-// @route   DELETE /api/vendor/experience/:mediaId
+// @desc    Update experience only
+// @route   PUT /api/vendor/experience
 // @access  Private (Vendor)
-router.delete('/:mediaId', protect, async (req, res) => {
+router.put('/', protect, async (req, res) => {
   try {
-    const { mediaId } = req.params;
-    
-    // Find and verify the media belongs to the authenticated vendor
-    const mediaItem = await Media.findOne({ 
-      _id: mediaId, 
-      vendor: req.vendor._id 
+    const { experience } = req.body;
+
+    // Validate experience
+    if (!experience || isNaN(experience) || parseFloat(experience) < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid experience value (number of years)'
+      });
+    }
+
+    const experienceValue = parseFloat(experience);
+
+    // Find existing profile
+    const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+    if (!existingProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profile not found. Please upload a profile image first.'
+      });
+    }
+
+    // Update only experience
+    const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+      experience: experienceValue
     });
-
-    if (!mediaItem) {
-      return res.status(404).json({ message: 'Media not found or unauthorized' });
-    }
-
-    const wasCoverImage = mediaItem.isCoverImage;
-
-    // Delete file from filesystem
-    try {
-      if (fs.existsSync(mediaItem.path)) {
-        fs.unlinkSync(mediaItem.path);
-      }
-    } catch (fileError) {
-      console.error('Error deleting file from filesystem:', fileError);
-      // Continue with database deletion even if file deletion fails
-    }
-
-    // Remove from database
-    await Media.findByIdAndDelete(mediaId);
-
-    // If deleted image was cover image, set the most recent remaining image as cover
-    if (wasCoverImage) {
-      const nextCoverImage = await Media.findOne({ vendor: req.vendor._id }).sort({ uploadedAt: -1 });
-      if (nextCoverImage) {
-        nextCoverImage.isCoverImage = true;
-        await nextCoverImage.save();
-      }
-    }
 
     res.json({
       success: true,
-      message: 'Media deleted successfully'
+      message: 'Experience updated successfully',
+      data: updatedProfile
     });
 
   } catch (error) {
-    console.error('Error deleting experience media:', error);
+    console.error('Error updating experience:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Update profile image only
+// @route   PUT /api/vendor/experience/image
+// @access  Private (Vendor)
+router.put('/image', protect, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select an image to upload'
+      });
+    }
+
+    // Find existing profile
+    const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+    if (!existingProfile) {
+      // Delete uploaded file since we're rejecting the request
+      await cloudinary.uploader.destroy(req.file.public_id);
+      return res.status(404).json({
+        success: false,
+        message: 'Profile not found. Please create profile with experience first.'
+      });
+    }
+
+    // Delete old image from Cloudinary
+    try {
+      await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+    } catch (cloudinaryError) {
+      console.error('Error deleting old image from Cloudinary:', cloudinaryError);
+      // Continue with the update even if old image deletion fails
+    }
+
+    // Update profile with new image
+    const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+      cloudinaryUrl: req.file.path,
+      cloudinaryPublicId: req.file.public_id,
+      originalName: req.file.originalname,
+      size: req.file.bytes,
+      mimetype: req.file.mimetype,
+      uploadedAt: new Date()
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile image updated successfully',
+      data: updatedProfile
+    });
+
+  } catch (error) {
+    console.error('Error updating profile image:', error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      try {
+        await cloudinary.uploader.destroy(req.file.public_id);
+      } catch (cloudinaryError) {
+        console.error('Error deleting file from Cloudinary:', cloudinaryError);
+      }
+    }
+
+    res.status(500).json({ message: 'Server error during image update' });
+  }
+});
+
+// @desc    Delete profile image (keep experience)
+// @route   DELETE /api/vendor/experience/image
+// @access  Private (Vendor)
+router.delete('/image', protect, async (req, res) => {
+  try {
+    const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+    if (!existingProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profile not found'
+      });
+    }
+
+    // Check if there's any image data to delete
+    if (!existingProfile.cloudinaryUrl && !existingProfile.cloudinaryPublicId) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image to delete'
+      });
+    }
+
+    // Delete image from Cloudinary if publicId exists
+    if (existingProfile.cloudinaryPublicId) {
+      try {
+        const deleteResult = await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+        console.log('Cloudinary delete result:', deleteResult);
+      } catch (cloudinaryError) {
+        console.error('Error deleting image from Cloudinary:', cloudinaryError);
+        // Continue with database update even if Cloudinary deletion fails
+      }
+    }
+
+    // Update the document to remove image fields but keep experience
+    const updatedProfile = await Media.findOneAndUpdate(
+      { vendor: req.vendor._id },
+      {
+        $unset: {
+          cloudinaryUrl: 1,
+          cloudinaryPublicId: 1,
+          originalName: 1,
+          size: 1,
+          mimetype: 1
+        }
+      },
+      { 
+        new: true, 
+        runValidators: false // Skip validation since we're unsetting fields
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Profile image deleted successfully',
+      data: updatedProfile
+    });
+
+  } catch (error) {
+    console.error('Error deleting profile image:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message 
+    });
+  }
+});
+
+// @desc    Delete entire profile (image and experience)
+// @route   DELETE /api/vendor/experience
+// @access  Private (Vendor)
+router.delete('/', protect, async (req, res) => {
+  try {
+    const existingProfile = await Media.findVendorProfile(req.vendor._id);
+
+    if (!existingProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Profile not found'
+      });
+    }
+
+    // Delete image from Cloudinary if exists
+    if (existingProfile.cloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
+      } catch (cloudinaryError) {
+        console.error('Error deleting image from Cloudinary:', cloudinaryError);
+        // Continue with database deletion even if Cloudinary deletion fails
+      }
+    }
+
+    // Delete from database
+    await Media.findByIdAndDelete(existingProfile._id);
+
+    res.json({
+      success: true,
+      message: 'Profile deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @desc    Serve uploaded images
-// @route   GET /api/vendor/experience/image/:filename
-// @access  Public (for displaying images)
-router.get('/image/:filename', (req, res) => {
-  const { filename } = req.params;
-  const imagePath = path.join(__dirname, '../../../uploads/vendor/experience', filename);
-  
-  // Check if file exists
-  if (!fs.existsSync(imagePath)) {
-    return res.status(404).json({ message: 'Image not found' });
-  }
+// @desc    Get experience only
+// @route   GET /api/vendor/experience/get-experience
+// @access  Private (Vendor)
+router.get('/get-experience', protect, async (req, res) => {
+  try {
+    const profile = await Media.findVendorProfile(req.vendor._id);
 
-  res.sendFile(path.resolve(imagePath));
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'No experience data found for this vendor',
+        data: null
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Experience data retrieved successfully',
+      data: {
+        experience: profile.experience,
+        vendor: profile.vendor,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error in get-experience:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// Legacy route for adding experience (now handled by upload route)
+// @desc    Add or update experience
+// @route   POST /api/vendor/experience/add-experience
+// @access  Private (Vendor)
+router.post('/add-experience', protect, async (req, res) => {
+  try {
+    const { experience } = req.body;
+
+    // Validate experience value
+    if (!experience || typeof experience !== 'number' || experience < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid experience value (number of years)'
+      });
+    }
+
+    // Update or create profile with experience only
+    const updatedProfile = await Media.updateVendorProfile(req.vendor._id, {
+      vendor: req.vendor._id,
+      experience: experience
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: updatedProfile.createdAt === updatedProfile.updatedAt ? 'Experience added successfully' : 'Experience updated successfully',
+      data: {
+        experience: updatedProfile.experience,
+        vendor: updatedProfile.vendor,
+        createdAt: updatedProfile.createdAt,
+        updatedAt: updatedProfile.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error in add-experience:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;

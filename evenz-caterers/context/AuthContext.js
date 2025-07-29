@@ -1,21 +1,35 @@
-'use client'
-
+"use client"
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext({
   currentUser: null,
   loading: true,
-  register: () => { },
   login: () => { },
   logout: () => { },
-  updateProfile: () => { }
 });
 
 // Create axios instance
 const api = axios.create({
   baseURL: 'http://localhost:5000/api'
 });
+
+// Helper function to get token expiration
+const getTokenExpiration = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000; // Convert to milliseconds
+  } catch (error) {
+    return null;
+  }
+};
+
+// Helper function to check if token is expired
+const isTokenExpired = (token) => {
+  const expiration = getTokenExpiration(token);
+  if (!expiration) return true;
+  return Date.now() > expiration;
+};
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -32,8 +46,16 @@ export const AuthProvider = ({ children }) => {
 
         const token = localStorage.getItem('token');
         if (token) {
+          // Check if token is expired
+          if (isTokenExpired(token)) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('tokenExpiry');
+            setLoading(false);
+            return;
+          }
+
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const res = await axios.get('http://localhost:5000/api/vendor/vendor-profile/profile', {
+          const res = await axios.get('http://localhost:5000/api/vendor-profile', {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -44,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to load user:', error);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('token');
+          localStorage.removeItem('tokenExpiry');
         }
       } finally {
         setLoading(false);
@@ -53,36 +76,52 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  const register = async (userData) => {
-    const res = await axios.post('http://localhost:5000/api/vendor/auth/register', userData);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', res.data.token);
+  // Set up token expiration check
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+      const expiration = getTokenExpiration(token);
+      if (expiration) {
+        const timeUntilExpiry = expiration - Date.now();
+        if (timeUntilExpiry > 0) {
+          // Auto-logout when token expires
+          const timeout = setTimeout(() => {
+            logout();
+          }, timeUntilExpiry);
+          
+          return () => clearTimeout(timeout);
+        }
+      }
     }
-    api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setCurrentUser(res.data.user || res.data);
-    return res.data;
-  };
+  }, [currentUser]);
 
   const login = async (credentials) => {
     const res = await axios.post('http://localhost:5000/api/vendor/auth/login', credentials);
+    
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', res.data.token);
+      
+      // Store token expiry for reference
+      const expiration = getTokenExpiration(res.data.token);
+      if (expiration) {
+        localStorage.setItem('tokenExpiry', expiration.toString());
+      }
     }
+    
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setCurrentUser(res.data.user || res.data);
+    setCurrentUser(res.data);
     return res.data;
   };
 
   const logout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('tokenExpiry');
     }
     delete api.defaults.headers.common['Authorization'];
     setCurrentUser(null);
-  };
-
-  const updateProfile = (userData) => {
-    setCurrentUser({ ...currentUser, ...userData });
   };
 
   return (
@@ -90,10 +129,8 @@ export const AuthProvider = ({ children }) => {
       value={{
         currentUser,
         loading,
-        register,
         login,
         logout,
-        updateProfile
       }}
     >
       {children}

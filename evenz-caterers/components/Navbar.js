@@ -43,32 +43,32 @@ const Navbar = ({ User, setUser }) => {
                <div className="hidden lg:ml-6 lg:flex lg:items-center lg:space-x-6 xl:space-x-8">
                   {currentUser ? (
                      <>
-                        <Link 
-                           href="/dashboard" 
+                        <Link
+                           href="/dashboard"
                            className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
                         >
                            Dashboard
                         </Link>
-                        <Link 
-                           href="/bookings" 
+                        <Link
+                           href="/bookings"
                            className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
                         >
                            Bookings
                         </Link>
-                        <Link 
-                           href="/services" 
+                        <Link
+                           href="/services"
                            className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
                         >
                            Services
                         </Link>
-                        <Link 
-                           href="/calendar" 
+                        <Link
+                           href="/calendar"
                            className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
                         >
                            Calendar
                         </Link>
-                        <Link 
-                           href="/your-profile" 
+                        <Link
+                           href="/your-profile"
                            className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
                         >
                            Profile
@@ -82,8 +82,20 @@ const Navbar = ({ User, setUser }) => {
                      </>
                   ) : (
                      <>
-                        <Link 
-                           href="/login" 
+                        <Link
+                           href="/how-it-works"
+                           className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
+                        >
+                           How It Works
+                        </Link>
+                        <Link
+                           href="/faq"
+                           className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
+                        >
+                           FAQs
+                        </Link>
+                        <Link
+                           href="/login"
                            className="px-2 xl:px-3 py-2 text-sm xl:text-base text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out whitespace-nowrap"
                         >
                            Login
@@ -162,6 +174,20 @@ const Navbar = ({ User, setUser }) => {
                   </>
                ) : (
                   <>
+                     <Link
+                        href="/how-it-works"
+                        className="block px-3 py-2.5 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-200"
+                        onClick={() => setIsMenuOpen(false)}
+                     >
+                        How It Works
+                     </Link>
+                     <Link
+                        href="/faq"
+                        className="block px-3 py-2.5 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-200"
+                        onClick={() => setIsMenuOpen(false)}
+                     >
+                        FAQs
+                     </Link>
                      <Link
                         href="/login"
                         className="block px-3 py-2.5 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-200"

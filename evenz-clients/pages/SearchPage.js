@@ -1,11 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { FaSearch, FaMapMarkerAlt, FaUtensils, FaRupeeSign } from 'react-icons/fa';
+import useAnalytics from '../hooks/useAnalytics'; // Adjust path as needed
 
 const SearchPage = () => {
   const location = useParams;
+  const analytics = useAnalytics();
+  
   // Get query parameters for initial search (if any)
   const queryParams = new URLSearchParams(location.search);
   const initialArea = queryParams.get('area') || '';
@@ -34,6 +37,33 @@ const SearchPage = () => {
     hasPrevPage: false
   });
 
+  // Track page view on component mount
+  useEffect(() => {
+    analytics.trackPageView('search_page', 'catering_search');
+    
+    // Track if user came with initial search parameters
+    if (initialSearch || initialArea) {
+      analytics.trackCustomEvent(
+        'search_page_entry_with_params',
+        'search_behavior',
+        `query:${initialSearch}_area:${initialArea}`
+      );
+    }
+  }, [analytics, initialSearch, initialArea]);
+
+  // Function to check if vendor has required details
+  const hasRequiredDetails = (vendor) => {
+    // Check if vendor has cuisines (array should exist and have at least one item)
+    const hasCuisines = vendor.cuisines && Array.isArray(vendor.cuisines) && vendor.cuisines.length > 0;
+    
+    // Check if vendor has both minPrice and maxPrice
+    const hasPrice = vendor.minPrice && vendor.maxPrice;
+
+    
+    
+    return hasCuisines && hasPrice;
+  };
+
   // Fetch available cuisines on component mount
   useEffect(() => {
     const fetchCuisines = async () => {
@@ -42,9 +72,18 @@ const SearchPage = () => {
         const data = await response.json();
         if (data.success) {
           setAvailableCuisines(data.data);
+          // Track successful cuisine fetch
+          analytics.trackCustomEvent(
+            'cuisines_loaded',
+            'data_loading',
+            'cuisines_fetch_success',
+            data.data.length
+          );
         }
       } catch (error) {
         console.error('Failed to fetch cuisines:', error);
+        // Track cuisine fetch error
+        analytics.trackError('api_error', 'cuisines_fetch_failed', 'search_page');
       }
     };
     
@@ -58,7 +97,7 @@ const SearchPage = () => {
         setLoading(true);
         setError('');
         
-        // Build query parameters
+        // Build  query parameters
         const params = new URLSearchParams();
         
         if (searchParams.query) params.append('query', searchParams.query);
@@ -73,18 +112,72 @@ const SearchPage = () => {
 
         const response = await fetch(`http://localhost:5000/api/search/vendors?${params}`);
         const data = await response.json();
+        console.log(data)
         
         if (data.success) {
-          setVendors(data.data);
-          setPagination(data.pagination);
+          // Filter vendors to only include those with required details
+          const filteredVendors = data.data.filter(vendor => hasRequiredDetails(vendor));
+          
+          setVendors(filteredVendors);
+          
+          // Update pagination to reflect filtered results
+          setPagination({
+            ...data.pagination,
+            totalVendors: filteredVendors.length
+          });
+          
+          // Track successful search with exact search text
+          analytics.trackSearch(
+            searchParams.query || 'no_query_applied',
+            filteredVendors.length,
+            'vendor_search'
+          );
+          
+          // Track detailed search results with search text
+          analytics.trackCustomEvent(
+            'search_completed',
+            'search_results',
+            `query:"${searchParams.query || 'no_query'}"_results:${filteredVendors.length}`,
+            filteredVendors.length
+          );
+          
+          // Track search with filters if any are applied
+          const activeFilters = [];
+          if (searchParams.area) activeFilters.push('area');
+          if (searchParams.cuisineType) activeFilters.push('cuisine');
+          if (searchParams.priceRange[0] > 250 || searchParams.priceRange[1] < 1000) activeFilters.push('price');
+          if (searchParams.availableNow) activeFilters.push('availability');
+          
+          if (activeFilters.length > 0) {
+            analytics.trackCustomEvent(
+              'filtered_search',
+              'search_behavior',
+              `search:"${searchParams.query || 'no_query'}"_filters:${activeFilters.join('_')}`,
+              filteredVendors.length
+            );
+          }
+          
+          // Track if search returned no results
+          if (filteredVendors.length === 0 && searchParams.query) {
+            analytics.trackCustomEvent(
+              'zero_results_search',
+              'search_issues',
+              `failed_search:"${searchParams.query}"`,
+              0
+            );
+          }
           
         } else {
           setError(data.message || 'Failed to fetch vendors');
+          // Track search error
+          analytics.trackError('search_error', data.message || 'vendor_fetch_failed', 'search_page');
         }
         
       } catch (error) {
         console.error('Fetch vendors error:', error);
         setError('Failed to load vendors. Please try again.');
+        // Track fetch error
+        analytics.trackError('api_error', 'vendor_fetch_exception', 'search_page');
       } finally {
         setLoading(false);
       }
@@ -94,6 +187,17 @@ const SearchPage = () => {
   }, [searchParams, pagination.currentPage]);
 
   const handleFilterChange = (filters) => {
+    // Track filter changes
+    Object.keys(filters).forEach(filterKey => {
+      if (filters[filterKey] !== searchParams[filterKey]) {
+        analytics.trackCustomEvent(
+          'filter_changed',
+          'search_filters',
+          `${filterKey}:${filters[filterKey]}`
+        );
+      }
+    });
+    
     setSearchParams({
       ...searchParams,
       ...filters
@@ -103,6 +207,46 @@ const SearchPage = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    
+    // Track form submission
+    analytics.trackFormSubmit('search_form', true);
+    
+    // Track the exact search text entered by user
+    analytics.trackSearch(searchQuery || 'empty_search', 0, 'manual_search');
+    
+    // Track detailed search text with additional context
+    analytics.trackCustomEvent(
+      'search_text_entered',
+      'search_behavior',
+      `search_term:${searchQuery || 'empty'}`,
+      searchQuery ? searchQuery.length : 0
+    );
+    
+    // Track search text categorization (name, cuisine, or location hints)
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      let searchType = 'general';
+      
+      // Simple categorization based on common patterns
+      if (searchLower.includes('patna') || searchLower.includes('bihar') || 
+          searchLower.includes('station') || searchLower.includes('road')) {
+        searchType = 'location_based';
+      } else if (searchLower.includes('catering') || searchLower.includes('caterer') || 
+                searchLower.includes('food') || searchLower.includes('service')) {
+        searchType = 'service_based';
+      } else if (searchLower.includes('indian') || searchLower.includes('chinese') || 
+                searchLower.includes('continental') || searchLower.includes('bihari')) {
+        searchType = 'cuisine_based';
+      }
+      
+      analytics.trackCustomEvent(
+        'search_type_classification',
+        'search_analysis',
+        `${searchType}:${searchQuery}`,
+        searchQuery.length
+      );
+    }
+    
     setSearchParams({
       ...searchParams,
       query: searchQuery
@@ -111,6 +255,9 @@ const SearchPage = () => {
   };
 
   const clearAllFilters = () => {
+    // Track filter clearing
+    analytics.trackButtonClick('clear_all_filters', 'search_filters');
+    
     setSearchParams({
       area: '',
       query: '',
@@ -133,17 +280,83 @@ const SearchPage = () => {
       : `http://localhost:5000${coverImage.url}`;
   };
 
+  const handleVendorClick = (vendor) => {
+    // Track vendor profile click with vendor ID
+    analytics.trackLinkClick(
+      'vendor_profile',
+      `vendor_${vendor.id}`,
+      'vendor_interaction'
+    );
+    
+    // Track detailed vendor click with business name and ID
+    analytics.trackCustomEvent(
+      'vendor_profile_click',
+      'vendor_interaction',
+      `id:${vendor.id}_name:"${vendor.businessName}"_location:"${vendor.location}"`,
+      vendor.minPrice
+    );
+    
+    // Track vendor business name separately for easy filtering
+    analytics.trackCustomEvent(
+      'vendor_business_name_click',
+      'vendor_selection',
+      `business:"${vendor.businessName}"`,
+      vendor.id
+    );
+    
+    // Track vendor ID separately for technical analysis
+    analytics.trackCustomEvent(
+      'vendor_id_click',
+      'vendor_selection',
+      `vendor_id:${vendor.id}`,
+      vendor.minPrice
+    );
+    
+    // Track click position in search results
+    const vendorIndex = vendors.findIndex(v => v.id === vendor.id);
+    analytics.trackCustomEvent(
+      'vendor_click_position',
+      'search_behavior',
+      `position:${vendorIndex + 1}_of_${vendors.length}_name:"${vendor.businessName}"`,
+      vendorIndex + 1
+    );
+    
+    // Track vendor details for business intelligence
+    analytics.trackCustomEvent(
+      'vendor_click_details',
+      'vendor_analytics',
+      `id:${vendor.id}_cuisines:${vendor.cuisines.length}_price_range:${vendor.minPrice}-${vendor.maxPrice}`,
+      vendor.maxPrice - vendor.minPrice
+    );
+  };
+
+  const handlePaginationClick = (direction) => {
+    // Track pagination usage
+    analytics.trackButtonClick(
+      `pagination_${direction}`,
+      'search_pagination'
+    );
+    
+    analytics.trackCustomEvent(
+      'pagination_used',
+      'search_behavior',
+      `page_${pagination.currentPage}_to_${direction === 'next' ? pagination.currentPage + 1 : pagination.currentPage - 1}`
+    );
+  };
+
   const VendorCard = ({ vendor, isFeatured = false }) => (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
       <div className="relative">
         {/* Cover Image or Placeholder */}
         <div className="w-full h-48 relative overflow-hidden">
-          {vendor.coverImage ? (
+          {vendor.coverImage?.cloudinaryUrl ? (
             <img
-              src={getImageUrl(vendor.coverImage)}
+              src={vendor.coverImage?.cloudinaryUrl}
               alt={vendor.businessName}
               className="w-full h-full object-cover"
               onError={(e) => {
+                // Track image load error
+                analytics.trackError('image_error', 'cover_image_failed_to_load', 'search_page');
                 // Fallback to placeholder if image fails to load
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'flex';
@@ -154,7 +367,7 @@ const SearchPage = () => {
           {/* Placeholder (shown when no image or image fails to load) */}
           <div 
             className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${
-              vendor.coverImage ? 'hidden' : 'flex'
+              vendor.coverImage?.cloudinaryUrl ? 'hidden' : 'flex'
             }`}
           >
             <FaUtensils className="text-6xl text-indigo-300" />
@@ -177,46 +390,30 @@ const SearchPage = () => {
           <span className="text-sm">{vendor.location}</span>
         </div>
 
-        {vendor.cuisines && vendor.cuisines.length > 0 && (
-          <div className="text-sm text-gray-600 mb-3">
-            <span className="font-medium">Cuisines: </span>
-            <span>{vendor.cuisines.slice(0, 3).join(', ')}</span>
-            {vendor.cuisines.length > 3 && <span className="text-gray-500"> +{vendor.cuisines.length - 3} more</span>}
-          </div>
-        )}
+        {/* Cuisines - now guaranteed to exist */}
+        <div className="text-sm text-gray-600 mb-3">
+          <span className="font-medium">Cuisines: </span>
+          <span>{vendor.cuisines.slice(0, 3).join(', ')}</span>
+          {vendor.cuisines.length > 3 && <span className="text-gray-500"> +{vendor.cuisines.length - 3} more</span>}
+        </div>
 
-        {vendor.minPrice && vendor.maxPrice ? (
-          <div className="mb-3">
-            <span className="font-bold text-indigo-600 flex items-center">
-              <FaRupeeSign className="mr-1" />
-              {vendor.minPrice} - {vendor.maxPrice}
-            </span>
-            <span className="text-gray-500 text-sm"> / person</span>
-          </div>
-        ) : (
-          <div className="mb-3">
-            <span className="text-gray-500 text-sm">Menu not available</span>
-          </div>
-        )}
+        {/* Price - now guaranteed to exist */}
+        <div className="mb-3 flex items-center gap-2">
+          <span className="font-bold text-indigo-600 flex items-center">
+            <FaRupeeSign className="mr-1" />
+            {vendor.minPrice} - {vendor.maxPrice}
+          </span>
+          <span className="text-gray-500 text-sm"> / person</span>
+        </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-1">
           <Link
             href={`/vendors/${vendor.id}`}
             className="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm"
+            onClick={() => handleVendorClick(vendor)}
           >
             View Profile
           </Link>
-          {/* <Link
-            to={`/booking/${vendor.id}`}
-            className={`flex-1 text-center px-4 py-2 rounded-lg transition text-sm ${
-              vendor.hasMenu 
-                ? 'bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-50' 
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-            }`}
-            onClick={(e) => !vendor.hasMenu && e.preventDefault()}
-          >
-            {vendor.hasMenu ? 'Book Now' : 'No Menu'}
-          </Link> */}
         </div>
       </div>
     </div>
@@ -246,10 +443,29 @@ const SearchPage = () => {
                 className="w-full px-5 py-3 md:px-6 md:py-4 rounded-full text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md text-base md:text-lg font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  // Track search field focus
+                  analytics.trackFormFieldFocus('search_form', 'main_search_input');
+                }}
+                onBlur={() => {
+                  // Track what was in search field when user left it
+                  if (searchQuery) {
+                    analytics.trackCustomEvent(
+                      'search_input_blur',
+                      'search_interaction',
+                      `blur_with_text:"${searchQuery}"`,
+                      searchQuery.length
+                    );
+                  }
+                }}
               />
               <button
                 type="submit"
                 className="absolute cursor-pointer right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-indigo-600 to-purple-600 p-2 md:p-3 rounded-full text-white shadow-lg hover:from-indigo-700 hover:to-purple-700 transition"
+                onClick={() => {
+                  // Track search button click
+                  analytics.trackButtonClick('search_submit_button', 'search_interaction');
+                }}
               >
                 <FaSearch className="text-lg md:text-xl" />
               </button>
@@ -277,7 +493,11 @@ const SearchPage = () => {
               {availableCuisines.map((cuisine, index) => (
                 <button
                   key={index}
-                  onClick={() => handleFilterChange({ cuisineType: cuisine })}
+                  onClick={() => {
+                    // Track cuisine filter click
+                    analytics.trackButtonClick(`cuisine_filter_${cuisine}`, 'cuisine_filter');
+                    handleFilterChange({ cuisineType: cuisine });
+                  }}
                   className={`px-3 cursor-pointer py-1 rounded-full ${searchParams.cuisineType === cuisine
                     ? 'bg-indigo-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -320,7 +540,10 @@ const SearchPage = () => {
               {pagination.totalPages > 1 && (
                 <div className="flex justify-center items-center mt-8 space-x-2">
                   <button
-                    onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                    onClick={() => {
+                      handlePaginationClick('previous');
+                      setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }));
+                    }}
                     disabled={!pagination.hasPrevPage}
                     className={`px-4 py-2 rounded-lg ${pagination.hasPrevPage 
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
@@ -335,7 +558,10 @@ const SearchPage = () => {
                   </span>
                   
                   <button
-                    onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                    onClick={() => {
+                      handlePaginationClick('next');
+                      setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }));
+                    }}
                     disabled={!pagination.hasNextPage}
                     className={`px-4 py-2 rounded-lg ${pagination.hasNextPage 
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700' 

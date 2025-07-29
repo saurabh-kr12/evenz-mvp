@@ -1,6 +1,6 @@
 // app/about/page.js
-import AboutPage from '../../pages/AboutPage';
+import AboutUs from "@/pages/AboutPage";
 
 export default function About() {
-  return <AboutPage />;
+  return <AboutUs />;
 }

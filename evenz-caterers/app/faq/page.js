@@ -1,10 +1,7 @@
-import ProtectedRoute from '@/components/ProtectedRoute'
-import FAQ from '@/pages/FAQ'
+import CatererFAQs from "@/pages/FAQ"
 
 export default function FAQPage() {
   return (
-    <ProtectedRoute>
-      <FAQ />
-    </ProtectedRoute>
+      <CatererFAQs />
   )
 }

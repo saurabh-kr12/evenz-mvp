@@ -19,11 +19,11 @@ const AdminPortal = () => {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+          {/* <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} /> */}
           
           {/* Main Content */}
           <div className="flex-1">
-            {activeTab === 'dashboard' && <Dashboard />}
+            {activeTab === 'dashboard' && <BookingManagement />}
             {activeTab === 'bookings' && <BookingManagement />}
           </div>
         </div>

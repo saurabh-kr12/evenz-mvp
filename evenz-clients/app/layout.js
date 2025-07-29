@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import './globals.css';
+import GoogleAnalytics from '../components/GoogleAnalytics';
 
 export const metadata = {
   title: 'Evenz - Event Planning Made Easy',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+        <GoogleAnalytics/>
         <AuthProvider>
           <div className="app">
             <Navbar />

@@ -1,661 +1,961 @@
 "use client";
-import React, { useState, useContext } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Phone, Building, MapPin, Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
-import { AuthContext } from '@/context/AuthContext';
-import axios from 'axios';
 import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, MapPin, User, Mail, Phone, Building, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import useAnalytics from '@/hooks/useAnalytics';
 
-// OTP Verification Component
-const OtpVerification = ({ value, onChange, onVerify, loading, verified, label }) => {
-  return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        {label || 'Enter OTP'}
-      </label>
+// API Service
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-      <div className="flex space-x-3">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={loading || verified}
-          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:bg-gray-50"
-          placeholder="Enter 6-digit OTP"
-          maxLength={6}
-        />
-
-        <button
-          type="button"
-          onClick={onVerify}
-          disabled={loading || verified || !value}
-          className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 ${verified
-              ? 'bg-green-100 text-green-700 border border-green-200'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed'
-            }`}
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : verified ? (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              <span>Verified</span>
-            </>
-          ) : (
-            <span>Verify</span>
-          )}
-        </button>
-      </div>
-
-      {verified && (
-        <div className="flex items-center space-x-2 text-green-600 text-sm">
-          <CheckCircle className="w-4 h-4" />
-          <span>Verification successful!</span>
-        </div>
-      )}
-    </div>
-  );
+const api = {
+  post: async (endpoint, data) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+  get: async (endpoint) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+    return response.json();
+  },
 };
 
-const Register = () => {
-  const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register } = useContext(AuthContext);
 
+// Loading Spinner Component
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center">
+    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+  </div>
+);
 
-  // Form data states
-  const [formData, setFormData] = useState({
-    ownerName: '',
-    email: '',
-    mobile: '',
-    businessName: '',
-    pinCode: '',
-    locality: '',
-    city: '',
-    fullAddress: '',
-    password: '',
-    confirmPassword: '',
-  });
-
-  // OTP states
-  const [emailOtp, setEmailOtp] = useState('');
-  const [mobileOtp, setMobileOtp] = useState('');
-  const [showEmailOtpInput, setShowEmailOtpInput] = useState(false);
-  const [showMobileOtpInput, setShowMobileOtpInput] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [mobileVerified, setMobileVerified] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  // Send OTP to email
-  const sendEmailOtp = async () => {
-    if (!formData.email) {
-      setError('Please enter your email address');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/vendor/auth/send-email-otp', { email: formData.email });
-      setShowEmailOtpInput(true);
-      setSuccess('OTP sent to your email successfully!');
-      setLoading(false);
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to send OTP. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  // Send OTP to mobile
-  const sendMobileOtp = async () => {
-    if (!formData.mobile) {
-      setError('Please enter your mobile number');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/vendor/auth/send-mobile-otp', { mobile: formData.mobile });
-      setShowMobileOtpInput(true);
-      setSuccess('OTP sent to your mobile successfully!');
-      setLoading(false);
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to send OTP. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  // Verify email OTP
-  const verifyEmailOtp = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/vendor/auth/verify-email-otp', {
-        email: formData.email,
-        otp: emailOtp
-      });
-      setEmailVerified(true);
-      setSuccess('Email verified successfully!');
-      setLoading(false);
-
-      // If mobile is also verified, proceed to next step
-      if (mobileVerified) {
-        setStep(2);
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Invalid OTP. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  // Verify mobile OTP
-  const verifyMobileOtp = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/vendor/auth/verify-mobile-otp', {
-        mobile: formData.mobile,
-        otp: mobileOtp
-      });
-      setMobileVerified(true);
-      setSuccess('Mobile verified successfully!');
-      setLoading(false);
-
-      // If email is also verified, proceed to next step
-      if (emailVerified) {
-        setStep(2);
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Invalid OTP. Please try again.');
-      setLoading(false);
-    }
-  };
-
-  // Handle registration form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // const response = await axios.post('http://localhost:5000/vendor/auth/register', formData);
-      // setSuccess('Registration successful!');
-      // setLoading(false);
-
-      // // Store token in localStorage
-      // localStorage.setItem('token', response.data.token);.
-      await register(formData);
-      setSuccess('Registration successful!');
-      setLoading(false);
-
-      // Navigate to profile page
-      router.push('/dashboard');
-    } catch (error) {
-      setError(error.response?.data?.message || 'Registration failed. Please try again.');
-      setLoading(false);
-    }
-  };
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex xl:flex-row">
-      {/* Left side - Image (only on extra large screens) */}
-      <div className="hidden xl:flex xl:w-1/2 relative overflow-hidden">
-        <img
-          src="/catering_services_img.jpeg"
-          alt="Catering Business"
-          className="w-full h-full object-cover"
+// Form Input Component
+const FormInput = ({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  error,
+  required = false,
+  icon: Icon,
+  placeholder,
+  disabled = false,
+  children
+}) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      {Icon && (
+        <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+      )}
+      {children || (
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/80 to-purple-900/60"></div>
-        <div className="absolute inset-0 flex items-center justify-center p-8">
-          <div className="text-center text-white max-w-md">
-            <div className="mb-8">
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <span className="text-indigo-600 font-bold text-xl">S</span>
-                </div>
-              </div>
-              <h2 className="text-3xl font-bold mb-4">Join Evenz.in Today</h2>
-              <p className="text-white/90 text-lg leading-relaxed">
-                Start growing your catering business with our powerful platform
-              </p>
-            </div>
-            <div className="space-y-4 text-sm text-white/80">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-                <span>Easy business management</span>
-              </div>
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-                <span>Secure & reliable platform</span>
-              </div>
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-2 h-2 bg-white/60 rounded-full"></div>
-                <span>24/7 customer support</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      )}
+    </div>
+    {error && (
+      <p className="text-sm text-red-600 flex items-center gap-1">
+        <AlertCircle className="h-4 w-4" />
+        {error}
+      </p>
+    )}
+  </div>
+);
+
+// Step 1: Personal Contact & Location
+// Step 1: Personal Contact & Location
+const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) => {
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [showPatnaMessage, setShowPatnaMessage] = useState(false);
+  const { registration } = useAnalytics();
+
+  useEffect(() => {
+    // Track when user starts registration
+    registration.stepStarted(1, 'Personal & Location Details');
+    fetchStates();
+  }, []);
+
+  useEffect(() => {
+    if (data.state) {
+      fetchCities(data.state);
+    }
+  }, [data.state]);
+
+  useEffect(() => {
+    if (data.city && data.city.toLowerCase() !== 'patna') {
+      setShowPatnaMessage(true);
+      registration.patnaMessageShown();
+    } else {
+      setShowPatnaMessage(false);
+    }
+  }, [data.city]);
+
+  const fetchStates = async () => {
+    setLoadingStates(true);
+    try {
+      const response = await api.get('/register/states');
+      if (response.success) {
+        setStates(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  const fetchCities = async (state) => {
+    setLoadingCities(true);
+    try {
+      const response = await api.get(`/register/cities/${state}`);
+      if (response.success) {
+        setCities(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const handleStateChange = (e) => {
+    const selectedState = e.target.value;
+    setData({ ...data, state: selectedState, city: '' });
+    setErrors({ ...errors, state: '', city: '' });
+  };
+
+  const handleCityChange = (e) => {
+    const selectedCity = e.target.value;
+    setData({ ...data, city: selectedCity });
+    setErrors({ ...errors, city: '' });
+    
+    // Track location selection
+    if (selectedCity && data.state) {
+      registration.locationSelected(data.state, selectedCity);
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!data.ownerName.trim()) newErrors.ownerName = 'Owner name is required';
+    if (!data.mobileNumber.trim()) {
+      newErrors.mobileNumber = 'Mobile number is required';
+    } else if (!/^[0-9]{10}$/.test(data.mobileNumber)) {
+      newErrors.mobileNumber = 'Please enter a valid 10-digit mobile number';
+    }
+    if (!data.emailAddress.trim()) {
+      newErrors.emailAddress = 'Email address is required';
+    } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(data.emailAddress)) {
+      newErrors.emailAddress = 'Please enter a valid email address';
+    }
+    if (!data.state) newErrors.state = 'State is required';
+    if (!data.city.trim()) newErrors.city = 'City is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      registration.stepCompleted(1, 'Personal & Location Details');
+      onNext();
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Personal & Location Details</h2>
+        <p className="text-gray-600">Step 1 of 3</p>
       </div>
 
-      {/* Right side - Registration Form */}
-      <div className="flex-1 flex flex-col  p-4 sm:p-6 xl:p-8">
-        <div className="w-full max-w-xl mx-auto">
-          {/* Mobile/Tablet logo/branding */}
-          <div className="xl:hidden text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Join Evenz.in</h1>
-          </div>
+      <FormInput
+        label="Owner's Name"
+        value={data.ownerName}
+        onChange={(e) => setData({ ...data, ownerName: e.target.value })}
+        error={errors.ownerName}
+        required
+        icon={User}
+        placeholder="Enter your full name"
+      />
 
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-            {/* Progress indicator */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                  1
-                </div>
-                <div className={`flex-1 h-1 mx-4 ${step >= 2 ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                  2
-                </div>
-              </div>
+      <FormInput
+        label="Mobile Number"
+        value={data.mobileNumber}
+        onChange={(e) => setData({ ...data, mobileNumber: e.target.value })}
+        error={errors.mobileNumber}
+        required
+        icon={Phone}
+        placeholder="Enter 10-digit mobile number"
+      />
 
-              <div className="text-center">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                  {step === 1 ? 'Personal Details' : 'Business Details'}
-                </h2>
-                <p className="text-gray-600">
-                  {step === 1 ? 'Verify your email and mobile number' : 'Tell us about your business'}
-                </p>
-              </div>
-            </div>
+      <FormInput
+        label="Email Address"
+        type="email"
+        value={data.emailAddress}
+        onChange={(e) => setData({ ...data, emailAddress: e.target.value })}
+        error={errors.emailAddress}
+        required
+        icon={Mail}
+        placeholder="Enter your email address"
+      />
 
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
-                <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-red-400 mr-3 flex-shrink-0" />
-                  <p className="text-red-700 text-sm">{error}</p>
-                </div>
-              </div>
-            )}
+      <FormInput
+        label="State"
+        error={errors.state}
+        required
+        icon={MapPin}
+      >
+        <select
+          value={data.state}
+          onChange={handleStateChange}
+          disabled={loadingStates}
+          className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+            errors.state ? 'border-red-500 bg-red-50' : 'border-gray-300'
+          } ${loadingStates ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        >
+          <option value="">
+            {loadingStates ? 'Loading states...' : 'Select a state'}
+          </option>
+          {states.map((state) => (
+            <option key={state.code} value={state.code}>
+              {state.name}
+            </option>
+          ))}
+        </select>
+      </FormInput>
 
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-400 rounded-lg">
-                <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-400 mr-3 flex-shrink-0" />
-                  <p className="text-green-700 text-sm">{success}</p>
-                </div>
-              </div>
-            )}
+      <FormInput
+        label="City"
+        error={errors.city}
+        required
+        icon={Building}
+      >
+        <select
+          value={data.city}
+          onChange={handleCityChange}
+          disabled={loadingCities || !data.state}
+          className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+            errors.city ? 'border-red-500 bg-red-50' : 'border-gray-300'
+          } ${(loadingCities || !data.state) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        >
+          <option value="">
+            {loadingCities ? 'Loading cities...' : 'Select a city'}
+          </option>
+          {cities.map((city) => (
+            <option key={city.code} value={city.name}>
+              {city.name}
+            </option>
+          ))}
+        </select>
+      </FormInput>
 
-            <div className="space-y-6">
-              {step === 1 && (
-                <>
-                  {/* Owner Name */}
-                  <div>
-                    <label htmlFor="ownerName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Owner's Name
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="ownerName"
-                        name="ownerName"
-                        type="text"
-                        required
-                        value={formData.ownerName}
-                        onChange={handleChange}
-                        placeholder="Enter your full name"
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Email with OTP */}
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
-                        disabled={emailVerified}
-                        placeholder="Enter your email address"
-                        className="block w-full pl-10 pr-24 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:bg-gray-50"
-                      />
-                      {!emailVerified && (
-                        <button
-                          type="button"
-                          onClick={sendEmailOtp}
-                          disabled={loading || !formData.email}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Send OTP
-                        </button>
-                      )}
-                      {emailVerified && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {showEmailOtpInput && !emailVerified && (
-                    <OtpVerification
-                      value={emailOtp}
-                      onChange={setEmailOtp}
-                      onVerify={verifyEmailOtp}
-                      loading={loading}
-                      verified={emailVerified}
-                      label="Email OTP"
-                    />
-                  )}
-
-                  {/* Mobile with OTP */}
-                  <div>
-                    <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-2">
-                      Mobile Number
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="mobile"
-                        name="mobile"
-                        type="tel"
-                        required
-                        value={formData.mobile}
-                        onChange={handleChange}
-                        disabled={mobileVerified}
-                        placeholder="Enter your mobile number"
-                        className="block w-full pl-10 pr-24 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 disabled:bg-gray-50"
-                      />
-                      {!mobileVerified && (
-                        <button
-                          type="button"
-                          onClick={sendMobileOtp}
-                          disabled={loading || !formData.mobile}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Send OTP
-                        </button>
-                      )}
-                      {mobileVerified && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {showMobileOtpInput && !mobileVerified && (
-                    <OtpVerification
-                      value={mobileOtp}
-                      onChange={setMobileOtp}
-                      onVerify={verifyMobileOtp}
-                      loading={loading}
-                      verified={mobileVerified}
-                      label="Mobile OTP"
-                    />
-                  )}
-
-                  {emailVerified && mobileVerified && (
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      Next: Business Details
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </button>
-                  )}
-                </>
-              )}
-
-              {step === 2 && (
-                <>
-                  {/* Business Name */}
-                  <div>
-                    <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Business Name
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Building className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="businessName"
-                        name="businessName"
-                        type="text"
-                        required
-                        value={formData.businessName}
-                        onChange={handleChange}
-                        placeholder="Enter your business name"
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* PIN Code and Locality */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="pinCode" className="block text-sm font-medium text-gray-700 mb-2">
-                        PIN Code
-                      </label>
-                      <input
-                        id="pinCode"
-                        name="pinCode"
-                        type="text"
-                        required
-                        value={formData.pinCode}
-                        onChange={handleChange}
-                        placeholder="Enter PIN code"
-                        className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="locality" className="block text-sm font-medium text-gray-700 mb-2">
-                        Locality
-                      </label>
-                      <input
-                        id="locality"
-                        name="locality"
-                        type="text"
-                        required
-                        value={formData.locality}
-                        onChange={handleChange}
-                        placeholder="Enter locality"
-                        className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* City */}
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                      City
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPin className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="city"
-                        name="city"
-                        type="text"
-                        required
-                        value={formData.city}
-                        onChange={handleChange}
-                        placeholder="Enter city"
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Full Address */}
-                  <div>
-                    <label htmlFor="fullAddress" className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Address (Optional)
-                    </label>
-                    <textarea
-                      id="fullAddress"
-                      name="fullAddress"
-                      rows={3}
-                      value={formData.fullAddress}
-                      onChange={handleChange}
-                      placeholder="Enter complete address"
-                      className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500 resize-none"
-                    />
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="Create a strong password"
-                        className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        required
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        placeholder="Confirm your password"
-                        className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-between space-x-4 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="flex-1 flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={loading}
-                      className="flex-1 flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Registering...
-                        </>
-                      ) : (
-                        'Complete Registration'
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Login link */}
-              <div className="text-center pt-6 border-t border-gray-100">
-                <p className="text-gray-600 text-sm">
-                  Already have an account?{' '}
-                  <Link
-                    href={'/login'}
-                    className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors underline-offset-4 hover:underline"
-                  >
-                    Sign in here
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
-              By registering, you agree to our{' '}
-              <button type="button" className="text-indigo-600 hover:underline">Terms of Service</button>
-              {' '}and{' '}
-              <button type="button" className="text-indigo-600 hover:underline">Privacy Policy</button>
+      {showPatnaMessage && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-800">
+              <strong>Welcome!</strong> Evenz.in is currently focused on Patna, Bihar. Register now to be ready for expansion; leads are primarily for Patna events.
             </p>
           </div>
         </div>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <>
+            <LoadingSpinner />
+            Sending OTPs...
+          </>
+        ) : (
+          <>
+            Continue
+            <ChevronRight className="h-5 w-5" />
+          </>
+        )}
+      </button>
+
+      <div className='flex justify-center'>
+        Already have an account ?
+        <Link
+           href={'/login'}
+           className=' text-purple-700 px-2 hover:underline '
+        >
+           Login
+        </Link>
       </div>
     </div>
   );
 };
 
-export default Register;
+// Step 2: Verification & Password Setup
+const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, loading, tempId }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState({ mobile: 0, email: 0 });
+  const [resendLoading, setResendLoading] = useState({ mobile: false, email: false });
+  const { registration } = useAnalytics();
+
+  useEffect(() => {
+    // Track when user reaches step 2
+    registration.stepStarted(2, 'Verification & Password Setup');
+    
+    // Start cooldown timers
+    const timer = setInterval(() => {
+      setOtpCooldown(prev => ({
+        mobile: prev.mobile > 0 ? prev.mobile - 1 : 0,
+        email: prev.email > 0 ? prev.email - 1 : 0
+      }));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!data.mobileOTP.trim()) newErrors.mobileOTP = 'Mobile OTP is required';
+    if (!data.emailOTP.trim()) newErrors.emailOTP = 'Email OTP is required';
+    if (!data.password) {
+      newErrors.password = 'Password is required';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(data.password)) {
+      newErrors.password = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character';
+    }
+    if (!data.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (data.password !== data.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      // Track OTP verification success before proceeding
+      registration.otpVerified('mobile');
+      registration.otpVerified('email');
+      registration.stepCompleted(2, 'Verification & Password Setup');
+      onNext();
+    }
+  };
+
+  const handleResendOTP = async (type) => {
+    registration.otpResent(type);
+    setResendLoading({ ...resendLoading, [type]: true });
+    try {
+      const endpoint = type === 'mobile' ? '/register/resend/mobile-otp' : '/register/resend/email-otp';
+      const response = await api.post(endpoint, { tempId });
+
+      if (response.success) {
+        setOtpCooldown({ ...otpCooldown, [type]: 60 });
+        registration.otpSent(type);
+      }
+    } catch (error) {
+      console.error(`Error resending ${type} OTP:`, error);
+    } finally {
+      setResendLoading({ ...resendLoading, [type]: false });
+    }
+  };
+
+  const handleBack = () => {
+    registration.registrationAbandoned(2, 'Verification & Password Setup');
+    onBack();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification & Password Setup</h2>
+        <p className="text-gray-600">Step 2 of 3</p>
+        <p className="text-sm text-gray-500 mt-2">
+          OTPs have been sent to your mobile and email
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <FormInput
+            label="Mobile OTP"
+            value={data.mobileOTP}
+            onChange={(e) => setData({ ...data, mobileOTP: e.target.value })}
+            error={errors.mobileOTP}
+            required
+            icon={Phone}
+            placeholder="Enter mobile OTP"
+          />
+          <button
+            onClick={() => handleResendOTP('mobile')}
+            disabled={otpCooldown.mobile > 0 || resendLoading.mobile}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            {resendLoading.mobile ? (
+              <LoadingSpinner />
+            ) : otpCooldown.mobile > 0 ? (
+              <>
+                <Clock className="h-4 w-4" />
+                Resend in {otpCooldown.mobile}s
+              </>
+            ) : (
+              'Resend Mobile OTP'
+            )}
+          </button>
+        </div>
+
+        <div>
+          <FormInput
+            label="Email OTP"
+            value={data.emailOTP}
+            onChange={(e) => setData({ ...data, emailOTP: e.target.value })}
+            error={errors.emailOTP}
+            required
+            icon={Mail}
+            placeholder="Enter email OTP"
+          />
+          <button
+            onClick={() => handleResendOTP('email')}
+            disabled={otpCooldown.email > 0 || resendLoading.email}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            {resendLoading.email ? (
+              <LoadingSpinner />
+            ) : otpCooldown.email > 0 ? (
+              <>
+                <Clock className="h-4 w-4" />
+                Resend in {otpCooldown.email}s
+              </>
+            ) : (
+              'Resend Email OTP'
+            )}
+          </button>
+        </div>
+      </div>
+
+      <FormInput
+        label="Password"
+        type={showPassword ? 'text' : 'password'}
+        value={data.password}
+        onChange={(e) => setData({ ...data, password: e.target.value })}
+        error={errors.password}
+        required
+        placeholder="Create a strong password"
+      >
+        <div className="relative">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={data.password}
+            onChange={(e) => setData({ ...data, password: e.target.value })}
+            placeholder="Create a strong password"
+            className={`w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+              errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        </div>
+      </FormInput>
+
+      <FormInput
+        label="Confirm Password"
+        type={showConfirmPassword ? 'text' : 'password'}
+        value={data.confirmPassword}
+        onChange={(e) => setData({ ...data, confirmPassword: e.target.value })}
+        error={errors.confirmPassword}
+        required
+        placeholder="Confirm your password"
+      >
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={data.confirmPassword}
+            onChange={(e) => setData({ ...data, confirmPassword: e.target.value })}
+            placeholder="Confirm your password"
+            className={`w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+              errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        </div>
+      </FormInput>
+
+      <div className="bg-gray-50 rounded-lg p-4">
+        <p className="text-sm text-gray-600 mb-2">Password requirements:</p>
+        <ul className="text-xs text-gray-500 space-y-1">
+          <li>At least 8 characters long, one uppercase letter, one lowercase letter, one number and one special character (@$!%*?&)</li>
+        </ul>
+      </div>
+
+      <div className="flex gap-4">
+        <button
+          onClick={handleBack}
+          className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-2"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Back
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <LoadingSpinner />
+              Verifying...
+            </>
+          ) : (
+            <>
+              Verify & Continue
+              <ChevronRight className="h-5 w-5" />
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Step 3: Business Details
+const Step3Business = ({ data, setData, errors, setErrors, onNext, onBack, loading }) => {
+  const { registration } = useAnalytics();
+
+  useEffect(() => {
+    registration.stepStarted(3, 'Business Details');
+  }, []);
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!data.businessName.trim()) newErrors.businessName = 'Business name is required';
+    if (!data.pincode.trim()) {
+      newErrors.pincode = 'Pincode is required';
+    } else if (!/^[0-9]{6}$/.test(data.pincode)) {
+      newErrors.pincode = 'Please enter a valid 6-digit pincode';
+    }
+    if (!data.locality.trim()) newErrors.locality = 'Locality is required';
+
+    if (!data.agreeToTerms) {
+      newErrors.agreeToTerms = 'You must agree to the Terms & Conditions and Privacy Policy to continue';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleTermsChange = (e) => {
+    const isChecked = e.target.checked;
+    setData({ ...data, agreeToTerms: isChecked });
+    if (isChecked) {
+      registration.termsAccepted();
+    }
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      registration.stepCompleted(3, 'Business Details');
+      onNext();
+    }
+  };
+
+  const handleBack = () => {
+    registration.registrationAbandoned(3, 'Business Details');
+    onBack();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Details</h2>
+        <p className="text-gray-600">Step 3 of 3</p>
+        <p className="text-sm text-gray-500 mt-2">
+          Final step to complete your registration
+        </p>
+      </div>
+
+      <FormInput
+        label="Business Name"
+        value={data.businessName}
+        onChange={(e) => setData({ ...data, businessName: e.target.value })}
+        error={errors.businessName}
+        required
+        icon={Building}
+        placeholder="Enter your business name"
+      />
+
+      <FormInput
+        label="Pincode"
+        value={data.pincode}
+        onChange={(e) => setData({ ...data, pincode: e.target.value })}
+        error={errors.pincode}
+        required
+        icon={MapPin}
+        placeholder="Enter 6-digit pincode"
+      />
+
+      <FormInput
+        label="Locality"
+        value={data.locality}
+        onChange={(e) => setData({ ...data, locality: e.target.value })}
+        error={errors.locality}
+        required
+        icon={MapPin}
+        placeholder="Enter your locality/area"
+      />
+
+      <div className="space-y-2">
+        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border">
+          <input
+            type="checkbox"
+            id="agreeToTerms"
+            checked={data.agreeToTerms}
+            onChange={handleTermsChange}
+            className={`mt-1 h-4 w-4 rounded ${
+              errors.agreeToTerms ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          <label htmlFor="agreeToTerms" className="text-sm text-gray-700 leading-relaxed">
+            <span className="text-red-500">*</span> I agree to the{' '}
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline font-medium"
+            >
+              Terms & Conditions
+            </a>
+            {' '}and{' '}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline font-medium"
+            >
+              Privacy Policy
+            </a>
+          </label>
+        </div>
+        {errors.agreeToTerms && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {errors.agreeToTerms}
+          </p>
+        )}
+      </div>
+
+      <div className="flex gap-4">
+        <button
+          onClick={handleBack}
+          className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-2"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Back
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <LoadingSpinner />
+              Completing...
+            </>
+          ) : (
+            <>
+              Complete Registration
+              <CheckCircle className="h-5 w-5" />
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Success Page
+const SuccessPage = ({ vendor, token }) => {
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const router = useRouter();
+  const { registration, ui } = useAnalytics();
+
+  useEffect(() => {
+    // Track successful registration completion
+    registration.registrationCompleted(vendor?.city || 'unknown', vendor?.state || 'unknown');
+    
+    // Store token in memory (you can implement localStorage when deploying)
+    if (token) {
+      console.log('Token received:', token);
+    }
+  }, [token, vendor]);
+
+  const handleGoToDashboard = () => {
+    setDashboardLoading(true);
+    ui.buttonClicked('go_to_login', 'registration_success');
+    router.push('/login');
+  };
+
+  return (
+    <div className="text-center space-y-6">
+      <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto">
+        <CheckCircle className="h-12 w-12 text-green-600" />
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
+        <p className="text-gray-600">
+          Welcome to Evenz.in, {vendor?.ownerName || 'there'}!
+        </p>
+      </div>
+
+      <div className="bg-gray-50 rounded-lg p-6 text-left">
+        <h3 className="font-semibold text-gray-900 mb-3">What's Next?</h3>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li>• Complete your profile and add business details</li>
+          <li>• Upload photos of your food and services</li>
+          <li>• Set your pricing and availability</li>
+          <li>• Start receiving event bookings</li>
+        </ul>
+      </div>
+
+      <button
+        onClick={handleGoToDashboard}
+        disabled={dashboardLoading}
+        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+      >
+        {dashboardLoading ? (
+          <>
+            <LoadingSpinner />
+            Loading...
+          </>
+        ) : (
+          'Login to your account'
+        )}
+      </button>
+    </div>
+  );
+};
+
+// Main Registration Form Component
+const RegistrationForm = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [tempId, setTempId] = useState('');
+  const [vendor, setVendor] = useState(null);
+  const [token, setToken] = useState('');
+  const [errors, setErrors] = useState({});
+  const { registration } = useAnalytics();
+  const [data, setData] = useState({
+    ownerName: '',
+    mobileNumber: '',
+    emailAddress: '',
+    state: '',
+    city: '',
+    mobileOTP: '',
+    emailOTP: '',
+    password: '',
+    confirmPassword: '',
+    businessName: '',
+    pincode: '',
+    locality: '',
+    agreeToTerms: false
+  });
+
+  // Track page abandonment on unmount
+  useEffect(() => {
+    return () => {
+      if (currentStep < 4) {
+        const stepNames = {
+          1: 'Personal & Location Details',
+          2: 'Verification & Password Setup',
+          3: 'Business Details'
+        };
+        registration.registrationAbandoned(currentStep, stepNames[currentStep]);
+      }
+    };
+  }, [currentStep]);
+
+  const handleStep1Next = async () => {
+    setLoading(true);
+    try {
+      const response = await api.post('/register/step1', {
+        ownerName: data.ownerName,
+        mobileNumber: data.mobileNumber,
+        emailAddress: data.emailAddress,
+        state: data.state,
+        city: data.city
+      });
+
+      if (response.success) {
+        setTempId(response.tempId);
+        setCurrentStep(2);
+        // Track OTP sent events
+        registration.otpSent('mobile');
+        registration.otpSent('email');
+      } else {
+        setErrors({ general: response.error });
+      }
+    } catch (error) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStep2Next = async () => {
+    setLoading(true);
+    try {
+      const response = await api.post('/register/step2/verify', {
+        tempId,
+        mobileOTP: data.mobileOTP,
+        emailOTP: data.emailOTP,
+        password: data.password,
+        confirmPassword: data.confirmPassword
+      });
+
+      if (response.success) {
+        setCurrentStep(3);
+      } else {
+        setErrors({ general: response.error });
+      }
+    } catch (error) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStep3Next = async () => {
+    setLoading(true);
+    try {
+      const response = await api.post('/register/step3/complete', {
+        tempId,
+        businessName: data.businessName,
+        pincode: data.pincode,
+        locality: data.locality,
+        agreeToTerms: data.agreeToTerms
+      });
+
+      if (response.success) {
+        setVendor(response.vendor);
+        setToken(response.token);
+        setCurrentStep(4);
+      } else {
+        setErrors({ general: response.error });
+      }
+    } catch (error) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep(currentStep - 1);
+    setErrors({});
+  };
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <Step1Personal
+            data={data}
+            setData={setData}
+            errors={errors}
+            setErrors={setErrors}
+            onNext={handleStep1Next}
+            loading={loading}
+          />
+        );
+      case 2:
+        return (
+          <Step2Verification
+            data={data}
+            setData={setData}
+            errors={errors}
+            setErrors={setErrors}
+            onNext={handleStep2Next}
+            onBack={handleBack}
+            loading={loading}
+            tempId={tempId}
+          />
+        );
+      case 3:
+        return (
+          <Step3Business
+            data={data}
+            setData={setData}
+            errors={errors}
+            setErrors={setErrors}
+            onNext={handleStep3Next}
+            onBack={handleBack}
+            loading={loading}
+          />
+        );
+      case 4:
+        return (
+          <SuccessPage
+            vendor={vendor}
+            token={token}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-700 py-6">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {errors.general && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <p className="text-sm text-red-800">{errors.general}</p>
+              </div>
+            </div>
+          )}
+
+          {renderCurrentStep()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RegistrationForm;

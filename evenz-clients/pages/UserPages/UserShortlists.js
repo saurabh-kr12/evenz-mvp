@@ -2,20 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaHeart, FaMapMarkerAlt, FaPhone, FaUser, FaEye, FaTrash } from 'react-icons/fa';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const UserShortlists = () => {
   const [shortlistedCaterers, setShortlistedCaterers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const analytics = useAnalytics();
 
   // Fetch shortlisted caterers on component mount
   useEffect(() => {
+    analytics.trackPageView('shortlists_page', 'dashboard');
     fetchShortlistedCaterers();
   }, []);
 
   const fetchShortlistedCaterers = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clientToken');
       const response = await fetch('http://localhost:5000/api/user/shortlist', {
         method: 'GET',
         headers: {
@@ -28,11 +31,14 @@ const UserShortlists = () => {
 
       if (data.success) {
         setShortlistedCaterers(data.data);
+        analytics.trackCustomEvent('shortlist_loaded', 'data', 'shortlist_fetch_success', data.data.length);
       } else {
         setError(data.message);
+        analytics.trackError('api_error', data.message, 'shortlists_page');
       }
     } catch (err) {
-      setError('Failed href fetch shortlisted caterers');
+      setError('Failed to fetch shortlisted caterers');
+      analytics.trackError('network_error', err.message, 'shortlists_page');
       console.error('Error fetching shortlist:', err);
     } finally {
       setLoading(false);
@@ -41,7 +47,9 @@ const UserShortlists = () => {
 
   const handleRemoveFromShortlist = async (catererId, catererName) => {
     try {
-      const token = localStorage.getItem('authToken');
+      analytics.trackCustomEvent('shortlist_remove_attempt', 'user_action', catererName);
+      
+      const token = localStorage.getItem('clientToken');
       const response = await fetch(`http://localhost:5000/api/user/shortlist/${catererId}`, {
         method: 'DELETE',
         headers: {
@@ -57,12 +65,14 @@ const UserShortlists = () => {
         setShortlistedCaterers(prev =>
           prev.filter(item => item.caterer.id !== catererId)
         );
-        // Optional: Show success message
+        analytics.trackCustomEvent('shortlist_removed', 'user_action', catererName);
         console.log(`${catererName} removed from shortlist`);
       } else {
-        console.error('Failed href remove from shortlist:', data.message);
+        analytics.trackError('remove_shortlist_error', data.message, 'shortlists_page');
+        console.error('Failed to remove from shortlist:', data.message);
       }
     } catch (error) {
+      analytics.trackError('network_error', error.message, 'shortlists_page');
       console.error('Error removing from shortlist:', error);
     }
   };
@@ -93,7 +103,10 @@ const UserShortlists = () => {
         <div className="text-center py-12">
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={fetchShortlistedCaterers}
+            onClick={() => {
+              analytics.trackButtonClick('retry_shortlist_fetch', 'error_recovery');
+              fetchShortlistedCaterers();
+            }}
             className="bg-purple-700 text-white px-6 py-2 rounded-md hover:bg-purple-800 transition-colors"
           >
             Try Again
@@ -116,6 +129,7 @@ const UserShortlists = () => {
             </p>
             <Link
               href="/dashboard"
+              onClick={() => analytics.trackLinkClick('explore_caterers', 'dashboard', 'cta')}
               className="bg-purple-700 text-white px-6 py-2 rounded-md hover:bg-purple-800 transition-colors text-sm md:text-base"
             >
               Explore Caterers
@@ -159,25 +173,21 @@ const UserShortlists = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-4">
-                    <Link
-                      href={`/vendors/${item.caterer.id}`}
-                      className="flex-1 bg-purple-700 text-white py-2 px-3 rounded-md hover:bg-purple-800 transition-colors text-center text-sm font-medium flex items-center justify-center gap-1"
-                    >
-                      <FaEye className="text-xs" />
-                      View Profile
-                    </Link>
-                    <Link
-                      href={`/booking/${item.caterer.id}`}
-                      className="flex-1 bg-green-600 text-white py-2 px-3 rounded-md hover:bg-green-700 transition-colors text-center text-sm font-medium"
-                    >
-                      Book Now
-                    </Link>
-                  </div>
+                <div className="flex gap-4">
+                  <Link
+                    href={`/vendors/${item.caterer.id}`}
+                    onClick={() => analytics.trackLinkClick('view_caterer_profile', `vendor_${item.caterer.id}`, 'shortlist_action')}
+                    className="flex-1 bg-purple-700 text-white py-2 px-3 rounded-md hover:bg-purple-800 transition-colors text-center text-sm font-medium flex items-center justify-center gap-1"
+                  >
+                    <FaEye className="text-xs" />
+                    View Profile
+                  </Link>
                   <button
-                    onClick={() => handleRemoveFromShortlist(item.caterer.id, item.caterer.businessName)}
-                    className="w-full cursor-pointer bg-red-50 text-red-600 py-2 px-3 rounded-md hover:bg-red-100 transition-colors text-sm font-medium flex items-center justify-center gap-1 border border-red-200"
+                    onClick={() => {
+                      analytics.trackButtonClick('remove_from_shortlist', 'shortlist_action');
+                      handleRemoveFromShortlist(item.caterer.id, item.caterer.businessName);
+                    }}
+                    className="cursor-pointer flex-1 bg-red-50 text-red-600 py-2 px-3 rounded-md hover:bg-red-100 transition-colors text-sm font-medium flex items-center justify-center gap-1 border border-red-200"
                   >
                     <FaTrash className="text-xs" />
                     Remove from Shortlist

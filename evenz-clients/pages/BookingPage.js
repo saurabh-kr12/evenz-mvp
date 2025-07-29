@@ -4,6 +4,7 @@ import { useParams,useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AuthContext } from '@/context/AuthContext';
 import { Calendar, MapPin, Users, Phone, Mail, User, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const BookingRequestForm = () => {
    const params = useParams();
@@ -34,6 +35,22 @@ const BookingRequestForm = () => {
    const [debugInfo, setDebugInfo] = useState('');
    const { currentUser } = useContext(AuthContext);
 
+   // Analytics
+   const analytics = useAnalytics();
+
+   // Track form initialization
+   useEffect(() => {
+      if (params.vendorId && eventDate) {
+         analytics.trackFormStart('booking_request_form');
+         analytics.trackCustomEvent(
+            'booking_form_loaded',
+            'booking_funnel',
+            `vendor_${params.vendorId}_date_${eventDate}`,
+            0
+         );
+      }
+   }, [params.vendorId, eventDate, analytics]);
+
    // Fetch caterer data
    useEffect(() => {
       const catererId = params.vendorId;
@@ -58,11 +75,26 @@ const BookingRequestForm = () => {
          console.log(data);
          if (data.success) {
             setCatererData(data.data);
+            
+            // Track successful caterer data load
+            analytics.trackCustomEvent(
+               'caterer_profile_loaded',
+               'booking_funnel',
+               data.data.vendorInfo?.businessName || 'unknown_caterer',
+               0
+            );
          } else {
             throw new Error(data.message || 'Failed to load caterer profile');
          }
       } catch (err) {
          setError(err.message);
+         
+         // Track profile loading error
+         analytics.trackError(
+            'caterer_profile_load_failed',
+            err.message,
+            'booking_request_form'
+         );
       } finally {
          setLoading(false);
       }
@@ -120,6 +152,16 @@ const BookingRequestForm = () => {
       setEstimatedCost(totalCost);
       setDebugInfo(breakdown.join('\n'));
       console.log('Final cost:', totalCost);
+
+      // Track cost calculation milestones
+      if (totalCost > 0) {
+         analytics.trackCustomEvent(
+            'cost_calculated',
+            'booking_funnel',
+            `${catererData?.vendorInfo?.businessName || 'unknown'}_${totalCost}`,
+            totalCost
+         );
+      }
    };
 
    const handleInputChange = (field, value) => {
@@ -127,6 +169,42 @@ const BookingRequestForm = () => {
          ...prev,
          [field]: value
       }));
+
+      // Track key field interactions
+      if (['eventType', 'numGuests', 'selectedCuisine'].includes(field) && value) {
+         analytics.trackFormFieldFocus('booking_request_form', field);
+      }
+
+      // Track specific important selections
+      if (field === 'eventType' && value) {
+         analytics.trackCustomEvent(
+            'event_type_selected',
+            'booking_form_interaction',
+            value,
+            0
+         );
+      }
+
+      if (field === 'numGuests' && value) {
+         const guests = parseInt(value);
+         if (guests > 0) {
+            analytics.trackCustomEvent(
+               'guest_count_entered',
+               'booking_form_interaction',
+               `${guests}_guests`,
+               guests
+            );
+         }
+      }
+
+      if (field === 'selectedCuisine' && value) {
+         analytics.trackCustomEvent(
+            'cuisine_selected',
+            'booking_form_interaction',
+            value,
+            0
+         );
+      }
    };
 
    const handleMultiSelect = (field, item) => {
@@ -136,12 +214,46 @@ const BookingRequestForm = () => {
             ? prev[field].filter(i => i !== item)
             : [...prev[field], item]
       }));
+
+      // Track multi-select interactions
+      if (field === 'mealPreference') {
+         analytics.trackCustomEvent(
+            'meal_preference_toggled',
+            'booking_form_interaction',
+            item,
+            0
+         );
+      }
+
+      if (field === 'selectedLiveCounters') {
+         analytics.trackCustomEvent(
+            'live_counter_toggled',
+            'booking_form_interaction',
+            item.name,
+            item.pricePerPlate
+         );
+      }
+   };
+
+   const handlePackageSelection = (pkg) => {
+      handleInputChange('selectedPackage', pkg);
+      
+      // Track package selection
+      analytics.trackCustomEvent(
+         'package_selected',
+         'booking_form_interaction',
+         `${pkg.name}_${pkg.pricePerPlate}`,
+         pkg.pricePerPlate
+      );
    };
 
    const handleSubmit = async (e) => {
       e.preventDefault();
       setSubmitting(true);
       setError('');
+
+      // Track form submission attempt
+      analytics.trackFormSubmit('booking_request_form', false); // Will update to true on success
 
       try {
          const catererId = params.vendorId;
@@ -150,7 +262,7 @@ const BookingRequestForm = () => {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json',
-               Authorization: `Bearer ${localStorage.getItem('authToken')}`
+               Authorization: `Bearer ${localStorage.getItem('clientToken')}`
             },
             body: JSON.stringify({
                ...formData,
@@ -166,9 +278,35 @@ const BookingRequestForm = () => {
          }
 
          setSuccess(true);
+
+         // Track successful booking request submission
+         analytics.trackFormSubmit('booking_request_form', true);
+         analytics.trackBooking(
+            'booking_request_submitted',
+            catererData?.vendorInfo?.businessName || 'unknown_caterer',
+            estimatedCost
+         );
+         analytics.trackConversion('booking_request_completed', estimatedCost);
+
+         // Track detailed conversion data
+         analytics.trackCustomEvent(
+            'booking_conversion_success',
+            'conversion',
+            `${formData.eventType}_${formData.numGuests}guests_${estimatedCost}`,
+            estimatedCost
+         );
+
       } catch (err) {
          setError(err.message || 'Failed to submit booking request. Please try again.');
          console.error(err);
+
+         // Track submission failure
+         analytics.trackFormSubmit('booking_request_form', false);
+         analytics.trackError(
+            'booking_submission_failed',
+            err.message,
+            'booking_request_form'
+         );
       } finally {
          setSubmitting(false);
       }
@@ -213,6 +351,7 @@ const BookingRequestForm = () => {
                </p>
                <Link
                   href={'/dashboard'} 
+                  onClick={() => analytics.trackLinkClick('dashboard_from_success', 'dashboard', 'post_booking')}
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                >
                   Go to Dashboard
@@ -271,7 +410,7 @@ const BookingRequestForm = () => {
                         </div>
                         <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                            <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                           <span className="text-sm text-gray-700">{currentUser?.contact}</span>
+                           <span className="text-sm text-gray-700">{currentUser?.mobile}</span>
                         </div>
                      </div>
                   </div>
@@ -421,7 +560,7 @@ const BookingRequestForm = () => {
                                        type="radio"
                                        name="package"
                                        checked={formData.selectedPackage?.name === pkg.name}
-                                       onChange={() => handleInputChange('selectedPackage', pkg)}
+                                       onChange={() => handlePackageSelection(pkg)}
                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mt-1"
                                     />
                                     <div className="ml-3 flex-1">

@@ -1,12 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, Phone, Clock, CheckCircle, AlertCircle, Eye, Package, X, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const ClientBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancellingBookings, setCancellingBookings] = useState(new Set());
+  const analytics = useAnalytics();
 
   useEffect(() => {
     fetchBookings();
@@ -14,14 +17,14 @@ const ClientBookings = () => {
 
   const fetchBookings = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('clientToken');
       const response = await fetch('http://localhost:5000/api/booking/client', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       const data = await response.json();
       if (data.success) {
         setBookings(data.data);
@@ -36,15 +39,31 @@ const ClientBookings = () => {
   };
 
   const handleCancelBooking = async (bookingId) => {
+
+    // Track cancellation intent
+    analytics.trackCustomEvent(
+      'booking_cancel_initiated',
+      'booking_management',
+      `booking_${bookingId}`,
+      0
+    );
+
     // Add confirmation dialog
     if (!window.confirm('Are you sure you want to cancel this booking request? This action cannot be undone.')) {
+      // Track cancellation abandoned in confirmation
+      analytics.trackCustomEvent(
+        'booking_cancel_abandoned',
+        'booking_management',
+        `booking_${bookingId}_confirmation_declined`,
+        0
+      );
       return;
     }
 
     try {
       setCancellingBookings(prev => new Set(prev).add(bookingId));
-      
-      const token = localStorage.getItem('authToken');
+
+      const token = localStorage.getItem('clientToken');
       const response = await fetch(`http://localhost:5000/api/booking/cancel/${bookingId}`, {
         method: 'DELETE',
         headers: {
@@ -54,10 +73,18 @@ const ClientBookings = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Remove the cancelled booking from the state
         setBookings(prev => prev.filter(booking => booking._id !== bookingId));
+        // Track successful cancellation
+        analytics.trackCustomEvent(
+          'booking_cancelled_successfully',
+          'booking_management',
+          `booking_${bookingId}`,
+          0
+        );
+
       } else {
         setError(data.message);
       }
@@ -74,29 +101,44 @@ const ClientBookings = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { 
-        color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
-        icon: Clock, 
-        text: 'Pending' 
+      PENDING: {
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: Clock,
+        text: 'Pending'
       },
-      unlocked: { 
-        color: 'bg-blue-100 text-blue-800 border-blue-200', 
-        icon: Eye, 
-        text: 'Seen' 
+      PAYMENT_PENDING: {
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: Clock,
+        text: 'Pending'
       },
-      confirmed: { 
-        color: 'bg-green-100 text-green-800 border-green-200', 
-        icon: CheckCircle, 
-        text: 'Confirmed' 
+      PAYMENT_FAILED: {
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: Clock,
+        text: 'Pending'
       },
-      rejected: { 
-        color: 'bg-red-100 text-red-800 border-red-200', 
-        icon: AlertCircle, 
-        text: 'Not Confirmed' 
+      UNLOCKED: {
+        color: 'bg-blue-100 text-blue-800 border-blue-200',
+        icon: Eye,
+        text: 'Seen'
+      },
+      CONFIRMED: {
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: CheckCircle,
+        text: 'Confirmed'
+      },
+      NOT_CONFIRMED: {
+        color: 'bg-red-100 text-red-800 border-red-200',
+        icon: AlertCircle,
+        text: 'Not Confirmed'
+      },
+      CANCELLED: {
+        color: 'bg-red-100 text-red-800 border-red-200',
+        icon: AlertCircle,
+        text: 'Not Confirmed'
       }
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[status];
     const IconComponent = config.icon;
 
     return (
@@ -164,9 +206,11 @@ const ClientBookings = () => {
             <h3 className="mt-2 text-sm font-medium text-gray-900">No bookings yet</h3>
             <p className="mt-1 text-sm text-gray-500">Start by exploring caterers and making your first booking.</p>
             <div className="mt-6">
-              <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700">
+              <Link
+                href={'/dashboard'}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700">
                 Browse Caterers
-              </button>
+              </Link>
             </div>
           </div>
         ) : (
@@ -192,7 +236,7 @@ const ClientBookings = () => {
                         </p>
                       </div>
                       {/* Cancel Button - Only show for pending status */}
-                      {booking.status === 'pending' && (
+                      {booking.status === 'PENDING' && (
                         <button
                           onClick={() => handleCancelBooking(booking._id)}
                           disabled={cancellingBookings.has(booking._id)}
@@ -217,7 +261,7 @@ const ClientBookings = () => {
                     {/* Event Details */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wide">Event Details</h4>
-                      
+
                       <div className="space-y-3">
                         <div className="flex items-start">
                           <Calendar className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -249,7 +293,7 @@ const ClientBookings = () => {
                     {/* Package & Pricing */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wide">Package & Pricing</h4>
-                      
+
                       <div className="space-y-3">
                         <div className="bg-gray-50 rounded-lg p-3">
                           <p className="text-sm font-medium text-gray-900">{booking.selectedPackage.name}</p>
@@ -292,7 +336,7 @@ const ClientBookings = () => {
                           <div className="space-y-1">
                             {booking.selectedLiveCounters.map((counter, index) => (
                               <p key={index} className="text-sm text-gray-600">
-                                {counter.name} 
+                                {counter.name}
                               </p>
                             ))}
                           </div>

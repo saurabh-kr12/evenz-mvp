@@ -1,5 +1,5 @@
 import ProtectedRoute from '@/components/ProtectedRoute'
-import CustomizationTasting from '@/components/ServicePages/Customization&Tasting'
+import CustomizationTasting from '@/components/ServicePages/GuestnDietFilters'
 
 export default function CustomizationPage() {
   return (

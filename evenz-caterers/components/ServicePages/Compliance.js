@@ -15,6 +15,8 @@ import {
    CheckCircle,
    Clock
 } from 'lucide-react';
+import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
+import useAnalytics from '@/hooks/useAnalytics';
 
 const ComplianceSection = () => {
    const [complianceData, setComplianceData] = useState(null);
@@ -24,6 +26,7 @@ const ComplianceSection = () => {
    const [uploadFile, setUploadFile] = useState(null);
    const [submitting, setSubmitting] = useState(false);
    const [updateSuccess, setUpdateSuccess] = useState(null); // For success feedback
+   const analytics = useAnalytics();
 
    // Get auth token from localStorage or your auth context
    const getAuthToken = () => {
@@ -59,10 +62,15 @@ const ComplianceSection = () => {
 
    useEffect(() => {
       fetchComplianceData();
+      // Track tab view
+      analytics.services.tabViewed('compliance_section');
    }, []);
 
    const handleEdit = (cardType) => {
       setEditingCard(cardType);
+
+      // Track edit action
+      analytics.ui.buttonClicked(`${cardType}_edit`, 'compliance_section');
 
       switch (cardType) {
          case 'fssai':
@@ -90,7 +98,7 @@ const ComplianceSection = () => {
    const updateComplianceDataOptimistically = (cardType, newData) => {
       setComplianceData(prev => {
          if (!prev) return prev;
-         
+
          const updated = { ...prev };
          switch (cardType) {
             case 'fssai':
@@ -178,12 +186,14 @@ const ComplianceSection = () => {
             // Show success feedback
             setUpdateSuccess(cardType);
             setTimeout(() => setUpdateSuccess(null), 2000);
-            
+
+            analytics.services.dataSaved('compliance_section', cardType, true);
+
             // Only refetch for insurance (file uploads) or if optimistic update failed
             if (cardType === 'insurance') {
                await fetchComplianceData(false); // Don't show loading spinner
             }
-            
+
             setEditingCard(null);
             setUploadFile(null);
          } else {
@@ -227,9 +237,9 @@ const ComplianceSection = () => {
             const result = await apiCall('/insurance/document', { method: 'DELETE' });
             if (result.success) {
                // Optimistically remove document
-               updateComplianceDataOptimistically('insurance', { 
+               updateComplianceDataOptimistically('insurance', {
                   document: null,
-                  documentName: null 
+                  documentName: null
                });
                setUpdateSuccess('insurance');
                setTimeout(() => setUpdateSuccess(null), 2000);
@@ -328,9 +338,9 @@ const ComplianceSection = () => {
                               <div className={`p-2 bg-${card.color}-100 rounded-lg`}>
                                  <Icon className={`w-5 h-5 text-${card.color}-600`} />
                               </div>
-                              <div>
+                              <div className='flex'>
                                  <h3 className="font-semibold text-gray-900">{card.title}</h3>
-
+                                 <SectionHeaderWithTooltip />
                               </div>
                            </div>
                            <div className="flex items-center gap-2">
@@ -439,7 +449,13 @@ const ComplianceSection = () => {
                                           type="checkbox"
                                           id="insuranceProvided"
                                           checked={formData.provided || false}
-                                          onChange={(e) => setFormData({ ...formData, provided: e.target.checked })}
+                                          onChange={(e) => {
+                                             const newValue = e.target.checked;
+                                             setFormData({ ...formData, provided: newValue });
+
+                                             // Track insurance provision toggle
+                                             analytics.ui.buttonClicked(`insurance_coverage_${newValue ? 'enabled' : 'disabled'}`, 'compliance_section');
+                                          }}
                                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                        />
                                        <label htmlFor="insuranceProvided" className="text-sm font-medium text-gray-700">
@@ -460,28 +476,6 @@ const ComplianceSection = () => {
                                                 rows={4}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
                                              />
-                                          </div>
-
-                                          <div>
-                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Upload Insurance Document (Optional)
-                                             </label>
-                                             <div className="flex items-center gap-3">
-                                                <input
-                                                   type="file"
-                                                   onChange={handleFileUpload}
-                                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                                   className="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                                />
-                                                {uploadFile && (
-                                                   <span className="text-sm text-green-600">
-                                                      ✓ {uploadFile.name}
-                                                   </span>
-                                                )}
-                                             </div>
-                                             <p className="text-xs text-gray-500 mt-1">
-                                                Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB)
-                                             </p>
                                           </div>
                                        </>
                                     )}
