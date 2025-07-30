@@ -14,13 +14,6 @@ const SectionHeaderWithTooltip = ({ title, priority = 'low', children }) => {
    const isHighPriority = priority === 'high';
 
    return (
-      //  <div className="flex items-center mb-4">
-      //    <h3 className="text-xl font-semibold text-gray-800 flex items-center">
-      //      {title}
-      //    </h3>
-      //    {children} {/* For any extra elements like buttons or other info */}
-      //  </div>
-
       <>
          {isHighPriority && (
             <span className="text-red-500 ml-1 leading-none text-2xl relative top-[-2px]">*</span>

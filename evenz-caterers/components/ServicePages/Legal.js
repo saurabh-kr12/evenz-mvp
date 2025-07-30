@@ -521,12 +521,17 @@ const LegalPaymentSection = () => {
                               <div className="flex-1">
                                  <input
                                     type="number"
+                                    inputMode="numeric"
                                     value={bookingAdvance.value}
                                     onChange={(e) => setBookingAdvance({ ...bookingAdvance, value: parseFloat(e.target.value) || 0 })}
                                     placeholder={bookingAdvance.type === 'percentage' ? 'Enter percentage' : 'Enter amount'}
                                     min="0"
                                     max={bookingAdvance.type === 'percentage' ? 100 : undefined}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                    [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                                  />
                               </div>
                            </div>
@@ -610,11 +615,16 @@ const LegalPaymentSection = () => {
                         {editMode.policies ? (
                            <input
                               type="number"
+                              inputMode="numeric"
                               id="notice-days"
                               value={policies.minimumNoticeDays}
                               onChange={(e) => setPolicies({ ...policies, minimumNoticeDays: parseInt(e.target.value) || 1 })}
                               min="1"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                              [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                            />
                         ) : (
                            <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50">

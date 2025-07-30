@@ -521,12 +521,17 @@ const GuestnDietFilters = () => {
                 {editMode.guests ? (
                   <input
                     type="number"
+                    inputMode="numeric"
                     id="min-guests"
                     value={guestLimits.minGuests}
                     onChange={(e) => setGuestLimits({ ...guestLimits, minGuests: e.target.value })}
                     placeholder="Enter minimum guests"
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                   />
                 ) : (
                   <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
@@ -542,12 +547,17 @@ const GuestnDietFilters = () => {
                 {editMode.guests ? (
                   <input
                     type="number"
+                    inputMode="numeric"
                     id="max-guests"
                     value={guestLimits.maxGuests}
                     onChange={(e) => setGuestLimits({ ...guestLimits, maxGuests: e.target.value })}
                     placeholder="Enter maximum guests"
                     min="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                   />
                 ) : (
                   <div className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
@@ -764,12 +774,17 @@ const GuestnDietFilters = () => {
                       <label className="block text-sm font-medium text-gray-900 mb-2">Amount (₹)</label>
                       <input
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         step="1"
                         value={formData.customizationCharges.amount}
                         onChange={(e) => handleNestedInputChange('customizationCharges', 'amount', parseFloat(e.target.value) || 0)}
                         disabled={!editingSections.customization}
-                        className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed
+                        [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                         placeholder="Enter amount"
                       />
                     </div>

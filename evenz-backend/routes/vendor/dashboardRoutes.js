@@ -1,7 +1,7 @@
 // File: routes/vendor/dashboardRoutes.js
 const express = require('express');
 const router = express.Router();
-const BookingRequest = require('../../models/Admin/BookingRequest');
+const BookingRequest = require('../../models/admin/BookingRequest');
 const Vendor = require('../../models/Vendor/Vendor');
 const Availability = require('../../models/Vendor/Availability');
 const { protect } = require('../../middleware/vendor/auth');

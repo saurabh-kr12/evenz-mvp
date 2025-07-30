@@ -214,7 +214,7 @@ const SectionCard = ({
                               onClick={(e) => {
                                  e.stopPropagation();
                                  toggleEditing(sectionName);
-                                 ui.buttonClicked('edit_section_expanded', `counter_services_${sectionName}`);
+                                 analytics.ui.buttonClicked('edit_section_expanded', `counter_services_${sectionName}`);
                               }}
                               className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                            >
@@ -359,11 +359,16 @@ const LiveCounterCard = ({
                         <span className="absolute left-3 top-2 text-gray-500 text-sm">₹</span>
                         <input
                            type="number"
+                           inputMode="numeric"
                            placeholder="0"
                            min="0"
                            value={counter.pricePerPlate}
                            onChange={(e) => onUpdate(index, 'pricePerPlate', Number(e.target.value) || 0)}
-                           className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                           className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors
+                           [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                         />
                      </div>
                   </div>
@@ -1082,22 +1087,32 @@ const CounterNServices = () => {
                            <label className="block text-sm font-medium text-gray-700 mb-1">Staff Count</label>
                            <input
                               type="number"
+                              inputMode="numeric"
                               min="1"
                               value={services.staffProvided.ratio.staffCount}
                               onChange={(e) => updateServices('staffProvided.ratio.staffCount', Number(e.target.value) || 1)}
                               disabled={!editingSections.staffProvided}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50
+                              [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                            />
                         </div>
                         <div>
                            <label className="block text-sm font-medium text-gray-700 mb-1">Guest Count</label>
                            <input
                               type="number"
+                              inputMode="numeric"
                               min="1"
                               value={services.staffProvided.ratio.guestCount}
                               onChange={(e) => updateServices('staffProvided.ratio.guestCount', Number(e.target.value) || 10)}
                               disabled={!editingSections.staffProvided}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50
+                              [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                            />
                         </div>
                      </div>
@@ -1111,10 +1126,15 @@ const CounterNServices = () => {
                            <input
                               type="number"
                               min="0"
+                              inputMode="numeric"
                               value={services.staffProvided.cost}
                               onChange={(e) => updateServices('staffProvided.cost', Number(e.target.value) || 0)}
                               disabled={!editingSections.staffProvided}
-                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50"
+                              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50
+                              [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                            />
                         </div>
                      </div>

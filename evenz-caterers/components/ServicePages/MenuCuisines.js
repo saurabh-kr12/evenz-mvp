@@ -601,10 +601,15 @@ const MenuCuisinesModule = () => {
                               </select>
                               <input
                                  type="number"
+                                 inputMode="numeric"
                                  placeholder="Price per Plate"
                                  value={packageForm.pricePerPlate}
                                  onChange={(e) => handlePackageFormChange('pricePerPlate', e.target.value)}
-                                 className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base sm:col-span-2"
+                                 className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base sm:col-span-2 
+                                           [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                               />
                            </div>
                            <textarea
@@ -624,10 +629,16 @@ const MenuCuisinesModule = () => {
                                     </label>
                                     <input
                                        type="number"
+                                       inputMode="numeric"
                                        min="0"
                                        value={packageForm.itemCounts[category]}
                                        onChange={(e) => handlePackageFormChange(`itemCounts.${category}`, e.target.value)}
-                                       className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                                       className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm
+                                       [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
+
                                     />
                                  </div>
                               ))}
@@ -757,10 +768,15 @@ const MenuCuisinesModule = () => {
                                     />
                                     <input
                                        type="number"
+                                       inputMode="numeric"
                                        placeholder="Extra Price (optional)"
                                        value={itemForm.extraPrice}
                                        onChange={(e) => handleItemFormChange('extraPrice', e.target.value)}
-                                       className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                                       className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base
+                                       [&::-webkit-inner-spin-button]:appearance-none
+                                           [&::-webkit-outer-spin-button]:appearance-none
+                                           [appearance:textfield]
+                                           "
                                     />
                                  </div>
 
