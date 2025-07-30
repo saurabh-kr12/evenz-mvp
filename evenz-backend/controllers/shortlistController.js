@@ -11,8 +11,6 @@ const addToShortlist = async (req, res) => {
       const { catererId } = req.params;
       const userId = req.user._id;
 
-      console.log('Add to shortlist - User ID:', userId, 'Caterer ID:', catererId); // Debug log
-
       // Validate inputs
       if (!catererId) {
          return res.status(400).json({
@@ -80,8 +78,6 @@ const removeFromShortlist = async (req, res) => {
       const { catererId } = req.params;
       const userId = req.user._id;
 
-      console.log('Remove from shortlist - User ID:', userId, 'Caterer ID:', catererId); // Debug log
-
       if (!catererId) {
          return res.status(400).json({
             success: false,
@@ -127,8 +123,6 @@ const removeFromShortlist = async (req, res) => {
 const getShortlist = async (req, res) => {
    try {
       const userId = req.user._id;
-
-      console.log('Get shortlist - User ID:', userId); // Debug log
 
       if (!userId) {
          return res.status(401).json({
@@ -214,8 +208,6 @@ const checkShortlistStatus = async (req, res) => {
    try {
       const { catererId } = req.params;
       const userId = req.user._id;
-
-      console.log('Check shortlist status - User ID:', userId, 'Caterer ID:', catererId); // Debug log
 
       if (!catererId) {
          return res.status(400).json({

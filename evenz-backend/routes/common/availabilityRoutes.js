@@ -29,23 +29,16 @@ const checkVendorAvailability = async (req, res) => {
       });
     }
 
-    console.log('Target date being searched:', targetDate);
-    console.log('Vendor ID being searched:', vendorId);
-
     // Find availability record for the date
     const availability = await Availability.findOne({
       vendor: vendorId,
       date: targetDate
     });
 
-    console.log('Availability record found:', availability);
-
     // Show unavailable only if explicitly marked as unavailable in database
     // If no record exists or isAvailable is true, show as available
     const isAvailable = availability ? availability.isAvailable : true;
     const notes = availability ? availability.notes : '';
-    
-    console.log('Final availability status:', isAvailable);
 
     res.json({
       success: true,

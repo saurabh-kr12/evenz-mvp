@@ -24,27 +24,6 @@ const bookingRoutes = require('./routes/user/bookings')
 const adminRoutes = require('./routes/admin/auth')
 const vendorDashboardRoutes = require('./routes/vendor/dashboardRoutes');
 
-// Load environment variables
-
-// Debug environment loading
-if (envResult.error) {
-  console.error('Error loading .env file:', envResult.error);
-} else {
-  console.log('Environment variables loaded successfully');
-}
-
-// Debug specific environment variables
-console.log('Environment check:');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('PORT:', process.env.PORT);
-console.log('MONGO_URI:', process.env.MONGO_URI ? 'Set' : 'Not set');
-console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not set');
-console.log('Current working directory:', process.cwd());
-console.log('.env file path:', path.resolve('.env'));
-// Add this after dotenv.config() in your server.js
-console.log('Fast2SMS API Key check:', process.env.FAST2SMS_API_KEY ? 'Set' : 'Not set');
-console.log('Fast2SMS API Key length:', process.env.FAST2SMS_API_KEY?.length || 0);
-
 // Initialize Express app
 const app = express();
 

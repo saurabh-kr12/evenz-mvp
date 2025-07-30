@@ -57,26 +57,6 @@ const getCatererProfile = async (req, res) => {
       Customization.findOne({ vendor: catererId })
     ]);
 
-
-    // FIXED: Better experience filtering
-    // const getExperienceValue = () => {
-    //   if (!media || media.length === 0) return null;
-
-    //   // Try multiple approaches to find experience data
-    //   let experienceItem = media.find(m => m.experience !== undefined && m.experience !== null);
-
-    //   if (!experienceItem) {
-    //     experienceItem = media.find(m => m.size === 0 && m.mimetype === 'application/json');
-    //   }
-
-    //   if (!experienceItem) {
-    //     experienceItem = media.find(m => m.originalName && m.originalName.includes('experience'));
-    //   }
-
-    //   console.log('Experience item found:', experienceItem);
-    //   return experienceItem ? experienceItem.experience : null;
-    // };
-
     // Structure the response data
     const profileData = {
       // Basic vendor info
@@ -159,9 +139,6 @@ const getCatererProfile = async (req, res) => {
         hasDietaryFilters: customization.hasDietaryFilters || false
       } : null
     };
-
-    console.log('Media data:', media);
-    console.log('Gallery data:', profileData.gallery);
 
     res.status(200).json({
       success: true,
@@ -267,8 +244,6 @@ const getProfileStatus = async (req, res) => {
   try {
     const catererId = req.vendor._id; // From JWT middleware
 
-    console.log('Caterer ID:', catererId);
-
     // Check if vendor exists
     const vendor = await Vendor.findById(catererId);
     if (!vendor) {
@@ -315,8 +290,6 @@ const getProfileStatus = async (req, res) => {
       [...menu.packages.values()].some(
         (pkgArray) => Array.isArray(pkgArray) && pkgArray.length > 0
       );
-
-    console.log('Packages and Cuisines Saved:', packagesAndCuisinesSaved);
 
     // 2. Min/Max Guests and Available for Events
     const minMaxGuestsAvailableForEventsFilled = legal &&

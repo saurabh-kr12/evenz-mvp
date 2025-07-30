@@ -41,10 +41,6 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
     }
 
-    // Add debug logging
-    console.log('Decoded token:', decoded);
-    console.log('Looking for user ID:', decoded.userId);
-
     // Get user from the token - Use decoded.userId (not decoded.id)
     const user = await User.findById(decoded.userId).select('-password');
     
@@ -52,8 +48,6 @@ const protect = async (req, res, next) => {
       console.log('User not found with ID:', decoded.userId);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-
-    console.log('User found:', user.name, user.email);
 
     // Set user in request object with the correct structure
     req.user = {
