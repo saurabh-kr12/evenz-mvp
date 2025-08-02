@@ -1,12 +1,18 @@
-// File: routes/compliance.js
+// File:  routes/compliance.js
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { body, validationResult } = require('express-validator');
 const Compliance = require('../../models/Vendor/Compliance');
 const { protect } = require('../../middleware/vendor/auth');
 
 const router = express.Router();
+
+// Whitelist for safe text input to prevent XSS. Allows letters, numbers, spaces, and common punctuation.
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
+// Stricter regex for license numbers.
+const alphaNumericRegex = /^[a-zA-Z0-9]*$/;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -27,7 +33,7 @@ const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
-  
+
   if (mimetype && extname) {
     return cb(null, true);
   } else {
@@ -45,13 +51,13 @@ const upload = multer({
 router.get('/', protect, async (req, res) => {
   try {
     let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
+
     if (!compliance) {
       // Create default compliance record if none exists
       compliance = new Compliance({ vendorId: req.vendor._id });
       await compliance.save();
     }
-    
+
     res.json({
       success: true,
       data: compliance
@@ -66,249 +72,105 @@ router.get('/', protect, async (req, res) => {
 });
 
 // Update FSSAI License
-router.put('/fssai', protect, async (req, res) => {
-  try {
-    const { number } = req.body;
-    
-    let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance) {
-      compliance = new Compliance({ vendorId: req.vendor._id });
+router.put('/fssai', protect,
+  [
+    body('number').matches(alphaNumericRegex).withMessage('FSSAI number must be alphanumeric.').trim().escape()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
-    
-    compliance.fssaiLicense = {
-      number: number || '',
-      updatedAt: new Date()
-    };
-    
-    await compliance.save();
-    
-    res.json({
-      success: true,
-      message: 'FSSAI license updated successfully',
-      data: compliance.fssaiLicense
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update FSSAI license',
-      error: error.message
-    });
-  }
-});
+    try {
+      const { number } = req.body;
+
+      let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
+
+      if (!compliance) {
+        compliance = new Compliance({ vendorId: req.vendor._id });
+      }
+
+      compliance.fssaiLicense = {
+        number: number || '',
+        updatedAt: new Date()
+      };
+
+      await compliance.save();
+
+      res.json({
+        success: true,
+        message: 'FSSAI license updated successfully',
+        data: compliance.fssaiLicense
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update FSSAI license',
+        error: error.message
+      });
+    }
+  });
+
+// Generic updater for details-based sections
+const createDetailsUpdater = (sectionName, successMessage) => {
+    return [
+        protect,
+        [ body('details').matches(safeTextRegex).withMessage('Invalid characters detected.').trim().escape() ],
+        async (req, res) => {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, errors: errors.array() });
+            }
+            try {
+                const { details } = req.body;
+                const update = { $set: { [`${sectionName}.details`]: details, [`${sectionName}.updatedAt`]: new Date() } };
+                const compliance = await Compliance.findOneAndUpdate({ vendorId: req.vendor._id }, update, { new: true, upsert: true });
+                res.json({ success: true, message: successMessage, data: compliance[sectionName] });
+            } catch (error) {
+                res.status(500).json({ success: false, message: `Failed to update ${sectionName}`, error: error.message });
+            }
+        }
+    ];
+};
 
 // Update Hygiene & Audits
-router.put('/hygiene', protect, async (req, res) => {
-  try {
-    const { details } = req.body;
-    
-    let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance) {
-      compliance = new Compliance({ vendorId: req.vendor._id });
-    }
-    
-    compliance.hygieneAudits = {
-      details: details || '',
-      updatedAt: new Date()
-    };
-    
-    await compliance.save();
-    
-    res.json({
-      success: true,
-      message: 'Hygiene & audits updated successfully',
-      data: compliance.hygieneAudits
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update hygiene & audits',
-      error: error.message
-    });
-  }
-});
+router.put('/hygiene', ...createDetailsUpdater('hygieneAudits', 'Hygiene & audits updated successfully'));
 
 // Update Ingredient Sourcing
-router.put('/ingredients', protect, async (req, res) => {
-  try {
-    const { details } = req.body;
-    
-    let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance) {
-      compliance = new Compliance({ vendorId: req.vendor._id });
-    }
-    
-    compliance.ingredientSourcing = {
-      details: details || '',
-      updatedAt: new Date()
-    };
-    
-    await compliance.save();
-    
-    res.json({
-      success: true,
-      message: 'Ingredient sourcing updated successfully',
-      data: compliance.ingredientSourcing
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update ingredient sourcing',
-      error: error.message
-    });
-  }
-});
+router.put('/ingredients', ...createDetailsUpdater('ingredientSourcing', 'Ingredient sourcing updated successfully'));
 
 // Update Allergen Handling
-router.put('/allergens', protect, async (req, res) => {
-  try {
-    const { details } = req.body;
-    
-    let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance) {
-      compliance = new Compliance({ vendorId: req.vendor._id });
-    }
-    
-    compliance.allergenHandling = {
-      details: details || '',
-      updatedAt: new Date()
-    };
-    
-    await compliance.save();
-    
-    res.json({
-      success: true,
-      message: 'Allergen handling updated successfully',
-      data: compliance.allergenHandling
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update allergen handling',
-      error: error.message
-    });
-  }
-});
+router.put('/allergens', ...createDetailsUpdater('allergenHandling', 'Allergen handling updated successfully'));
 
-// Update Insurance
-router.put('/insurance', protect, upload.single('document'), async (req, res) => {
-  try {
-    const { provided, details } = req.body;
-    
-    let compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance) {
-      compliance = new Compliance({ vendorId: req.vendor._id });
+// Update Insurance (no file upload)
+router.put(
+    '/insurance',
+    protect,
+    [
+        body('provided').isBoolean(),
+        body('details').matches(safeTextRegex).withMessage('Invalid characters detected.').trim().escape()
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
+        try {
+            const { provided, details } = req.body;
+            const update = {
+                $set: {
+                    'insurance.provided': provided,
+                    'insurance.details': details,
+                    'insurance.updatedAt': new Date()
+                }
+            };
+            const compliance = await Compliance.findOneAndUpdate({ vendorId: req.vendor._id }, update, { new: true, upsert: true });
+            res.json({ success: true, message: 'Insurance information updated successfully', data: compliance.insurance });
+        } catch (error) {
+            res.status(500).json({ success: false, message: 'Failed to update insurance information', error: error.message });
+        }
     }
-    
-    // Delete old document if exists and new one is uploaded
-    if (req.file && compliance.insurance.document && compliance.insurance.document.path) {
-      try {
-        fs.unlinkSync(compliance.insurance.document.path);
-      } catch (err) {
-        console.log('Failed to delete old document:', err.message);
-      }
-    }
-    
-    compliance.insurance = {
-      provided: provided === 'true' || provided === true,
-      details: details || '',
-      updatedAt: new Date()
-    };
-    
-    if (req.file) {
-      compliance.insurance.document = {
-        filename: req.file.filename,
-        path: req.file.path,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      };
-    }
-    
-    await compliance.save();
-    
-    res.json({
-      success: true,
-      message: 'Insurance information updated successfully',
-      data: compliance.insurance
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update insurance information',
-      error: error.message
-    });
-  }
-});
+);
 
-// Download insurance document
-router.get('/insurance/document', protect, async (req, res) => {
-  try {
-    const compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance || !compliance.insurance.document || !compliance.insurance.document.path) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-    
-    const filePath = compliance.insurance.document.path;
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found on server'
-      });
-    }
-    
-    res.download(filePath, compliance.insurance.document.filename);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to download document',
-      error: error.message
-    });
-  }
-});
-
-// Delete insurance document
-router.delete('/insurance/document', protect, async (req, res) => {
-  try {
-    const compliance = await Compliance.findOne({ vendorId: req.vendor._id });
-    
-    if (!compliance || !compliance.insurance.document) {
-      return res.status(404).json({
-        success: false,
-        message: 'Document not found'
-      });
-    }
-    
-    // Delete file from filesystem
-    if (compliance.insurance.document.path && fs.existsSync(compliance.insurance.document.path)) {
-      fs.unlinkSync(compliance.insurance.document.path);
-    }
-    
-    // Remove document info from database
-    compliance.insurance.document = undefined;
-    compliance.insurance.updatedAt = new Date();
-    await compliance.save();
-    
-    res.json({
-      success: true,
-      message: 'Document deleted successfully',
-      data: compliance.insurance
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete document',
-      error: error.message
-    });
-  }
-});
 
 module.exports = router;

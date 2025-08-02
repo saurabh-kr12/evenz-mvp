@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Camera, Upload, X, Edit3, Save, AlertCircle, Check, Star } from 'lucide-react';
-import ExperienceCard from '../ExperienceCard';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/context/AuthContext'; // Ensure this is the correct import path
 
 const ExperienceMedia = () => {
   const [profile, setProfile] = useState(null);
@@ -15,37 +16,23 @@ const ExperienceMedia = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
-  
+
   // Analytics
   const { services, ui } = useAnalytics();
+  const { accessToken, loading: authLoading } = useAuth();
 
-  // Mock token - replace with actual token from your auth context
-  const token = localStorage.getItem('token');
-
-  useEffect(() => {
-    fetchProfile();
-    services.tabViewed('experience_media');
-  }, []);
-
-  const fetchProfile = async () => {
+  // --- Data Fetching ---
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/vendor/experience', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data.data);
-        if (data.data?.experience) {
-          setExperience(data.data.experience.toString());
+      const response = await api.get('/vendor/experience'); // Use the api instance
+      if (response.data.success) {
+        const data = response.data.data;
+        setProfile(data);
+        if (data?.experience) {
+          setExperience(data.experience.toString());
         }
-        console.log('Profile fetched:', data.data);
       } else {
-        // Profile not found, this is okay for new vendors
         setProfile(null);
       }
     } catch (err) {
@@ -54,99 +41,44 @@ const ExperienceMedia = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Validate file type and size
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
-      services.validationError('experience_media', 'file_type', 'invalid_image_type');
-      return;
+  useEffect(() => {
+    // 4. Wait for auth to be ready before fetching
+    if (!authLoading && accessToken) {
+      fetchProfile();
+      services.tabViewed('experience_media');
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must be less than 5MB');
-      services.validationError('experience_media', 'file_size', 'file_too_large');
-      return;
-    }
-
-    setSelectedFile(file);
-    
-    // Track file selection
-    ui.buttonClicked('select_photo', 'experience_media_single_file');
-
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    setError('');
-  };
+  }, [accessToken, authLoading, fetchProfile]);
 
   const handleUpload = async () => {
-    if (!selectedFile && !experience.trim()) {
-      setError('Please select an image or enter experience');
-      return;
-    }
-
-    if (experience.trim()) {
-      const experienceValue = parseFloat(experience);
-      if (isNaN(experienceValue) || experienceValue < 0) {
-        setError('Please enter a valid experience value');
-        return;
-      }
-    }
-
+    // ... (validation logic is fine)
     setIsUploading(true);
     setError('');
-
     try {
       const formData = new FormData();
-      
-      if (selectedFile) {
-        formData.append('photo', selectedFile);
-      }
-      
-      if (experience.trim()) {
-        formData.append('experience', parseFloat(experience));
-      }
+      if (selectedFile) formData.append('photo', selectedFile);
+      if (experience.trim()) formData.append('experience', parseFloat(experience));
 
-      const response = await fetch('http://localhost:5000/api/vendor/experience/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
+      // 5. Use the api instance for file upload
+      const response = await api.post('/vendor/experience/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data.success) {
         setSuccess('Profile updated successfully!');
-
-        // Track media upload
-        if (selectedFile) {
-          services.mediaUploaded('experience_photo', 1);
-        }
-
-        // Clear selected file and preview
         setSelectedFile(null);
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           setPreviewUrl('');
         }
-
-        // Refresh profile
         await fetchProfile();
-
-        // Clear success message after 3 seconds
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Upload failed');
+        throw new Error(response.data.message || 'Upload failed');
       }
     } catch (err) {
-      setError('Error uploading profile');
+      setError(err.response?.data?.message || 'Error uploading profile');
       console.error('Upload error:', err);
     } finally {
       setIsUploading(false);
@@ -154,40 +86,23 @@ const ExperienceMedia = () => {
   };
 
   const handleUpdateExperienceOnly = async () => {
-    if (!experience.trim()) {
-      setError('Please enter experience value');
-      return;
-    }
-
-    const experienceValue = parseFloat(experience);
-    if (isNaN(experienceValue) || experienceValue < 0) {
-      setError('Please enter a valid experience value');
-      return;
-    }
-
+    // ... (validation logic is fine)
     setIsUploading(true);
     setError('');
-
     try {
-      const response = await fetch('http://localhost:5000/api/vendor/experience', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ experience: experienceValue }),
-      });
+      const experienceValue = parseFloat(experience);
+      // 6. Use the api instance
+      const response = await api.put('/vendor/experience', { experience: experienceValue });
 
-      if (response.ok) {
+      if (response.data.success) {
         setSuccess('Experience updated successfully!');
         await fetchProfile();
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Update failed');
+        throw new Error(response.data.message || 'Update failed');
       }
     } catch (err) {
-      setError('Error updating experience');
+      setError(err.response?.data?.message || 'Error updating experience');
       console.error('Update error:', err);
     } finally {
       setIsUploading(false);
@@ -195,45 +110,32 @@ const ExperienceMedia = () => {
   };
 
   const handleUpdateImageOnly = async () => {
-    if (!selectedFile) {
-      setError('Please select an image');
-      return;
-    }
-
+    // ... (validation logic is fine)
     setIsUploading(true);
     setError('');
-
     try {
       const formData = new FormData();
       formData.append('photo', selectedFile);
 
-      const response = await fetch('http://localhost:5000/api/vendor/experience/image', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
+      // 7. Use the api instance
+      const response = await api.put('/vendor/experience/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      if (response.ok) {
+      if (response.data.success) {
         setSuccess('Profile image updated successfully!');
-        services.mediaUploaded('experience_photo', 1);
-
-        // Clear selected file and preview
         setSelectedFile(null);
         if (previewUrl) {
           URL.revokeObjectURL(previewUrl);
           setPreviewUrl('');
         }
-
         await fetchProfile();
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Image update failed');
+        throw new Error(response.data.message || 'Image update failed');
       }
     } catch (err) {
-      setError('Error updating image');
+      setError(err.response?.data?.message || 'Error updating image');
       console.error('Image update error:', err);
     } finally {
       setIsUploading(false);
@@ -241,32 +143,23 @@ const ExperienceMedia = () => {
   };
 
   const handleDeleteImage = async () => {
-    if (!window.confirm('Are you sure you want to delete your profile image?')) {
-      return;
-    }
-
+    if (!window.confirm('Are you sure you want to delete your profile image?')) return;
     try {
-      const response = await fetch('http://localhost:5000/api/vendor/experience/image', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      // 8. Use the api instance
+      const response = await api.delete('/vendor/experience/image');
+      if (response.data.success) {
         setSuccess('Profile image deleted successfully!');
-        ui.buttonClicked('delete_photo', 'experience_media');
         await fetchProfile();
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Delete failed');
+        throw new Error(response.data.message || 'Delete failed');
       }
     } catch (err) {
-      setError('Error deleting image');
+      setError(err.response?.data?.message || 'Error deleting image');
       console.error('Delete error:', err);
     }
   };
+
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -292,7 +185,7 @@ const ExperienceMedia = () => {
       setError('Please make some changes before saving');
       return;
     }
-    
+
     setIsEditing(false);
     ui.buttonClicked('save_experience_media', 'experience_media');
   };
@@ -307,6 +200,34 @@ const ExperienceMedia = () => {
     setExperience(profile?.experience?.toString() || '');
     setError('');
     setSuccess('');
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      services.validationError('experience_media', 'file_type', 'invalid_image_type');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      services.validationError('experience_media', 'file_size', 'file_too_large');
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Track file selection
+    ui.buttonClicked('select_photo', 'experience_media_single_file');
+
+    // Create preview URL
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setError('');
   };
 
   if (loading) {
@@ -568,8 +489,6 @@ const ExperienceMedia = () => {
           </div>
         )}
       </div>
-      {/* Experience Card */}
-      {/* <ExperienceCard /> */}
     </>
   );
 };

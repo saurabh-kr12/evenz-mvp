@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const Services = require('../../models/Vendor/Services');
+const { body, validationResult } = require('express-validator');
 const { protect } = require('../../middleware/vendor/auth');
 
 // Helper function to process custom options
@@ -55,7 +56,7 @@ router.get('/', protect, async (req, res) => {
       await services.save();
     }
     
-    res.json(services);
+    res.json({ success: true, data: services });
   } catch (error) {
     console.error('Error fetching services:', error);
     res.status(500).json({ message: 'Server error while fetching services' });
@@ -65,8 +66,22 @@ router.get('/', protect, async (req, res) => {
 // @desc    Update vendor services
 // @route   PUT /api/services
 // @access  Private (Vendor)
-router.put('/', protect, async (req, res) => {
-  try {
+router.put('/', protect,
+   [ // ADDED: Validation for incoming data
+        body('staffDetails').optional().isString().trim().escape(),
+        body('setupBreakdownProcess').optional().isString().trim().escape(),
+        body('deliveryLogistics').optional().isString().trim().escape(),
+        body('staffProvided.cost').optional().isNumeric().withMessage('Staff cost must be a number.'),
+        body('waterService.jarWaterCharges').optional().isNumeric().withMessage('Jar water charges must be a number.'),
+        body('waterService.bottleWaterCharges').optional().isNumeric().withMessage('Bottle water charges must be a number.')
+    ], 
+    async (req, res) => {
+      const errors = validationResult(req); // ADDED: Check for validation errors
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
+    try {
+      
     const {
       mealServiceTypes,
       liveCounters,
@@ -105,6 +120,7 @@ router.put('/', protect, async (req, res) => {
     await services.save();
     
     res.json({
+      success: true,
       message: 'Services updated successfully',
       services
     });
@@ -123,10 +139,20 @@ router.put('/', protect, async (req, res) => {
 // @desc    Add live counter
 // @route   POST /api/services/live-counters
 // @access  Private (Vendor)
-router.post('/live-counters', protect, async (req, res) => {
+router.post('/live-counters', protect,
+  [ // ADDED: Validation
+        body('name', 'Counter name is required').not().isEmpty().trim().escape(),
+        body('description', 'Description is required').not().isEmpty().trim().escape(),
+        body('pricePerPlate', 'Price must be a number').isNumeric()
+    ],
+  async (req, res) => {
+    const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
   try {
     const { name, description, pricePerPlate } = req.body;
-    console.log("name",name)
+    
     if (!name || !description || pricePerPlate === undefined) {
       return res.status(400).json({ 
         message: 'Name, description, and price per plate are required' 
@@ -143,6 +169,7 @@ router.post('/live-counters', protect, async (req, res) => {
     await services.save();
     
     res.json({
+      success: true,
       message: 'Live counter added successfully',
       liveCounter: services.liveCounters[services.liveCounters.length - 1]
     });
@@ -178,6 +205,7 @@ router.put('/live-counters/:id', protect, async (req, res) => {
     await services.save();
     
     res.json({
+      success: true,
       message: 'Live counter updated successfully',
       liveCounter
     });
@@ -209,7 +237,9 @@ router.delete('/live-counters/:id', protect, async (req, res) => {
     services.liveCounters.splice(liveCounterIndex, 1);
     await services.save();
     
-    res.json({ message: 'Live counter deleted successfully' });
+    res.json({ 
+      success: true,
+      message: 'Live counter deleted successfully' });
   } catch (error) {
     console.error('Error deleting live counter:', error);
     res.status(500).json({ message: 'Server error while deleting live counter' });

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import ProfileCompletionCard from '@/components/ProfileCompletionCard';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
 
 const CatererDashboard = () => {
   const navigate = useRouter().push;
@@ -26,41 +27,50 @@ const CatererDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Mock auth context - replace with your actual auth implementation
-  const authToken = localStorage.getItem('token');
+  const { accessToken: vendorAccessToken, loading: authLoading } = useAuth();
 
   useEffect(() => {
     dashboard.pageViewed('caterer_dashboard');
   }, [dashboard]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/vendor/dashboard/dashboard-summary', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+    const fetchDashboardData = async () => {
+      // Don't try to fetch if we don't have a token yet
+      if (!vendorAccessToken) {
+        setLoading(false);
+        return;
       }
 
-      const result = await response.json();
-      setDashboardData(result.data);
-    } catch (err) {
-      setError(err.message);
-      console.error('Dashboard fetch error:', err);
-    } finally {
-      setLoading(false);
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/vendor/dashboard/dashboard-summary', {
+          method: 'GET',
+          headers: {
+            // Use the live vendorAccessToken from the context
+            'Authorization': `Bearer ${vendorAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const result = await response.json();
+        setDashboardData(result.data);
+      } catch (err) {
+        setError(err.message);
+        console.error('Dashboard fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only fetch data once the initial authentication check is complete
+    if (!authLoading) {
+        fetchDashboardData();
     }
-  };
+  }, [vendorAccessToken, authLoading]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -125,12 +135,13 @@ const CatererDashboard = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchDashboardData}
+          <Link
+            // onClick={fetchDashboardData}
+            href="/dashboard"
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
           >
             Try Again
-          </button>
+          </Link>
         </div>
       </div>
     );

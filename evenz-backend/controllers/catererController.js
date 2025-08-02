@@ -27,9 +27,9 @@ const getCatererProfile = async (req, res) => {
       });
     }
 
-     // Check if vendor exists AND is active
-    const vendor = await Vendor.findOne({ 
-      _id: catererId, 
+    // Check if vendor exists AND is active
+    const vendor = await Vendor.findOne({
+      _id: catererId,
       status: 'active' // Only active vendors
     });
 
@@ -140,6 +140,9 @@ const getCatererProfile = async (req, res) => {
       } : null
     };
 
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+    
     res.status(200).json({
       success: true,
       data: profileData
@@ -356,6 +359,9 @@ const getProfileStatus = async (req, res) => {
     const totalFields = Object.keys(profileStatus).length;
     const completedFields = Object.values(profileStatus).filter(Boolean).length;
     const completionPercentage = Math.round((completedFields / totalFields) * 100);
+
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
 
     res.status(200).json({
       success: true,

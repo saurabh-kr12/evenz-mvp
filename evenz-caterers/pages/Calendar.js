@@ -1,7 +1,9 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Save, Edit3, ChevronDown, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/context/AuthContext'; // Ensure this is the correct import path
 
 const AvailabilityCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -9,16 +11,116 @@ const AvailabilityCalendar = () => {
   const [availability, setAvailability] = useState({});
   const [selectedDate, setSelectedDate] = useState(null);
   const [bulkMode, setBulkMode] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [bulkAction, setBulkAction] = useState('unavailable'); // 'available' or 'unavailable'
   const [bulkNotes, setBulkNotes] = useState('');
+
+  // --- Hooks ---
+  const { accessToken, loading: authLoading } = useAuth();
   const { calendar, ui } = useAnalytics(); // Add this line
 
   // Get current date without time for comparison
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // --- Data Fetching ---
+  const loadAvailability = useCallback(async (dateToLoad) => {
+    setLoading(true);
+    try {
+      const month = dateToLoad.getMonth() + 1;
+      const year = dateToLoad.getFullYear();
+
+      // 4. Use the api instance for the GET request
+      const response = await api.get(`/vendor/availability?month=${month}&year=${year}`);
+
+      if (response.data.success) {
+        setAvailability(prev => ({ ...prev, ...response.data.data }));
+      }
+    } catch (error) {
+      console.error('Error loading availability:', error);
+      setMessage('Error loading availability data.');
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Empty dependency array means this function is created only once
+
+  useEffect(() => {
+    // 5. Wait for auth to be ready before fetching data
+    if (!authLoading && accessToken) {
+      loadAvailability(currentDate);
+      calendar.pageViewed('availability_calendar');
+    }
+  }, [currentDate, accessToken, authLoading, loadAvailability]);
+
+  // --- Data Saving ---
+  const handleSave = async () => {
+    if (!selectedDate || !isEditable(selectedDate)) return;
+    const dateKey = formatDateKey(selectedDate);
+    const dateData = availability[dateKey];
+    if (!dateData) return;
+
+    setLoading(true);
+    try {
+      const payload = { availability: { [dateKey]: dateData } };
+      // 6. Use the api instance for the POST request
+      const response = await api.post('/vendor/availability', payload);
+
+      if (response.data.success) {
+        setMessage(`Availability saved for ${selectedDate.toLocaleDateString()}!`);
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        throw new Error(response.data.message || 'Failed to save');
+      }
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Error saving availability.');
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (selectedDates.length === 0) return;
+    const bulkUpdates = selectedDates.map(dateKey => ({
+      date: new Date(dateKey + 'T00:00:00.000Z'),
+      isAvailable: bulkAction === 'available',
+      notes: bulkAction === 'unavailable' ? bulkNotes : ''
+    }));
+
+    setLoading(true);
+    try {
+      // 7. Use the api instance for the POST request
+      const response = await api.post('/vendor/availability', { bulkUpdate: bulkUpdates });
+
+      if (response.data.success) {
+        // Manually update local state for instant feedback
+        const updates = {};
+        bulkUpdates.forEach(update => {
+          const key = formatDateKey(update.date);
+          updates[key] = { isAvailable: update.isAvailable, notes: update.notes };
+        });
+        setAvailability(prev => ({ ...prev, ...updates }));
+
+        setMessage(`Successfully updated ${bulkUpdates.length} dates!`);
+        setTimeout(() => setMessage(''), 3000);
+
+        // Reset bulk mode
+        setSelectedDates([]);
+        setBulkMode(false);
+        setBulkNotes('');
+      } else {
+        throw new Error(response.data.message || 'Failed to update');
+      }
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Error saving bulk changes.');
+      setTimeout(() => setMessage(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Get days in current month
   const getDaysInMonth = (date) => {
@@ -148,146 +250,6 @@ const AvailabilityCalendar = () => {
         notes
       }
     }));
-  };
-
-  // Handle bulk update
-  const handleBulkUpdate = async () => {
-    if (selectedDates.length === 0) return;
-
-    const bulkUpdates = selectedDates
-      .filter(dateKey => {
-        const date = new Date(dateKey);
-        return !isPastDate(date);
-      })
-      .map(dateKey => ({
-        // date: dateKey,
-        date: new Date(dateKey + 'T00:00:00.000Z'), // Add this
-        isAvailable: bulkAction === 'available',
-        notes: bulkAction === 'unavailable' ? bulkNotes : ''
-      }));
-
-    if (bulkUpdates.length === 0) return;
-
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/vendor/availability', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ bulkUpdate: bulkUpdates })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update local state
-        const updates = {};
-        bulkUpdates.forEach(update => {
-          updates[update.date] = {
-            isAvailable: update.isAvailable,
-            notes: update.notes
-          };
-        });
-        setAvailability(prev => ({ ...prev, ...updates }));
-
-        setMessage(`Successfully updated ${bulkUpdates.length} dates!`);
-        setTimeout(() => setMessage(''), 3000);
-
-        calendar.bulkAvailabilityUpdated(bulkUpdates.length, bulkAction);
-        // Reset bulk mode
-        setSelectedDates([]);
-        setBulkMode(false);
-        setBulkNotes('');
-      } else {
-        throw new Error(result.message || 'Failed to update');
-      }
-    } catch (error) {
-      setMessage('Error saving bulk changes. Please try again.');
-      setTimeout(() => setMessage(''), 3000);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load availability from backend
-  const loadAvailability = async () => {
-    try {
-      const month = currentDate.getMonth() + 1;
-      const year = currentDate.getFullYear();
-
-      const response = await fetch(`http://localhost:5000/api/vendor/availability?month=${month}&year=${year}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          setAvailability(prev => ({ ...prev, ...result.data }));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading availability:', error);
-    }
-  };
-
-  // Load availability on component mount and month change
-  useEffect(() => {
-    loadAvailability();
-    calendar.pageViewed('availability_calendar');
-  }, [currentDate]);
-
-  // Save availability for single date only
-  const handleSave = async () => {
-    if (!selectedDate || !isEditable(selectedDate)) {
-      setMessage('Please select a valid date to save.');
-      setTimeout(() => setMessage(''), 3000);
-      return;
-    }
-
-    const dateKey = formatDateKey(selectedDate);
-    const dateData = availability[dateKey];
-
-    if (!dateData) {
-      setMessage('No changes to save for this date.');
-      setTimeout(() => setMessage(''), 3000);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Only send the data for the currently selected date
-      const singleDateAvailability = {
-        [dateKey]: dateData
-      };
-
-      const response = await fetch('http://localhost:5000/api/vendor/availability', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ availability: singleDateAvailability })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setMessage(`Availability saved for ${selectedDate.toLocaleDateString()}!`);
-        setTimeout(() => setMessage(''), 3000);
-
-        calendar.singleDateAvailabilityUpdated(dateData.isAvailable ? 'available' : 'unavailable');
-      } else {
-        throw new Error(result.message || 'Failed to save');
-      }
-    } catch (error) {
-      setMessage(error.message || 'Error saving availability. Please try again.');
-      setTimeout(() => setMessage(''), 3000);
-    }
-    setLoading(false);
   };
 
   // Navigation

@@ -1,57 +1,113 @@
+// File: controllers/vendor/VendorAuthController.js
 const Vendor = require('../../models/Vendor/Vendor');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
 
-const generateToken = (id, rememberMe = false) => {
-  const expiresIn = rememberMe ? '60d' : '7d';
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn
-  });
-};
-
-// Login vendor
 const login = async (req, res) => {
-  try {
-    const { identifier, password, rememberMe = false } = req.body;
-
-    // Find vendor by email or mobile
-    const vendor = await Vendor.findOne({
-      $or: [{ email: identifier }, { mobile: identifier }]
-    }).select('+password');
-
-    if (!vendor) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
 
-    // Check password
-    const isMatch = await vendor.comparePassword(password);
+    try {
+        const { identifier, password, rememberMe = false } = req.body;
 
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+        // --- STEP 1: LOG THE INPUT ---
+        console.log(`[DEBUG] Login attempt for identifier: ${identifier}`);
+
+        const vendor = await Vendor.findOne({
+            $or: [{ email: identifier }, { mobile: identifier }]
+        }).select('+password');
+
+        // --- STEP 2: LOG THE FOUND VENDOR'S ID ---
+        if (vendor) {
+            console.log(`[DEBUG] Vendor found in DB with ID: ${vendor._id}`);
+        } else {
+            console.log(`[DEBUG] No vendor found for identifier: ${identifier}`);
+            return res.status(401).json({ message: 'Vendor not found. Please create an account to continue.' });
+        }
+
+        const isMatch = await vendor.comparePassword(password);
+
+        if (!isMatch) {
+            console.log(`[DEBUG] Password mismatch for vendor ID: ${vendor._id}`);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        
+        console.log(`[DEBUG] Password match successful for vendor ID: ${vendor._id}`);
+
+        if (vendor.status !== 'active') {
+            return res.status(403).json({ message: `Your account is currently ${vendor.status}. Please contact support.` });
+        }
+        
+        // --- STEP 3: LOG THE ID RIGHT BEFORE CREATING THE TOKEN ---
+        console.log(`[DEBUG] Creating tokens for vendor ID: ${vendor._id}`);
+
+        const accessToken = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ id: vendor._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: rememberMe ? '60d' : '1d' });
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+        };
+        
+        res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: (rememberMe ? 60 : 1) * 24 * 60 * 60 * 1000 });
+        
+        res.status(200).json({
+            message: 'Login successful',
+            accessToken,
+            vendor: {
+                _id: vendor._id,
+                businessName: vendor.businessName,
+            }
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'An internal server error occurred.' });
+    }
+};
+
+
+const handleRefreshToken = async (req, res) => {
+    const cookies = req.cookies;
+    if (!cookies?.refreshToken) {
+        return res.sendStatus(401); // Unauthorized
     }
 
-    // Generate token with appropriate expiration
-    const token = generateToken(vendor._id, rememberMe);
+    const refreshToken = cookies.refreshToken;
 
-    // Update last login time
-    vendor.updatedAt = new Date();
-    await vendor.save();
+    try {
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    // Return success response
-    res.status(200).json({
-      _id: vendor._id,
-      ownerName: vendor.ownerName,
-      email: vendor.email,
-      mobile: vendor.mobile,
-      businessName: vendor.businessName,
-      token,
-      expiresIn: rememberMe ? '60d' : '7d'
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Login failed', error: error.message });
-  }
+        const vendor = await Vendor.findById(decoded.id);
+        if (!vendor) {
+            return res.sendStatus(403); // Forbidden
+        }
+
+        // Issue a new short-lived access token
+        const accessToken = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        
+        res.json({ accessToken });
+
+    } catch (err) {
+        // If refresh token is expired or invalid
+        return res.sendStatus(403); // Forbidden
+    }
 };
 
-module.exports = {
-  login,
+const handleLogout = (req, res) => {
+    // On client, also delete the accessToken
+    const cookies = req.cookies;
+    if (!cookies?.refreshToken) {
+        return res.sendStatus(204); // No content
+    }
+
+    // Clear the secure cookie
+    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'strict', secure: true });
+    res.json({ message: 'Cookie cleared' });
 };
+
+// ... other exports
+module.exports = { login, handleRefreshToken, handleLogout };

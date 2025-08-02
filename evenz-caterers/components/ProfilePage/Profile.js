@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User, Phone, Mail, Building, MapPin, Lock, Eye, EyeOff, Edit2, Save, X, RefreshCw } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/context/AuthContext';
 
 const VendorProfile = () => {
   const [vendor, setVendor] = useState(null);
@@ -11,9 +13,6 @@ const VendorProfile = () => {
   const [success, setSuccess] = useState('');
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
-  const { dashboard, ui } = useAnalytics(); // Add this line
-
-  // Form states
   const [editingField, setEditingField] = useState(null);
   const [formData, setFormData] = useState({
     ownerName: '',
@@ -28,99 +27,170 @@ const VendorProfile = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [otpData, setOtpData] = useState({ mobile: {}, email: {} });
+  const [showPassword, setShowPassword] = useState({});
 
-  // OTP states
-  const [otpData, setOtpData] = useState({
-    mobile: { otp: '', sent: false, loading: false },
-    email: { otp: '', sent: false, loading: false }
-  });
+  // --- Hooks ---
+  const { accessToken, loading: authLoading, setAccessToken } = useAuth(); // 3. Get auth state
+  const { dashboard, ui } = useAnalytics();
 
-  const [showPassword, setShowPassword] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
-
-  // API Base URL (update this to your backend URL)
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-  // Get auth token from localStorage
-  const getAuthToken = () => {
-    return localStorage.getItem('token');
-  };
-
-  // API call helper
-  const apiCall = async (endpoint, options = {}) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers
-      },
-      ...options
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Something went wrong');
-    }
-
-    return data;
-  };
-
-  // Fetch vendor profile
-  const fetchVendorProfile = async () => {
+  // --- Data Fetching ---
+  const fetchVendorProfile = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await apiCall('/vendor-profile');
-      setVendor(data.data);
-      setFormData({
-        ownerName: data.data.ownerName,
-        businessName: data.data.businessName,
-        mobile: data.data.mobile,
-        email: data.data.email,
-        pinCode: data.data.pinCode,
-        locality: data.data.locality,
-        city: data.data.city,
-        state: data.data.state,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-    } catch (error) {
-      setError(error.message);
+      const [profileRes, statesRes] = await Promise.all([
+        api.get('/vendor-profile'), // Use the api instance
+        api.get('/vendor-profile/states')
+      ]);
+
+      if (profileRes.data.success) {
+        const vendorData = profileRes.data.data;
+        setVendor(vendorData);
+        setFormData({
+          ownerName: vendorData.ownerName,
+          businessName: vendorData.businessName,
+          mobile: vendorData.mobile,
+          email: vendorData.email,
+          pinCode: vendorData.pinCode,
+          locality: vendorData.locality,
+          city: vendorData.city,
+          state: vendorData.state,
+        });
+        // Pre-fetch cities for the vendor's current state
+        if (vendorData.state) {
+          fetchCities(vendorData.state);
+        }
+      }
+      if (statesRes.data.success) {
+        setStates(statesRes.data.data);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load profile data.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array means this function is created only once
 
-  // Fetch states
-  const fetchStates = async () => {
-    try {
-      const data = await apiCall('/vendor-profile/states');
-      setStates(data.data);
-    } catch (error) {
-      console.error('Error fetching states:', error);
-    }
-  };
-
-  // Fetch cities by state
   const fetchCities = async (state) => {
     try {
-      const data = await apiCall(`/vendor-profile/cities/${state}`);
-      setCities(data.data);
+      const response = await api.get(`/vendor-profile/cities/${state}`);
+      if (response.data.success) {
+        setCities(response.data.data);
+      }
     } catch (error) {
       console.error('Error fetching cities:', error);
     }
   };
 
   useEffect(() => {
-    fetchVendorProfile();
-    fetchStates();
-    dashboard.pageViewed('vendor_profile');
-  }, []);
+    // 4. Wait for auth to be ready before fetching
+    if (!authLoading && accessToken) {
+      fetchVendorProfile();
+      dashboard.pageViewed('vendor_profile');
+    }
+  }, [accessToken, authLoading, fetchVendorProfile]);
+
+  // --- API Handlers ---
+  const updateField = async (field, data) => {
+    try {
+      const response = await api.put(`/vendor-profile/${field}`, data); // Use api instance
+      if (response.data.success) {
+        setVendor(response.data.data);
+        setEditingField(null);
+        setSuccess(response.data.message);
+        setTimeout(() => setSuccess(''), 3000);
+        dashboard.profileFieldUpdated(field);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Update failed.');
+    }
+  };
+
+  const sendOtp = async (type, value) => {
+    setOtpData(prev => ({ ...prev, [type]: { ...prev[type], loading: true } }));
+    try {
+      const response = await api.post(`/vendor-profile/${type}/send-otp`, { [type]: value });
+      if (response.data.success) {
+        setOtpData(prev => ({ ...prev, [type]: { ...prev[type], sent: true, loading: false } }));
+        setSuccess(response.data.message);
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send OTP.');
+      setOtpData(prev => ({ ...prev, [type]: { ...prev[type], loading: false } }));
+    }
+  };
+
+  const verifyOtp = async (type, value, otp) => {
+    try {
+      const response = await api.put(`/vendor-profile/${type}/verify-otp`, { [type]: value, otp });
+      if (response.data.success) {
+        setVendor(response.data.data);
+        setEditingField(null);
+        setOtpData(prev => ({ ...prev, [type]: {} }));
+        setSuccess(response.data.message);
+        setTimeout(() => setSuccess(''), 3000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'OTP verification failed.');
+    }
+  };
+
+  // ... (Your other handlers like handleInputChange, handleEdit, handleCancel should work as is)
+  // Update the specific save handlers to use the new functions
+  const handleOwnerNameUpdate = () => updateField('owner-name', { ownerName: formData.ownerName });
+  const handleBusinessNameUpdate = () => updateField('business-name', { businessName: formData.businessName });
+  const handleLocationUpdate = () => updateField('location', { pinCode: formData.pinCode, locality: formData.locality, city: formData.city, state: formData.state });
+  const sendMobileOTP = () => sendOtp('mobile', formData.mobile);
+  const verifyMobileOTP = () => verifyOtp('mobile', formData.mobile, otpData.mobile.otp);
+  const sendEmailOTP = () => sendOtp('email', formData.email);
+  const verifyEmailOTP = () => verifyOtp('email', formData.email, otpData.email.otp);
+  const handlePasswordUpdate = async () => {
+    const { currentPassword, newPassword, confirmPassword } = formData;
+
+    // --- (Your existing validation is fine) ---
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('All password fields are required');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters long');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await api.put('/vendor-profile/password', { currentPassword, newPassword });
+
+      // --- THE FIX IS HERE ---
+      if (response.data.success) {
+        // 1. Get the new access token from the response.
+        const newAccessToken = response.data.accessToken;
+
+        // 2. Update the AuthContext with the new token.
+        // You will need to add `setAccessToken` to your AuthContext value.
+        setAccessToken(newAccessToken);
+
+        // 3. Clear the form and show the success message.
+        setEditingField(null);
+        setFormData(prev => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }));
+        setSuccess(response.data.message);
+        setTimeout(() => setSuccess(''), 3000);
+      }
+      // --- END OF FIX ---
+
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to update password.');
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -158,226 +228,6 @@ const VendorProfile = () => {
     });
 
     ui.buttonClicked('cancel_edit', 'vendor_profile');
-  };
-
-  const updateField = async (field, data) => {
-    try {
-      const response = await apiCall(`/vendor-profile/${field}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-      });
-
-      setVendor(response.data);
-      setEditingField(null);
-      setSuccess(response.message);
-      setTimeout(() => setSuccess(''), 3000);
-
-      dashboard.profileFieldUpdated(field);
-    } catch (error) {
-      setError(error.message);
-    }
-  };
-
-  const handleOwnerNameUpdate = () => {
-    if (!formData.ownerName.trim()) {
-      setError('Owner name is required');
-      return;
-    }
-    updateField('owner-name', { ownerName: formData.ownerName });
-  };
-
-  const handleBusinessNameUpdate = () => {
-    if (!formData.businessName.trim()) {
-      setError('Business name is required');
-      return;
-    }
-    updateField('business-name', { businessName: formData.businessName });
-  };
-
-  const handleLocationUpdate = () => {
-    const { pinCode, locality, city, state } = formData;
-
-    if (!pinCode || !locality || !city || !state) {
-      setError('All location fields are required');
-      return;
-    }
-
-    if (!/^[0-9]{6}$/.test(pinCode)) {
-      setError('Please provide a valid 6-digit pin code');
-      return;
-    }
-
-    updateField('location', { pinCode, locality, city, state });
-  };
-
-  const sendMobileOTP = async () => {
-    try {
-      if (!/^[0-9]{10}$/.test(formData.mobile)) {
-        setError('Please provide a valid 10-digit mobile number');
-        return;
-      }
-
-      setOtpData(prev => ({
-        ...prev,
-        mobile: { ...prev.mobile, loading: true }
-      }));
-
-      const response = await apiCall('/vendor-profile/mobile/send-otp', {
-        method: 'POST',
-        body: JSON.stringify({ mobile: formData.mobile })
-      });
-
-      setOtpData(prev => ({
-        ...prev,
-        mobile: { ...prev.mobile, sent: true, loading: false }
-      }));
-
-      setSuccess(response.message);
-      setTimeout(() => setSuccess(''), 3000);
-
-      ui.buttonClicked('mobile_otp_sent', 'vendor_profile');
-    } catch (error) {
-      setError(error.message);
-      setOtpData(prev => ({
-        ...prev,
-        mobile: { ...prev.mobile, loading: false }
-      }));
-    }
-  };
-
-  const verifyMobileOTP = async () => {
-    try {
-      if (!otpData.mobile.otp.trim()) {
-        setError('Please enter the OTP');
-        return;
-      }
-
-      const response = await apiCall('/vendor-profile/mobile/verify-otp', {
-        method: 'PUT',
-        body: JSON.stringify({
-          mobile: formData.mobile,
-          otp: otpData.mobile.otp
-        })
-      });
-
-      setVendor(response.data);
-      setEditingField(null);
-      setOtpData(prev => ({
-        ...prev,
-        mobile: { otp: '', sent: false, loading: false }
-      }));
-      setSuccess(response.message);
-      setTimeout(() => setSuccess(''), 3000);
-
-      dashboard.profileFieldUpdated('mobile_verified');
-    } catch (error) {
-      setError(error.message);
-    }
-  };
-
-  const sendEmailOTP = async () => {
-    try {
-      if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
-        setError('Please provide a valid email address');
-        return;
-      }
-
-      setOtpData(prev => ({
-        ...prev,
-        email: { ...prev.email, loading: true }
-      }));
-
-      const response = await apiCall('/vendor-profile/email/send-otp', {
-        method: 'POST',
-        body: JSON.stringify({ email: formData.email })
-      });
-
-      setOtpData(prev => ({
-        ...prev,
-        email: { ...prev.email, sent: true, loading: false }
-      }));
-
-      setSuccess(response.message);
-      setTimeout(() => setSuccess(''), 3000);
-
-      ui.buttonClicked('email_otp_sent', 'vendor_profile');
-    } catch (error) {
-      setError(error.message);
-      setOtpData(prev => ({
-        ...prev,
-        email: { ...prev.email, loading: false }
-      }));
-    }
-  };
-
-  const verifyEmailOTP = async () => {
-    try {
-      if (!otpData.email.otp.trim()) {
-        setError('Please enter the OTP');
-        return;
-      }
-
-      const response = await apiCall('/vendor-profile/email/verify-otp', {
-        method: 'PUT',
-        body: JSON.stringify({
-          email: formData.email,
-          otp: otpData.email.otp
-        })
-      });
-
-      setVendor(response.data);
-      setEditingField(null);
-      setOtpData(prev => ({
-        ...prev,
-        email: { otp: '', sent: false, loading: false }
-      }));
-      setSuccess(response.message);
-      setTimeout(() => setSuccess(''), 3000);
-
-      dashboard.profileFieldUpdated('email_verified');
-    } catch (error) {
-      setError(error.message);
-    }
-  };
-
-  const handlePasswordUpdate = async () => {
-    const { currentPassword, newPassword, confirmPassword } = formData;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('All password fields are required');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
-    try {
-      const response = await apiCall('/vendor-profile/password', {
-        method: 'PUT',
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-
-      setEditingField(null);
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-      setSuccess(response.message);
-      setTimeout(() => setSuccess(''), 3000);
-
-      dashboard.profileFieldUpdated('password');
-    } catch (error) {
-      setError(error.message);
-    }
   };
 
   const handleStateChange = (state) => {
@@ -857,7 +707,7 @@ const VendorProfile = () => {
                 <div className="relative">
                   <input
                     type={showPassword.current ? 'text' : 'password'}
-                    value={formData.currentPassword}
+                    value={formData.currentPassword ?? ''}
                     onChange={(e) => handleInputChange('currentPassword', e.target.value)}
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Current Password"
@@ -878,7 +728,7 @@ const VendorProfile = () => {
                 <div className="relative">
                   <input
                     type={showPassword.new ? 'text' : 'password'}
-                    value={formData.newPassword}
+                    value={formData.newPassword ?? ''}
                     onChange={(e) => handleInputChange('newPassword', e.target.value)}
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="New Password"
@@ -899,7 +749,7 @@ const VendorProfile = () => {
                 <div className="relative">
                   <input
                     type={showPassword.confirm ? 'text' : 'password'}
-                    value={formData.confirmPassword}
+                    value={formData.confirmPassword ?? ''}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Confirm New Password"

@@ -10,6 +10,7 @@ import {
   Loader2
 } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
 
 const ProfileCompletionCard = () => {
   const router = useRouter();
@@ -19,11 +20,49 @@ const ProfileCompletionCard = () => {
   const [error, setError] = useState(null);
 
   // Get auth token from localStorage
-  const authToken = localStorage.getItem('token');
+  // const authToken = localStorage.getItem('token');
+  const { accessToken: vendorAccessToken, loading: authLoading } = useAuth();
+
+
+  // useEffect(() => {
+  //   fetchProfileStatus();
+  // }, []);
 
   useEffect(() => {
-    fetchProfileStatus();
-  }, []);
+    // We create the function inside useEffect to avoid stale closures
+    const fetchProfileStatus = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch('http://localhost:5000/api/caterers-details/profile-status', {
+          method: 'GET',
+          headers: {
+            // This will now use the valid token
+            'Authorization': `Bearer ${vendorAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile status');
+        }
+
+        const result = await response.json();
+        setProfileStatus(result.profileStatus);
+      } catch (err) {
+        setError(err.message);
+        console.error('Profile status fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only run the fetch function if auth is no longer loading AND we have a token
+    if (!authLoading && vendorAccessToken) {
+      fetchProfileStatus();
+    }
+  }, [vendorAccessToken, authLoading]);
 
   useEffect(() => {
     if (profileStatus && !loading) {
@@ -33,33 +72,33 @@ const ProfileCompletionCard = () => {
       }
     }
   }, [profileStatus, loading, dashboard]);
-  
-  const fetchProfileStatus = async () => {
-    try {
-      setLoading(true);
-      setError(null);
 
-      const response = await fetch('http://localhost:5000/api/caterers-details/profile-status', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
+  // const fetchProfileStatus = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile status');
-      }
+  //     const response = await fetch('http://localhost:5000/api/caterers-details/profile-status', {
+  //       method: 'GET',
+  //       headers: {
+  //         'Authorization': `Bearer ${vendorAccessToken}`,
+  //         'Content-Type': 'application/json'
+  //       }
+  //     });
 
-      const result = await response.json();
-      setProfileStatus(result.profileStatus);
-    } catch (err) {
-      setError(err.message);
-      console.error('Profile status fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (!response.ok) {
+  //       throw new Error('Failed to fetch profile status');
+  //     }
+
+  //     const result = await response.json();
+  //     setProfileStatus(result.profileStatus);
+  //   } catch (err) {
+  //     setError(err.message);
+  //     console.error('Profile status fetch error:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const getCompletionStatus = () => {
     if (!profileStatus) return null;

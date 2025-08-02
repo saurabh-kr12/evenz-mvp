@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
    Shield,
    FileText,
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/context/AuthContext'; // Adjusted import to use context API
 
 const ComplianceSection = () => {
    const [complianceData, setComplianceData] = useState(null);
@@ -26,52 +28,38 @@ const ComplianceSection = () => {
    const [uploadFile, setUploadFile] = useState(null);
    const [submitting, setSubmitting] = useState(false);
    const [updateSuccess, setUpdateSuccess] = useState(null); // For success feedback
+
+   // --- Hooks ---
+   const { accessToken, loading: authLoading } = useAuth();
    const analytics = useAnalytics();
 
-   // Get auth token from localStorage or your auth context
-   const getAuthToken = () => {
-      return localStorage.getItem('token'); // Adjust based on your auth implementation
-   };
-
-   const apiCall = async (url, options = {}) => {
-      const token = getAuthToken();
-      const response = await fetch(`http://localhost:5000/api/vendor/compliance${url}`, {
-         ...options,
-         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            ...options.headers,
-         },
-      });
-      return response.json();
-   };
-
-   const fetchComplianceData = async (showLoading = true) => {
+   // --- Data Fetching ---
+   const fetchComplianceData = useCallback(async (showLoading = true) => {
+      if (showLoading) setLoading(true);
       try {
-         if (showLoading) setLoading(true);
-         const result = await apiCall('');
-         if (result.success) {
-            setComplianceData(result.data);
+         const result = await api.get('/vendor/compliance');
+         if (result.data.success) {
+            setComplianceData(result.data.data);
          }
       } catch (error) {
          console.error('Failed to fetch compliance data:', error);
       } finally {
          if (showLoading) setLoading(false);
       }
-   };
-
-   useEffect(() => {
-      fetchComplianceData();
-      // Track tab view
-      analytics.services.tabViewed('compliance_section');
    }, []);
 
+   useEffect(() => {
+      if (!authLoading && accessToken) {
+         fetchComplianceData();
+         analytics.services.tabViewed('compliance_section');
+      }
+   }, [accessToken, authLoading, fetchComplianceData]);
+
+   // --- UI Handlers ---
    const handleEdit = (cardType) => {
       setEditingCard(cardType);
-
-      // Track edit action
       analytics.ui.buttonClicked(`${cardType}_edit`, 'compliance_section');
-
+      // Pre-fill form data based on the card being edited
       switch (cardType) {
          case 'fssai':
             setFormData({ number: complianceData?.fssaiLicense?.number || '' });
@@ -91,121 +79,55 @@ const ComplianceSection = () => {
                details: complianceData?.insurance?.details || ''
             });
             break;
+         default:
+            setFormData({});
       }
    };
 
-   // Optimistic update function
-   const updateComplianceDataOptimistically = (cardType, newData) => {
-      setComplianceData(prev => {
-         if (!prev) return prev;
-
-         const updated = { ...prev };
-         switch (cardType) {
-            case 'fssai':
-               updated.fssaiLicense = { ...prev.fssaiLicense, ...newData };
-               break;
-            case 'hygiene':
-               updated.hygieneAudits = { ...prev.hygieneAudits, ...newData };
-               break;
-            case 'ingredients':
-               updated.ingredientSourcing = { ...prev.ingredientSourcing, ...newData };
-               break;
-            case 'allergens':
-               updated.allergenHandling = { ...prev.allergenHandling, ...newData };
-               break;
-            case 'insurance':
-               updated.insurance = { ...prev.insurance, ...newData };
-               break;
-         }
-         return updated;
-      });
-   };
-
    const handleSave = async (cardType) => {
+      setSubmitting(true);
       try {
-         setSubmitting(true);
-         let result;
-         let optimisticData = {};
-
+         let endpoint = '';
+         let payload = {};
          switch (cardType) {
             case 'fssai':
-               optimisticData = { number: formData.number };
-               updateComplianceDataOptimistically(cardType, optimisticData);
-               result = await apiCall('/fssai', {
-                  method: 'PUT',
-                  body: JSON.stringify({ number: formData.number })
-               });
+               endpoint = '/fssai';
+               payload = { number: formData.number };
                break;
             case 'hygiene':
-               optimisticData = { details: formData.details };
-               updateComplianceDataOptimistically(cardType, optimisticData);
-               result = await apiCall('/hygiene', {
-                  method: 'PUT',
-                  body: JSON.stringify({ details: formData.details })
-               });
+               endpoint = '/hygiene';
+               payload = { details: formData.details };
                break;
             case 'ingredients':
-               optimisticData = { details: formData.details };
-               updateComplianceDataOptimistically(cardType, optimisticData);
-               result = await apiCall('/ingredients', {
-                  method: 'PUT',
-                  body: JSON.stringify({ details: formData.details })
-               });
+               endpoint = '/ingredients';
+               payload = { details: formData.details };
                break;
             case 'allergens':
-               optimisticData = { details: formData.details };
-               updateComplianceDataOptimistically(cardType, optimisticData);
-               result = await apiCall('/allergens', {
-                  method: 'PUT',
-                  body: JSON.stringify({ details: formData.details })
-               });
+               endpoint = '/allergens';
+               payload = { details: formData.details };
                break;
             case 'insurance':
-               // For insurance, we need to handle file uploads differently
-               // Don't do optimistic update for file uploads
-               const insuranceFormData = new FormData();
-               insuranceFormData.append('provided', formData.provided);
-               insuranceFormData.append('details', formData.details);
-               if (uploadFile) {
-                  insuranceFormData.append('document', uploadFile);
-               }
-
-               const token = getAuthToken();
-               const response = await fetch('http://localhost:5000/api/vendor/compliance/insurance', {
-                  method: 'PUT',
-                  headers: {
-                     'Authorization': `Bearer ${token}`,
-                  },
-                  body: insuranceFormData
-               });
-               result = await response.json();
+               endpoint = '/insurance';
+               payload = { provided: formData.provided, details: formData.details };
                break;
+            default:
+               throw new Error('Invalid card type');
          }
 
-         if (result.success) {
-            // Show success feedback
+         const result = await api.put(`/vendor/compliance${endpoint}`, payload);
+
+         if (result.data.success) {
             setUpdateSuccess(cardType);
             setTimeout(() => setUpdateSuccess(null), 2000);
-
             analytics.services.dataSaved('compliance_section', cardType, true);
-
-            // Only refetch for insurance (file uploads) or if optimistic update failed
-            if (cardType === 'insurance') {
-               await fetchComplianceData(false); // Don't show loading spinner
-            }
-
+            await fetchComplianceData(false); // Refetch data without full loading screen
             setEditingCard(null);
-            setUploadFile(null);
          } else {
-            // Revert optimistic update on failure
-            await fetchComplianceData(false);
-            alert('Failed to update: ' + result.message);
+            alert('Failed to update: ' + (result.data.message || 'Unknown error'));
          }
       } catch (error) {
          console.error('Error saving:', error);
-         // Revert optimistic update on error
-         await fetchComplianceData(false);
-         alert('Failed to save changes');
+         alert('Failed to save changes: ' + (error.response?.data?.message || error.message));
       } finally {
          setSubmitting(false);
       }
@@ -213,108 +135,22 @@ const ComplianceSection = () => {
 
    const handleCancel = () => {
       setEditingCard(null);
-      setUploadFile(null);
       setFormData({});
    };
 
-   const handleFileUpload = (e) => {
-      const file = e.target.files[0];
-      if (file && file.size <= 5 * 1024 * 1024) { // 5MB limit
-         setUploadFile(file);
-      } else {
-         alert('File size must be less than 5MB');
-      }
-   };
+   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-   const downloadDocument = () => {
-      const token = getAuthToken();
-      window.open(`http://localhost:5000/api/vendor/compliance/insurance/document?token=${token}`, '_blank');
-   };
-
-   const deleteDocument = async () => {
-      if (confirm('Are you sure you want to delete this document?')) {
-         try {
-            const result = await apiCall('/insurance/document', { method: 'DELETE' });
-            if (result.success) {
-               // Optimistically remove document
-               updateComplianceDataOptimistically('insurance', {
-                  document: null,
-                  documentName: null
-               });
-               setUpdateSuccess('insurance');
-               setTimeout(() => setUpdateSuccess(null), 2000);
-            }
-         } catch (error) {
-            console.error('Error deleting document:', error);
-            // Revert on error
-            await fetchComplianceData(false);
-         }
-      }
-   };
-
-   const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('en-US', {
-         year: 'numeric',
-         month: 'short',
-         day: 'numeric',
-         hour: '2-digit',
-         minute: '2-digit'
-      });
-   };
-
-   if (loading) {
-      return (
-         <div className="p-6">
-            <div className="animate-pulse space-y-6">
-               {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="bg-gray-200 rounded-lg h-48"></div>
-               ))}
-            </div>
-         </div>
-      );
+   // --- Render Logic ---
+   if (loading || authLoading) {
+      return <div>Loading compliance information...</div>;
    }
 
    const cards = [
-      {
-         id: 'fssai',
-         title: 'FSSAI License',
-         icon: Shield,
-         color: 'blue',
-         data: complianceData?.fssaiLicense,
-         hasValue: !!complianceData?.fssaiLicense?.number
-      },
-      {
-         id: 'hygiene',
-         title: 'Hygiene & Audits',
-         icon: FileCheck,
-         color: 'green',
-         data: complianceData?.hygieneAudits,
-         hasValue: !!complianceData?.hygieneAudits?.details
-      },
-      {
-         id: 'ingredients',
-         title: 'Ingredient Sourcing',
-         icon: Leaf,
-         color: 'emerald',
-         data: complianceData?.ingredientSourcing,
-         hasValue: !!complianceData?.ingredientSourcing?.details
-      },
-      {
-         id: 'allergens',
-         title: 'Allergen Handling',
-         icon: AlertTriangle,
-         color: 'orange',
-         data: complianceData?.allergenHandling,
-         hasValue: !!complianceData?.allergenHandling?.details
-      },
-      {
-         id: 'insurance',
-         title: 'Insurance Coverage',
-         icon: FileText,
-         color: 'purple',
-         data: complianceData?.insurance,
-         hasValue: complianceData?.insurance?.provided
-      }
+      { id: 'fssai', title: 'FSSAI License', icon: Shield, color: 'blue', data: complianceData?.fssaiLicense, hasValue: !!complianceData?.fssaiLicense?.number },
+      { id: 'hygiene', title: 'Hygiene & Audits', icon: FileCheck, color: 'green', data: complianceData?.hygieneAudits, hasValue: !!complianceData?.hygieneAudits?.details },
+      { id: 'ingredients', title: 'Ingredient Sourcing', icon: Leaf, color: 'emerald', data: complianceData?.ingredientSourcing, hasValue: !!complianceData?.ingredientSourcing?.details },
+      { id: 'allergens', title: 'Allergen Handling', icon: AlertTriangle, color: 'orange', data: complianceData?.allergenHandling, hasValue: !!complianceData?.allergenHandling?.details },
+      { id: 'insurance', title: 'Insurance Coverage', icon: FileText, color: 'purple', data: complianceData?.insurance, hasValue: complianceData?.insurance?.provided }
    ];
 
    return (

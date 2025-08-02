@@ -4,6 +4,7 @@ import { useContext } from 'react';
 import React, { useState, useEffect } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
 
 const BookingsDashboard = () => {
   const [metrics, setMetrics] = useState({
@@ -16,7 +17,8 @@ const BookingsDashboard = () => {
     totalRevenueGenerated: 0
   });
 
-  const { currentUser } = useContext(AuthContext);
+  const { accessToken, loading: authLoading, currentUser } = useAuth();
+
   const { dashboard, bookings, ui } = useAnalytics();
   const [pendingBookings, setPendingBookings] = useState([]);
   const [unlockedBookings, setUnlockedBookings] = useState([]);
@@ -26,9 +28,47 @@ const BookingsDashboard = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
 
+  const fetchDashboardData = async () => {
+    if (!accessToken) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      // const token = localStorage.getItem('token');
+
+      const [metricsRes, pendingRes, unlockedRes] = await Promise.all([
+        fetch('http://localhost:5000/api/booking/vendor/metrics', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        }),
+        fetch('http://localhost:5000/api/booking/vendor/ongoing', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        }),
+        fetch('http://localhost:5000/api/booking/vendor/unlocked', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+      ]);
+
+      const metricsData = await metricsRes.json();
+      const pendingData = await pendingRes.json();
+      const unlockedData = await unlockedRes.json();
+
+      if (metricsData.success) setMetrics(metricsData.data);
+      if (pendingData.success) setPendingBookings(pendingData.data);
+      if (unlockedData.success) setUnlockedBookings(unlockedData.data);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setErrorMessage('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!authLoading) {
+      fetchDashboardData();
+    }
+  }, [accessToken, authLoading]);
 
   // Auto-hide toast messages after 5 seconds
   useEffect(() => {
@@ -49,38 +89,6 @@ const BookingsDashboard = () => {
     }
   }, [errorMessage]);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-
-      const [metricsRes, pendingRes, unlockedRes] = await Promise.all([
-        fetch('http://localhost:5000/api/booking/vendor/metrics', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('http://localhost:5000/api/booking/vendor/ongoing', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('http://localhost:5000/api/booking/vendor/unlocked', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-      ]);
-
-      const metricsData = await metricsRes.json();
-      const pendingData = await pendingRes.json();
-      const unlockedData = await unlockedRes.json();
-
-      if (metricsData.success) setMetrics(metricsData.data);
-      if (pendingData.success) setPendingBookings(pendingData.data);
-      if (unlockedData.success) setUnlockedBookings(unlockedData.data);
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setErrorMessage('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleUnlockBooking = async (bookingId, ownerName, ownerEmail, ownerMobile) => {
     try {
@@ -91,11 +99,11 @@ const BookingsDashboard = () => {
       setErrorMessage('');
       setSuccessMessage('');
 
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/booking/${bookingId}/initiate-unlock`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -130,7 +138,7 @@ const BookingsDashboard = () => {
               const verifyResponse = await fetch('http://localhost:5000/api/booking/payments/verify-razorpay', {
                 method: 'POST',
                 headers: {
-                  'Authorization': `Bearer ${token}`,
+                  'Authorization': `Bearer ${accessToken}`,
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -189,11 +197,10 @@ const BookingsDashboard = () => {
       setErrorMessage('');
       setSuccessMessage('');
 
-      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/booking/${bookingId}/update-final-status`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -231,7 +238,7 @@ const BookingsDashboard = () => {
     }).format(amount);
   };
 
-  const handlePhoneCall = (phoneNumber , bookingId) => {
+  const handlePhoneCall = (phoneNumber, bookingId) => {
     // You'll need to pass bookingId to this function or get it from context
     bookings.clientContactClicked('phone', bookingId);
     window.open(`tel:${phoneNumber}`, '_self');
@@ -430,7 +437,7 @@ const BookingsDashboard = () => {
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Phone:</span>
             <button
-              onClick={() => handlePhoneCall(booking.clientPhone,booking._id)}
+              onClick={() => handlePhoneCall(booking.clientPhone, booking._id)}
               className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"
             >
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

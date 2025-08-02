@@ -1,131 +1,138 @@
-
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useCallback } from 'react';
 import { Save, Plus, X, AlertCircle, CheckCircle2, RefreshCw, Trash2, Edit3, Check, Users, XCircle, Loader } from 'lucide-react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/context/AuthContext';
 
 const GuestnDietFilters = () => {
-  const [formData, setFormData] = useState({
-    allowCustomization: false,
-    customizationCharges: {
-      hasCharges: false,
-      chargeType: 'per_plate',
-      amount: 0
-    },
-    specialMenus: '',
-    dietaryFilters: {
-      vegan: false,
-      jain: false,
-      vegetarian: false,
-      glutenFree: false,
-      diabeticFriendly: false,
-      lowSodium: false,
-      custom: [] // Changed from other.values to custom array
-    },
-    tastingSession: {
-      allowed: false,
-      description: ''
-    }
-  });
-
   const [editingSections, setEditingSections] = useState({
     customization: false,
     dietary: false,
     tasting: false
   });
-
-  const analytics = useAnalytics();
+  const [formData, setFormData] = useState(null); // Start as null
+  const [guestLimits, setGuestLimits] = useState({ minGuests: '', maxGuests: '' });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState({});
+  const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState({});
+  const [editMode, setEditMode] = useState({});
   const [savingSection, setSavingSection] = useState('');
   const [messages, setMessages] = useState({});
   const [newCustomFilter, setNewCustomFilter] = useState('');
   const [addingCustomFilter, setAddingCustomFilter] = useState(false);
 
-  // Guest Limits State
-  const [errors, setErrors] = useState({});
-  const [success, setSuccess] = useState({});
-  const [editMode, setEditMode] = useState({});
-  const [saving, setSaving] = useState({});
-  const [guestLimits, setGuestLimits] = useState({
-    minGuests: '',
-    maxGuests: ''
-  });
+  // --- Hooks ---
+  const { accessToken, loading: authLoading } = useAuth();
+  const analytics = useAnalytics();
 
-  // API configuration
-  const API_BASE = 'http://localhost:5000/api/vendor/customization';
-
-  const getAuthHeaders = () => {
-    // For demo purposes, we'll simulate this
-    const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-  };
-
-  // Fetch legal data on component mount
-  useEffect(() => {
-    fetchCustomizationData();
-    fetchLegalData();
-    // Track tab view
-    analytics.services.tabViewed('guest_diet_filters');
-  }, []);
-
-  const fetchLegalData = async () => {
+  // --- Data Fetching ---
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/vendor/legal', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Fetch both sets of data in parallel
+      const [customizationRes, legalRes] = await Promise.all([
+        api.get('/vendor/customization'),
+        api.get('/vendor/legal')
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (customizationRes.data.success) {
+        setFormData(customizationRes.data.data);
+      } else {
+        throw new Error(customizationRes.data.message || 'Failed to fetch customization data');
+      }
 
-        // Clean up the data - remove agreementContract if it's empty or has no valid file
-        if (data.agreementContract && (!data.agreementContract.filename || !data.agreementContract.size || data.agreementContract.size === 0)) {
-          data.agreementContract = null;
-        }
-
-        // Populate guest limits
+      if (legalRes.data.success) {
+        const legalData = legalRes.data.data;
         setGuestLimits({
-          minGuests: data.minGuests || '',
-          maxGuests: data.maxGuests || ''
+          minGuests: legalData.minGuests || '',
+          maxGuests: legalData.maxGuests || ''
         });
+      } else {
+        throw new Error(legalRes.data.message || 'Failed to fetch legal data');
       }
     } catch (error) {
-      console.error('Error fetching legal data:', error);
-      setErrors({ general: 'Failed to load legal information' });
+      console.error('Error fetching data:', error);
+      setMessages(prev => ({ ...prev, general: { type: 'error', text: 'Failed to load data. Please refresh.' } }));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchCustomizationData = async () => {
+  useEffect(() => {
+    if (!authLoading && accessToken) {
+      fetchData();
+      analytics.services.tabViewed('guest_diet_filters');
+    }
+  }, [accessToken, authLoading, fetchData]);
+
+  // --- Data Saving ---
+  const updateGuestLimits = async () => {
+    if (guestLimits.minGuests && guestLimits.maxGuests && parseInt(guestLimits.minGuests) > parseInt(guestLimits.maxGuests)) {
+      showError('guests', 'Minimum guests cannot be greater than maximum guests');
+      return;
+    }
+    setSaving(prev => ({ ...prev, guests: true }));
     try {
-      setLoading(true);
-      clearMessages();
-
-      // Actual API call - uncomment when backend is ready
-      const response = await fetch(API_BASE, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setFormData(data.data);
+      const payload = {
+        minGuests: guestLimits.minGuests ? parseInt(guestLimits.minGuests) : undefined,
+        maxGuests: guestLimits.maxGuests ? parseInt(guestLimits.maxGuests) : undefined
+      };
+      const response = await api.put('/vendor/legal', payload);
+      if (response.data.success) {
+        showSuccess('guests', 'Guest limits updated successfully');
+        setEditMode(prev => ({ ...prev, guests: false }));
+        // No need to refetch, just update local state
+        setGuestLimits({
+          minGuests: response.data.legal.minGuests || '',
+          maxGuests: response.data.legal.maxGuests || ''
+        });
       } else {
-        throw new Error(data.message || 'Failed to fetch customization data');
+        throw new Error(response.data.message || 'Failed to update guest limits');
       }
     } catch (error) {
-      console.error('Error fetching customization data:', error);
-      setMessage('general', 'error', 'Failed to load customization preferences. Please try again.');
+      showError('guests', error.response?.data?.message || 'A network error occurred.');
     } finally {
-      setLoading(false);
+      setSaving(prev => ({ ...prev, guests: false }));
+    }
+  };
+
+  const saveSection = async (section) => {
+    setSavingSection(section);
+    setMessage(section, '', '');
+    try {
+      let sectionData = {};
+      switch (section) {
+        case 'customization':
+          sectionData = { allowCustomization: formData.allowCustomization, customizationCharges: formData.customizationCharges, specialMenus: formData.specialMenus };
+          break;
+        case 'dietary':
+          sectionData = { dietaryFilters: formData.dietaryFilters };
+          break;
+
+        case 'tasting':
+          sectionData = { tastingSession: formData.tastingSession };
+          break;
+        default:
+          return;
+      }
+
+      const response = await api.patch(`/vendor/customization/${section}`, sectionData);
+
+      if (response.data.success) {
+        setMessage(section, 'success', response.data.message);
+        setFormData(response.data.data);
+        setEditingSections(prev => ({ ...prev, [section]: false }));
+      } else {
+        throw new Error(response.data.message || 'Failed to save preferences');
+      }
+    } catch (error) {
+      console.error(`Error saving ${section} data:`, error);
+      setMessage(section, 'error', error.response?.data?.message || `Failed to save ${section} preferences.`);
+    } finally {
+      setSavingSection('');
     }
   };
 
@@ -194,103 +201,6 @@ const GuestnDietFilters = () => {
     }, 5000);
   };
 
-  // Update Guest Limits
-  const updateGuestLimits = async () => {
-    if (guestLimits.minGuests && guestLimits.maxGuests &&
-      parseInt(guestLimits.minGuests) > parseInt(guestLimits.maxGuests)) {
-      showError('guests', 'Minimum guests cannot be greater than maximum guests');
-      return;
-    }
-
-    setSaving(prev => ({ ...prev, guests: true }));
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/vendor/legal', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          minGuests: guestLimits.minGuests ? parseInt(guestLimits.minGuests) : undefined,
-          maxGuests: guestLimits.maxGuests ? parseInt(guestLimits.maxGuests) : undefined
-        })
-      });
-
-      if (response.ok) {
-        showSuccess('guests', 'Guest limits updated successfully');
-        setEditMode(prev => ({ ...prev, guests: false }));
-        fetchLegalData();
-
-        // Track guest limits update
-        analytics.services.guestLimitSet(guestLimits.minGuests, guestLimits.maxGuests);
-      } else {
-        const data = await response.json();
-        showError('guests', data.message || 'Failed to update guest limits');
-      }
-    } catch (error) {
-      showError('guests', 'Network error occurred');
-    }
-    setSaving(prev => ({ ...prev, guests: false }));
-  };
-
-  const saveSection = async (section) => {
-    try {
-      setSavingSection(section);
-      setMessage(section, '', '');
-
-      let sectionData = {};
-      let endpoint = `${API_BASE}/${section}`;
-
-      switch (section) {
-        case 'customization':
-          sectionData = {
-            allowCustomization: formData.allowCustomization,
-            customizationCharges: formData.customizationCharges,
-            specialMenus: formData.specialMenus
-          };
-          break;
-        case 'dietary':
-          sectionData = {
-            dietaryFilters: formData.dietaryFilters
-          };
-          break;
-        case 'tasting':
-          sectionData = {
-            tastingSession: formData.tastingSession
-          };
-          break;
-      }
-
-      // Actual API call - uncomment when backend is ready
-      const response = await fetch(endpoint, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(sectionData)
-      });
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setMessage(section, 'success', data.message);
-        setFormData(data.data);
-        setEditingSections(prev => ({
-          ...prev,
-          [section]: false
-        }));
-
-        // Track successful save
-        analytics.services.dataSaved('guest_diet_filters', section, true);
-      } else {
-        throw new Error(data.message || 'Failed to save preferences');
-      }
-    } catch (error) {
-      console.error(`Error saving ${section} data:`, error);
-      setMessage(section, 'error', error.message || `Failed to save ${section} preferences. Please try again.`);
-    } finally {
-      setSavingSection('');
-    }
-  };
-
   const handleToggle = (field) => {
     setFormData(prev => ({
       ...prev,
@@ -299,7 +209,7 @@ const GuestnDietFilters = () => {
 
     // Track important toggles
     if (field === 'allowCustomization') {
-      analytics.ui.buttonClicked(`${field}_${ 'enabled' }`, 'guest_diet_filters');
+      analytics.ui.buttonClicked(`${field}_${'enabled'}`, 'guest_diet_filters');
     }
   };
 

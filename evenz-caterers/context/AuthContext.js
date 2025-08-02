@@ -2,146 +2,128 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
+// Create a dedicated axios instance for API calls
+export const api = axios.create({
+    baseURL: 'http://localhost:5000/api',
+    withCredentials: true
+});
+
 export const AuthContext = createContext({
-  currentUser: null,
-  loading: true,
-  login: () => { },
-  logout: () => { },
+    currentUser: null,
+    accessToken: null,
+    loading: true,
+    login: () => { },
+    logout: () => { },
 });
-
-// Create axios instance
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
-});
-
-// Helper function to get token expiration
-const getTokenExpiration = (token) => {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000; // Convert to milliseconds
-  } catch (error) {
-    return null;
-  }
-};
-
-// Helper function to check if token is expired
-const isTokenExpired = (token) => {
-  const expiration = getTokenExpiration(token);
-  if (!expiration) return true;
-  return Date.now() > expiration;
-};
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [accessToken, setAccessToken] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        // Check if we're on the client side
-        if (typeof window === 'undefined') {
-          setLoading(false);
-          return;
-        }
+    useEffect(() => {
+        const responseInterceptor = api.interceptors.response.use(
+            response => response,
+            async (error) => {
+                const originalRequest = error.config;
+                
+                // --- THE FIX IS HERE ---
+                // Add a check to prevent the interceptor from retrying the refresh token route itself.
+                if (error.response.status === 401 && originalRequest.url === '/vendor/auth/refresh') {
+                    // If the refresh token request itself fails, we can't recover.
+                    // Reject the promise to stop the process.
+                    return Promise.reject(error);
+                }
+                // --- END OF FIX ---
 
-        const token = localStorage.getItem('token');
-        if (token) {
-          // Check if token is expired
-          if (isTokenExpired(token)) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('tokenExpiry');
-            setLoading(false);
-            return;
-          }
+                if (error.response.status === 401 && !originalRequest._retry) {
+                    originalRequest._retry = true;
+                    try {
+                        const refreshResponse = await api.get('/vendor/auth/refresh');
+                        const newAccessToken = refreshResponse.data.accessToken;
+                        
+                        setAccessToken(newAccessToken);
+                        api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
 
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const res = await axios.get('http://localhost:5000/api/vendor-profile', {
-            headers: {
-              Authorization: `Bearer ${token}`
+                        return api(originalRequest);
+                    } catch (refreshError) {
+                        // If refresh fails, clear user data
+                        setCurrentUser(null);
+                        setAccessToken(null);
+                        delete api.defaults.headers.common['Authorization'];
+                        return Promise.reject(refreshError);
+                    }
+                }
+                return Promise.reject(error);
             }
-          });
-          setCurrentUser(res.data);
-        }
-      } catch (error) {
-        console.error('Failed to load user:', error);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('token');
-          localStorage.removeItem('tokenExpiry');
-        }
-      } finally {
-        setLoading(false);
-      }
+        );
+
+        return () => {
+            api.interceptors.response.eject(responseInterceptor);
+        };
+    }, []);
+
+    useEffect(() => {
+        const verifyUser = async () => {
+            try {
+                const response = await api.get('/vendor/auth/refresh');
+                const newAccessToken = response.data.accessToken;
+                setAccessToken(newAccessToken);
+                api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                
+                const userResponse = await api.get('/vendor-profile'); 
+                setCurrentUser(userResponse.data.data); // Your profile route returns { success: true, data: vendor }
+            } catch (error) {
+                console.log("No active session found on refresh.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        verifyUser();
+    }, []);
+
+    const login = async (credentials) => {
+        const res = await axios.post('http://localhost:5000/api/vendor/auth/login', credentials, { withCredentials: true });
+        
+        const { accessToken, vendor } = res.data;
+        
+        setAccessToken(accessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+        setCurrentUser(vendor);
+        
+        return res.data;
     };
 
-    loadUser();
-  }, []);
-
-  // Set up token expiration check
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const token = localStorage.getItem('token');
-    if (token) {
-      const expiration = getTokenExpiration(token);
-      if (expiration) {
-        const timeUntilExpiry = expiration - Date.now();
-        if (timeUntilExpiry > 0) {
-          // Auto-logout when token expires
-          const timeout = setTimeout(() => {
-            logout();
-          }, timeUntilExpiry);
-          
-          return () => clearTimeout(timeout);
+    const logout = async () => {
+        try {
+            await api.post('/vendor/auth/logout');
+        } catch (error) {
+            console.error("Logout failed", error);
+        } finally {
+            delete api.defaults.headers.common['Authorization'];
+            setCurrentUser(null);
+            setAccessToken(null);
         }
-      }
-    }
-  }, [currentUser]);
+    };
 
-  const login = async (credentials) => {
-    const res = await axios.post('http://localhost:5000/api/vendor/auth/login', credentials);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', res.data.token);
-      
-      // Store token expiry for reference
-      const expiration = getTokenExpiration(res.data.token);
-      if (expiration) {
-        localStorage.setItem('tokenExpiry', expiration.toString());
-      }
-    }
-    
-    api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-    setCurrentUser(res.data);
-    return res.data;
-  };
-
-  const logout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('tokenExpiry');
-    }
-    delete api.defaults.headers.common['Authorization'];
-    setCurrentUser(null);
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        loading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider
+            value={{
+                currentUser,
+                accessToken,
+                loading,
+                login,
+                logout,
+                setAccessToken
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    return useContext(AuthContext);
 };

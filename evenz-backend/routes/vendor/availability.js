@@ -11,57 +11,8 @@ const {
 } = require('../../controllers/vendor/calendarConrtroller');
 const { protect } = require('../../middleware/vendor/auth');
 
-// Validation middleware for single availability update
-const validateAvailability = [
-  body('availability')
-    .optional()
-    .isObject()
-    .withMessage('Availability must be an object'),
-  body('availability.*')
-    .optional()
-    .isObject()
-    .withMessage('Each date entry must be an object'),
-  body('availability.*.isAvailable')
-    .optional()
-    .isBoolean()
-    .withMessage('isAvailable must be a boolean'),
-  body('availability.*.notes')
-    .optional()
-    .isLength({ max: 500 })
-    .withMessage('Notes must be less than 500 characters')
-];
-
-// Validation middleware for bulk update
-const validateBulkUpdate = [
-  body('bulkUpdate')
-    .optional()
-    .isArray()
-    .withMessage('bulkUpdate must be an array'),
-  body('bulkUpdate.*.date')
-    .optional()
-    .isISO8601()
-    .withMessage('Date must be in valid ISO format'),
-  body('bulkUpdate.*.isAvailable')
-    .optional()
-    .isBoolean()
-    .withMessage('isAvailable must be a boolean'),
-  body('bulkUpdate.*.notes')
-    .optional()
-    .isLength({ max: 500 })
-    .withMessage('Notes must be less than 500 characters')
-];
-
-// Validation middleware for date parameter
-const validateDateParam = [
-  body('dates')
-    .optional()
-    .isArray()
-    .withMessage('Dates must be an array'),
-  body('dates.*')
-    .optional()
-    .isISO8601()
-    .withMessage('Each date must be in valid ISO format')
-];
+// This regex is a whitelist for common text, allowing letters, numbers, spaces, and basic punctuation.
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
 
 // Apply vendor authentication to all routes
 router.use(protect);
@@ -70,7 +21,37 @@ router.use(protect);
 router.get('/', getAvailability);
 router.get('/summary', getAvailabilitySummary);
 router.get('/:date', getDateAvailability);
-router.post('/', [...validateAvailability, ...validateBulkUpdate], saveAvailability);
-router.delete('/', validateDateParam, deleteAvailability);
+// router.post('/', [...validateAvailability, ...validateBulkUpdate], saveAvailability);
+// router.delete('/', validateDateParam, deleteAvailability);
+
+router.post('/',
+    [ // Combined and enhanced validation
+        body('availability.*.notes')
+            .optional()
+            .isString()
+            .isLength({ max: 500 }).withMessage('Notes must be less than 500 characters')
+            .matches(safeTextRegex).withMessage('Notes contain invalid characters.')
+            .trim()
+            .escape(), // Sanitize for XSS
+        body('bulkUpdate.*.notes')
+            .optional()
+            .isString()
+            .isLength({ max: 500 }).withMessage('Notes must be less than 500 characters')
+            .matches(safeTextRegex).withMessage('Notes contain invalid characters.')
+            .trim()
+            .escape(), // Sanitize for XSS
+        body('bulkUpdate.*.date').optional().isISO8601().withMessage('Date must be in valid ISO format'),
+        body('bulkUpdate.*.isAvailable').optional().isBoolean().withMessage('isAvailable must be a boolean')
+    ],
+    saveAvailability // The validationResult check is inside this controller
+);
+
+router.delete('/',
+    [ // Validation for delete
+        body('dates').optional().isArray().withMessage('Dates must be an array'),
+        body('dates.*').optional().isISO8601().withMessage('Each date must be in valid ISO format')
+    ],
+    deleteAvailability
+);
 
 module.exports = router;

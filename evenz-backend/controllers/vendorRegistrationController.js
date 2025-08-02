@@ -255,13 +255,6 @@ class RegistrationController {
 
       await vendor.save();
 
-      // Generate JWT token
-      const token = jwt.sign(
-        { vendorId: vendor._id },
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '7d' }
-      );
-
       // Clean up temporary data
       await TempRegistration.findByIdAndDelete(tempData._id);
 
@@ -272,7 +265,6 @@ class RegistrationController {
       res.status(201).json({
         success: true,
         message: 'Registration completed successfully',
-        token,
         vendor: vendorResponse
       });
 

@@ -1,6 +1,7 @@
-// File: routes/vendor/legal.js
+// File:  routes/vendor/legal.js
 const express = require('express');
 const multer = require('multer');
+const { body, validationResult } = require('express-validator');
 const path = require('path');
 const fs = require('fs');
 const Legal = require('../../models/Vendor/legal');
@@ -8,11 +9,14 @@ const { protect } = require('../../middleware/vendor/auth');
 
 const router = express.Router();
 
+// This regex is a whitelist for common text, allowing letters, numbers, spaces, and basic punctuation.
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = `uploads/vendor/${req.vendor._id}/legal`;
-    
+
     // Create directory if it doesn't exist
     fs.mkdirSync(uploadPath, { recursive: true });
     cb(null, uploadPath);
@@ -63,7 +67,7 @@ const handleMulterError = (err, req, res, next) => {
 router.get('/', protect, async (req, res) => {
   try {
     let legal = await Legal.findOne({ vendor: req.vendor._id });
-    
+
     if (!legal) {
       // Create default legal document if none exists
       legal = new Legal({
@@ -84,7 +88,11 @@ router.get('/', protect, async (req, res) => {
       await legal.save();
     }
 
-    res.json(legal);
+    res.json({
+      success: true,
+      message: 'Legal & payment information retrieved successfully',
+      data: legal
+    });
   } catch (error) {
     console.error('Error fetching legal info:', error);
     res.status(500).json({ message: 'Server error while fetching legal information' });
@@ -94,53 +102,73 @@ router.get('/', protect, async (req, res) => {
 // @route   PUT /api/vendor/legal
 // @desc    Update legal & payment info
 // @access  Private (Vendor)
-router.put('/', protect, async (req, res) => {
-  try {
-    const {
-      gstRegistrationNumber,
-      acceptedPaymentModes,
-      bookingAdvance,
-      minGuests,
-      maxGuests,
-      minimumNoticeDays,
-      cancellationRefundPolicy
-    } = req.body;
-
-    // Validation
-    if (bookingAdvance?.value < 0) {
-      return res.status(400).json({ message: 'Booking advance value cannot be negative' });
+router.put('/',
+  protect,
+  [ // ADDED: Validation and Sanitization
+    body('gstRegistrationNumber')
+      .optional({ checkFalsy: true }) // Allows empty strings
+      .isAlphanumeric().withMessage('GST number must be alphanumeric.')
+      .isLength({ min: 15, max: 15 }).withMessage('GST number must be 15 characters.')
+      .trim().escape(),
+    body('cancellationRefundPolicy')
+      .optional()
+      .matches(safeTextRegex).withMessage('Invalid characters in cancellation policy.')
+      .trim().escape(),
+    body('minGuests').optional().isInt({ min: 1 }).withMessage('Minimum guests must be a positive number.'),
+    body('maxGuests').optional().isInt({ min: 1 }).withMessage('Maximum guests must be a positive number.'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
+    try {
+      const {
+        gstRegistrationNumber,
+        acceptedPaymentModes,
+        bookingAdvance,
+        minGuests,
+        maxGuests,
+        minimumNoticeDays,
+        cancellationRefundPolicy
+      } = req.body;
 
-    if (minGuests && maxGuests && minGuests > maxGuests) {
-      return res.status(400).json({ message: 'Minimum guests cannot be greater than maximum guests' });
+      // Validation
+      if (bookingAdvance?.value < 0) {
+        return res.status(400).json({ message: 'Booking advance value cannot be negative' });
+      }
+
+      if (minGuests && maxGuests && minGuests > maxGuests) {
+        return res.status(400).json({ message: 'Minimum guests cannot be greater than maximum guests' });
+      }
+
+      let legal = await Legal.findOne({ vendor: req.vendor._id });
+
+      if (!legal) {
+        legal = new Legal({ vendor: req.vendor._id });
+      }
+
+      // Update fields
+      if (gstRegistrationNumber !== undefined) legal.gstRegistrationNumber = gstRegistrationNumber;
+      if (acceptedPaymentModes) legal.acceptedPaymentModes = acceptedPaymentModes;
+      if (bookingAdvance) legal.bookingAdvance = bookingAdvance;
+      if (minGuests !== undefined) legal.minGuests = minGuests;
+      if (maxGuests !== undefined) legal.maxGuests = maxGuests;
+      if (minimumNoticeDays !== undefined) legal.minimumNoticeDays = minimumNoticeDays;
+      if (cancellationRefundPolicy !== undefined) legal.cancellationRefundPolicy = cancellationRefundPolicy;
+
+      await legal.save();
+
+      res.json({
+        success: true,
+        message: 'Legal & payment information updated successfully',
+        legal
+      });
+    } catch (error) {
+      console.error('Error updating legal info:', error);
+      res.status(500).json({ message: 'Server error while updating legal information' });
     }
-
-    let legal = await Legal.findOne({ vendor: req.vendor._id });
-
-    if (!legal) {
-      legal = new Legal({ vendor: req.vendor._id });
-    }
-
-    // Update fields
-    if (gstRegistrationNumber !== undefined) legal.gstRegistrationNumber = gstRegistrationNumber;
-    if (acceptedPaymentModes) legal.acceptedPaymentModes = acceptedPaymentModes;
-    if (bookingAdvance) legal.bookingAdvance = bookingAdvance;
-    if (minGuests !== undefined) legal.minGuests = minGuests;
-    if (maxGuests !== undefined) legal.maxGuests = maxGuests;
-    if (minimumNoticeDays !== undefined) legal.minimumNoticeDays = minimumNoticeDays;
-    if (cancellationRefundPolicy !== undefined) legal.cancellationRefundPolicy = cancellationRefundPolicy;
-
-    await legal.save();
-
-    res.json({
-      message: 'Legal & payment information updated successfully',
-      legal
-    });
-  } catch (error) {
-    console.error('Error updating legal info:', error);
-    res.status(500).json({ message: 'Server error while updating legal information' });
-  }
-});
+  });
 
 // @route   POST /api/vendor/legal/upload-certificates
 // @desc    Upload certificate files
@@ -152,7 +180,7 @@ router.post('/upload-certificates', protect, upload.array('certificates', 5), ha
     }
 
     let legal = await Legal.findOne({ vendor: req.vendor._id });
-    
+
     if (!legal) {
       legal = new Legal({ vendor: req.vendor._id });
     }
@@ -191,13 +219,13 @@ router.delete('/certificate/:filename', protect, async (req, res) => {
     const { filename } = req.params;
 
     const legal = await Legal.findOne({ vendor: req.vendor._id });
-    
+
     if (!legal) {
       return res.status(404).json({ message: 'Legal information not found' });
     }
 
     const certificateIndex = legal.certificates.findIndex(cert => cert.filename === filename);
-    
+
     if (certificateIndex === -1) {
       return res.status(404).json({ message: 'Certificate not found' });
     }
@@ -233,7 +261,7 @@ router.post('/upload-agreement', protect, upload.single('agreement'), handleMult
     }
 
     let legal = await Legal.findOne({ vendor: req.vendor._id });
-    
+
     if (!legal) {
       legal = new Legal({ vendor: req.vendor._id });
     }
@@ -292,7 +320,7 @@ router.post('/upload-agreement', protect, upload.single('agreement'), handleMult
 router.delete('/agreement', protect, async (req, res) => {
   try {
     const legal = await Legal.findOne({ vendor: req.vendor._id });
-    
+
     if (!legal || !legal.agreementContract) {
       return res.status(404).json({ message: 'Agreement not found' });
     }

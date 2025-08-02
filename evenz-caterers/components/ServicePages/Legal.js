@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import { Shield, CreditCard, Users, Calendar, AlertCircle, CheckCircle, Loader, Edit3, Save, XCircle } from 'lucide-react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import {api} from '@/context/AuthContext';
 
 const LegalPaymentSection = () => {
    const [legalData, setLegalData] = useState(null);
@@ -31,52 +33,74 @@ const LegalPaymentSection = () => {
       cancellationRefundPolicy: ''
    });
 
-   // Fetch legal data on component mount
-   useEffect(() => {
-      fetchLegalData();
-      // Track tab view
-      analytics.services.tabViewed('legal_payment');
-   }, []);
+   const { accessToken, loading: authLoading } = useAuth();
 
-   const fetchLegalData = async () => {
+   // --- Data Fetching ---
+   const fetchLegalData = useCallback(async () => {
+      setLoading(true);
       try {
-         const token = localStorage.getItem('token');
-         const response = await fetch('http://localhost:5000/api/vendor/legal', {
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
-            }
-         });
-
-         if (response.ok) {
-            const data = await response.json();
-
-            // Clean up the data - remove agreementContract if it's empty or has no valid file
-            if (data.agreementContract && (!data.agreementContract.filename || !data.agreementContract.size || data.agreementContract.size === 0)) {
-               data.agreementContract = null;
-            }
-
+         const response = await api.get('/vendor/legal');
+         if (response.data.success) {
+            const data = response.data.data;
             setLegalData(data);
-
-            // Populate form states
+            // Populate form states from the fetched data
             setGstInfo({ gstNumber: data.gstRegistrationNumber || '' });
-            setPaymentModes(data.acceptedPaymentModes || {
-               upi: false, cash: false, card: false, netBanking: false, wallet: false
-            });
+            setPaymentModes(data.acceptedPaymentModes || { upi: false, cash: false, card: false, netBanking: false, wallet: false });
             setBookingAdvance(data.bookingAdvance || { type: 'percentage', value: 0 });
-
             setPolicies({
                minimumNoticeDays: data.minimumNoticeDays || 1,
                cancellationRefundPolicy: data.cancellationRefundPolicy || ''
             });
+         } else {
+            throw new Error(response.data.message || 'Failed to fetch legal data');
          }
       } catch (error) {
          console.error('Error fetching legal data:', error);
-         setErrors({ general: 'Failed to load legal information' });
+         setErrors({ general: error.response?.data?.message || 'Failed to load legal information' });
       } finally {
          setLoading(false);
       }
+   }, []);
+
+   useEffect(() => {
+      if (!authLoading && accessToken) {
+         fetchLegalData();
+         analytics.services.tabViewed('legal_payment');
+      }
+   }, [accessToken, authLoading, fetchLegalData]);
+
+   // --- Data Saving ---
+   const createUpdateHandler = (section, payload, successMessage) => async () => {
+      setSaving(prev => ({ ...prev, [section]: true }));
+      try {
+         const response = await api.put('/vendor/legal', payload);
+         if (response.data.success) {
+            showSuccess(section, successMessage);
+            setEditMode(prev => ({ ...prev, [section]: false }));
+            // Update local state with the response to avoid a full refetch
+            const updatedData = response.data.legal;
+            setGstInfo({ gstNumber: updatedData.gstRegistrationNumber || '' });
+            setPaymentModes(updatedData.acceptedPaymentModes || {});
+            setBookingAdvance(updatedData.bookingAdvance || {});
+            setPolicies({
+               minimumNoticeDays: updatedData.minimumNoticeDays || 1,
+               cancellationRefundPolicy: updatedData.cancellationRefundPolicy || ''
+            });
+         } else {
+            throw new Error(response.data.message || `Failed to update ${section}`);
+         }
+      } catch (error) {
+         showError(section, error.response?.data?.message || 'A network error occurred.');
+      } finally {
+         setSaving(prev => ({ ...prev, [section]: false }));
+      }
    };
+
+   const updateGstInfo = createUpdateHandler('gst', { gstRegistrationNumber: gstInfo.gstNumber }, 'GST info updated!');
+   const updatePaymentModes = createUpdateHandler('payment', { acceptedPaymentModes: paymentModes }, 'Payment modes updated!');
+   const updateBookingAdvance = createUpdateHandler('advance', { bookingAdvance }, 'Booking advance updated!');
+   const updatePolicies = createUpdateHandler('policies', policies, 'Policies updated!');
+
 
    const toggleEditMode = (section) => {
       setEditMode(prev => ({ ...prev, [section]: !prev[section] }));
@@ -103,142 +127,6 @@ const LegalPaymentSection = () => {
       setTimeout(() => {
          setErrors(prev => ({ ...prev, [section]: null }));
       }, 5000);
-   };
-
-   // Update GST Information
-   const updateGstInfo = async () => {
-      setSaving(prev => ({ ...prev, gst: true }));
-      try {
-         const token = localStorage.getItem('token');
-         const response = await fetch('http://localhost:5000/api/vendor/legal', {
-            method: 'PUT',
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-               gstRegistrationNumber: gstInfo.gstNumber
-            })
-         });
-
-         if (response.ok) {
-            showSuccess('gst', 'GST information updated successfully');
-            setEditMode(prev => ({ ...prev, gst: false }));
-            fetchLegalData();
-            // Track GST info completion
-            analytics.services.legalInfoCompleted('gst_information');
-         } else {
-            const data = await response.json();
-            showError('gst', data.message || 'Failed to update GST information');
-         }
-      } catch (error) {
-         showError('gst', 'Network error occurred');
-      }
-      setSaving(prev => ({ ...prev, gst: false }));
-   };
-
-   // Update Payment Modes
-   const updatePaymentModes = async () => {
-      setSaving(prev => ({ ...prev, payment: true }));
-      try {
-         const token = localStorage.getItem('token');
-         const response = await fetch('http://localhost:5000/api/vendor/legal', {
-            method: 'PUT',
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-               acceptedPaymentModes: paymentModes
-            })
-         });
-
-         if (response.ok) {
-            showSuccess('payment', 'Payment modes updated successfully');
-            setEditMode(prev => ({ ...prev, payment: false }));
-            fetchLegalData();
-
-            // Track enabled payment modes
-            const enabledModes = Object.entries(paymentModes)
-               .filter(([_, enabled]) => enabled)
-               .map(([mode, _]) => mode);
-
-            enabledModes.forEach(mode => {
-               analytics.ui.buttonClicked(`payment_mode_${mode}_enabled`, 'legal_payment');
-            });
-         } else {
-            const data = await response.json();
-            showError('payment', data.message || 'Failed to update payment modes');
-         }
-      } catch (error) {
-         showError('payment', 'Network error occurred');
-      }
-      setSaving(prev => ({ ...prev, payment: false }));
-   };
-
-   const updateBookingAdvance = async () => {
-      setSaving(prev => ({ ...prev, advance: true }));
-      try {
-         const token = localStorage.getItem('token');
-         const response = await fetch('http://localhost:5000/api/vendor/legal', {
-            method: 'PUT',
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-               bookingAdvance: bookingAdvance
-            })
-         });
-
-         if (response.ok) {
-            showSuccess('advance', 'Booking advance updated successfully');
-            fetchLegalData();
-
-            // Track booking advance configuration
-            analytics.ui.buttonClicked(`booking_advance_${bookingAdvance.type}_${bookingAdvance.value}`, 'legal_payment');
-         } else {
-            const data = await response.json();
-            showError('advance', data.message || 'Failed to update booking advance');
-         }
-      } catch (error) {
-         showError('advance', 'Network error occurred');
-      }
-      setSaving(prev => ({ ...prev, advance: false }));
-   };
-
-   // Update Policies
-   const updatePolicies = async () => {
-      setSaving(prev => ({ ...prev, policies: true }));
-      try {
-         const token = localStorage.getItem('token');
-         const response = await fetch('http://localhost:5000/api/vendor/legal', {
-            method: 'PUT',
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-               minimumNoticeDays: policies.minimumNoticeDays,
-               cancellationRefundPolicy: policies.cancellationRefundPolicy
-            })
-         });
-
-         if (response.ok) {
-            showSuccess('policies', 'Policies updated successfully');
-            setEditMode(prev => ({ ...prev, policies: false }));
-            fetchLegalData();
-
-            // Track policies completion
-            analytics.services.legalInfoCompleted('booking_policies');
-         } else {
-            const data = await response.json();
-            showError('policies', data.message || 'Failed to update policies');
-         }
-      } catch (error) {
-         showError('policies', 'Network error occurred');
-      }
-      setSaving(prev => ({ ...prev, policies: false }));
    };
 
    if (loading) {

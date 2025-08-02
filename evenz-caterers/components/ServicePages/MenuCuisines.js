@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import { ChevronDown, ChevronUp, Plus, Edit, Trash2, Save, X, Check, AlertTriangle } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/context/AuthContext'; // Import the axios instance
 
 // Confirmation Dialog Component
 const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, message, confirmText, cancelText, type }) => {
@@ -58,9 +60,11 @@ const MenuCuisinesModule = () => {
    const [expandedPackages, setExpandedPackages] = useState({});
    const [editingPackage, setEditingPackage] = useState(null);
    const [editingItem, setEditingItem] = useState(null);
-   const [isLoading, setIsLoading] = useState(false);
+   const [isLoading, setIsLoading] = useState(true);
    const [error, setError] = useState('');
    const [showCuisineForm, setShowCuisineForm] = useState(false);
+   const { accessToken, loading: authLoading, currentUser } = useAuth();
+
    // Analytics
    const { services, ui } = useAnalytics();
 
@@ -72,14 +76,6 @@ const MenuCuisinesModule = () => {
       onConfirm: null,
       type: 'danger'
    });
-
-   // API Configuration
-   const API_BASE = 'http://localhost:5000/api/vendor/menu'; // Adjust this to your server URL
-
-   // Get auth token from localStorage (adjust this based on your auth implementation)
-   const getAuthToken = () => {
-      return localStorage.getItem('token'); // Adjust this key based on your auth setup
-   };
 
    // Predefined cuisine options
    const cuisineOptions = [
@@ -151,60 +147,35 @@ const MenuCuisinesModule = () => {
       closeConfirmation();
    };
 
-   // API call helper function
-   const apiCall = async (endpoint, method = 'GET', data = null) => {
+   const loadExistingData = useCallback(async () => {
       setIsLoading(true);
       setError('');
-
       try {
-         const token = getAuthToken();
-         const config = {
-            method,
-            headers: {
-               'Content-Type': 'application/json',
-               'Authorization': `Bearer ${token}`
-            }
-         };
-
-         if (data && (method === 'POST' || method === 'PUT')) {
-            config.body = JSON.stringify(data);
+         const response = await api.get('/vendor/menu');
+         if (response.data.success) {
+            const menuData = response.data.data;
+            setSavedCuisines(menuData.cuisines || []);
+            setSelectedCuisines(menuData.cuisines || []);
+            setPackages(menuData.packages || {});
          }
-
-         const response = await fetch(`${API_BASE}${endpoint}`, config);
-         const result = await response.json();
-
-         if (!response.ok) {
-            throw new Error(result.message || 'API request failed');
-         }
-
-         return result;
-      } catch (error) {
-         console.error('API Error:', error);
-         setError(error.message);
-         throw error;
+      } catch (err) {
+         console.error('Failed to load menu data:', err);
+         setError(err.response?.data?.message || 'Failed to load menu data');
       } finally {
          setIsLoading(false);
       }
-   };
+   }, []);
 
    // Load existing data on component mount
    useEffect(() => {
-      loadExistingData();
-      services.tabViewed('menu_cuisines');
-   }, []);
-
-   const loadExistingData = async () => {
-      try {
-         const response = await apiCall('');
-         if (response.success) {
-            setSavedCuisines(response.data.cuisines || []);
-            setSelectedCuisines(response.data.cuisines || []);
-            setPackages(response.data.packages || {});
-         }
-      } catch (error) {
-         console.error('Failed to load menu data:', error);
+      if (!authLoading && accessToken) {
+         loadExistingData();
+         services.tabViewed('menu_cuisines');
       }
-   };
+      // services.tabViewed('menu_cuisines');
+   }, [accessToken, authLoading, loadExistingData]);
+
+
 
    // Get all available cuisines (predefined + custom)
    const getAllCuisines = () => {
@@ -243,30 +214,34 @@ const MenuCuisinesModule = () => {
    };
 
    const saveCuisines = async () => {
+      setIsLoading(true);
+      setError('');
       try {
-         let cuisinesToSave = [...selectedCuisines];
+         let cuisinesToSave = selectedCuisines.filter(c => c !== 'Other');
          if (showOtherInput && otherCuisine.trim()) {
-            cuisinesToSave = cuisinesToSave.filter(c => c !== 'Other');
             cuisinesToSave.push(otherCuisine.trim());
          }
 
-         const response = await apiCall('/cuisines', 'POST', { cuisines: cuisinesToSave });
+         const response = await api.post('/vendor/menu/cuisines', { cuisines: cuisinesToSave });
 
-         if (response.success) {
-            setSavedCuisines(response.data.cuisines);
-            setSelectedCuisines(response.data.cuisines);
-            setPackages(response.data.packages);
+         if (response.data.success) {
+            const menuData = response.data.data;
+            setSavedCuisines(menuData.cuisines);
+            setSelectedCuisines(menuData.cuisines);
+            setPackages(menuData.packages);
             setShowOtherInput(false);
             setOtherCuisine('');
             setShowCuisineForm(false);
-
-            // Track successful cuisine save
             services.sectionCompleted('menu_cuisines', 'cuisines', cuisinesToSave.length);
          }
-      } catch (error) {
-         console.error('Failed to save cuisines:', error);
+      } catch (err) {
+         console.error('Failed to save cuisines:', err);
+         setError(err.response?.data?.message || 'Failed to save cuisines');
+      } finally {
+         setIsLoading(false);
       }
    };
+
 
    // Package handlers
    const handlePackageFormChange = (field, value) => {
@@ -285,36 +260,28 @@ const MenuCuisinesModule = () => {
    };
 
    const savePackage = async (cuisine) => {
+      setIsLoading(true);
+      setError('');
       try {
-         const packageData = {
-            ...packageForm,
-            cuisine
-         };
-
+         const packageData = { ...packageForm, cuisine };
          let response;
          if (editingPackage) {
-            response = await apiCall(`/packages/${editingPackage._id}`, 'PUT', packageData);
+            response = await api.put(`/vendor/menu/packages/${editingPackage._id}`, packageData);
          } else {
-            response = await apiCall('/packages', 'POST', packageData);
+            response = await api.post('/vendor/menu/packages', packageData);
          }
 
-         if (response.success) {
-            // Reload menu data to get updated packages
+         if (response.data.success) {
             await loadExistingData();
-
             setPackageForm(initialPackageForm);
             setShowPackageForm(prev => ({ ...prev, [cuisine]: false }));
-
-            // Track package action
-            if (editingPackage) {
-               services.sectionUpdated('menu_cuisines', 'package', 'edit');
-            } else {
-               services.packageCreated(packageForm.type, packageForm.pricePerPlate);
-            }
             setEditingPackage(null);
          }
-      } catch (error) {
-         console.error('Failed to save package:', error);
+      } catch (err) {
+         console.error('Failed to save package:', err);
+         setError(err.response?.data?.message || 'Failed to save package');
+      } finally {
+         setIsLoading(false);
       }
    };
 
@@ -325,14 +292,18 @@ const MenuCuisinesModule = () => {
    };
 
    const deletePackage = async (cuisine, packageData) => {
+      setIsLoading(true);
+      setError('');
       try {
-         const response = await apiCall(`/packages/${packageData._id}?cuisine=${encodeURIComponent(cuisine)}`, 'DELETE');
-
-         if (response.success) {
+         const response = await api.delete(`/vendor/menu/packages/${packageData._id}?cuisine=${encodeURIComponent(cuisine)}`);
+         if (response.data.success) {
             await loadExistingData();
          }
-      } catch (error) {
-         console.error('Failed to delete package:', error);
+      } catch (err) {
+         console.error('Failed to delete package:', err);
+         setError(err.response?.data?.message || 'Failed to delete package');
+      } finally {
+         setIsLoading(false);
       }
    };
 
@@ -351,37 +322,29 @@ const MenuCuisinesModule = () => {
    };
 
    const saveMenuItem = async (cuisine, packageData) => {
+      setIsLoading(true);
+      setError('');
       try {
-         const itemData = {
-            ...itemForm,
-            cuisine,
-            packageId: packageData._id
-         };
-
+         const itemData = { ...itemForm, cuisine, packageId: packageData._id };
+         console.log('Saving item data:', itemData); // Debugging line
          let response;
          if (editingItem) {
-            response = await apiCall(`/items/${editingItem._id}`, 'PUT', itemData);
+            response = await api.put(`/vendor/menu/items/${editingItem._id}`, itemData);
          } else {
-            response = await apiCall('/items', 'POST', itemData);
+            response = await api.post('/vendor/menu/items', itemData);
          }
 
-         if (response.success) {
+         if (response.data.success) {
             await loadExistingData();
-
             setItemForm(initialItemForm);
             setShowItemForm(prev => ({ ...prev, [`${cuisine}-${packageData._id}`]: false }));
-
-            // Track menu item action
-            if (editingItem) {
-               services.sectionUpdated('menu_cuisines', 'menu_item', 'edit');
-            } else {
-               services.menuItemAdded(itemForm.type, 'menu_cuisines');
-            }
-
             setEditingItem(null);
          }
-      } catch (error) {
-         console.error('Failed to save menu item:', error);
+      } catch (err) {
+         console.error('Failed to save menu item:', err);
+         setError(err.response?.data?.message || 'Failed to save menu item');
+      } finally {
+         setIsLoading(false);
       }
    };
 
@@ -392,17 +355,18 @@ const MenuCuisinesModule = () => {
    };
 
    const deleteMenuItem = async (cuisine, packageData, item) => {
+      setIsLoading(true);
+      setError('');
       try {
-         const response = await apiCall(
-            `/items/${item._id}?cuisine=${encodeURIComponent(cuisine)}&packageId=${packageData._id}`,
-            'DELETE'
-         );
-
-         if (response.success) {
+         const response = await api.delete(`/vendor/menu/items/${item._id}?cuisine=${encodeURIComponent(cuisine)}&packageId=${packageData._id}`);
+         if (response.data.success) {
             await loadExistingData();
          }
-      } catch (error) {
-         console.error('Failed to delete menu item:', error);
+      } catch (err) {
+         console.error('Failed to delete menu item:', err);
+         setError(err.response?.data?.message || 'Failed to delete menu item');
+      } finally {
+         setIsLoading(false);
       }
    };
 
