@@ -10,11 +10,8 @@ import {
    Shield,
    CreditCard,
    AlertCircle,
-   Camera,
    CheckCircle,
    XCircle,
-   Award,
-   Clock,
    Star,
    Share2
 } from 'lucide-react';
@@ -23,7 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const CatererProfileView = () => {
    const { currentUser } = useAuth();
-   const  catererId  = currentUser?.data?._id || currentUser?.data?.id;
+   const  catererId  = currentUser?._id 
 
    const [catererData, setCatererData] = useState(null);
    const [isShortlisted, setIsShortlisted] = useState(false);
@@ -39,7 +36,7 @@ const CatererProfileView = () => {
    const fetchCatererProfile = async () => {
       try {
          setLoading(true);
-         const response = await fetch(`http://localhost:5000/api/caterers-details/${catererId}/view-profile`);
+         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
 
          if (!response.ok) {
             throw new Error('Failed to fetch caterer profile');
@@ -70,19 +67,6 @@ const CatererProfileView = () => {
    };
 
    const safeObjectEntries = (obj) => { if (!obj || typeof obj !== 'object') return []; return Object.entries(obj); };
-   // Add this helper function at the top of your component
-   const getImageUrl = (imagePath) => {
-      if (!imagePath) return '/placeholder-image.jpg'; // fallback image
-
-      // If it's already a full URL, return as is
-      if (imagePath.startsWith('http')) {
-         return imagePath;
-      }
-
-      // Convert backslashes to forward slashes and construct full URL
-      const normalizedPath = imagePath.replace(/\\/g, '/');
-      return `http://localhost:5000/${normalizedPath}`;
-   };
 
    if (loading) {
       return (
@@ -119,7 +103,7 @@ const CatererProfileView = () => {
 
       <div className="min-h-screen bg-gray-50">
          {/* Header */}
-         <div className="bg-white text-gray-700 shadow-sm sticky top-17 z-40">
+         <div className="bg-white text-gray-700 shadow-sm sticky top-15 z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-9 py-3 flex items-center justify-between">
                <div className="flex items-center gap-3">
                   <h1 className="font-semibold text-lg truncate">{safeRender(vendorInfo?.businessName)}</h1>
@@ -166,21 +150,6 @@ const CatererProfileView = () => {
                            }`}
                      >
                         <FaUtensils className="text-6xl text-indigo-300" />
-                     </div>
-
-                     <div className="flex gap-2 mt-3">
-                        {gallery.images?.slice(1, 4).map((item, index) => (
-                           <div key={index} className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden">
-                              <img
-                                 src={getImageUrl(item.url || item.path)}
-                                 alt=""
-                                 className="w-full h-full object-cover"
-                                 onError={(e) => {
-                                    e.target.src = '/placeholder-image.jpg';
-                                 }}
-                              />
-                           </div>
-                        ))}
                      </div>
                   </div>
 

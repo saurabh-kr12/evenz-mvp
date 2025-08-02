@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Eye, EyeOff, MapPin, User, Mail, Phone, Buil
 import useAnalytics from '@/hooks/useAnalytics';
 
 // API Service
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
 
 const api = {
   post: async (endpoint, data) => {

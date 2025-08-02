@@ -43,7 +43,7 @@ const CatererDashboard = () => {
 
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/vendor/dashboard/dashboard-summary', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/vendor/dashboard/dashboard-summary`, {
           method: 'GET',
           headers: {
             // Use the live vendorAccessToken from the context

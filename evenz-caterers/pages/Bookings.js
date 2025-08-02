@@ -37,13 +37,13 @@ const BookingsDashboard = () => {
       setLoading(true);
 
       const [metricsRes, pendingRes, unlockedRes] = await Promise.all([
-        fetch('http://localhost:5000/api/booking/vendor/metrics', {
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/vendor/metrics`, {
           headers: { 'Authorization': `Bearer ${accessToken}` }
         }),
-        fetch('http://localhost:5000/api/booking/vendor/ongoing', {
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/vendor/ongoing`, {
           headers: { 'Authorization': `Bearer ${accessToken}` }
         }),
-        fetch('http://localhost:5000/api/booking/vendor/unlocked', {
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/vendor/unlocked`, {
           headers: { 'Authorization': `Bearer ${accessToken}` }
         })
       ]);
@@ -98,8 +98,7 @@ const BookingsDashboard = () => {
       setErrorMessage('');
       setSuccessMessage('');
 
-      // const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/booking/${bookingId}/initiate-unlock`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/${bookingId}/initiate-unlock`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -134,7 +133,7 @@ const BookingsDashboard = () => {
             bookings.paymentSuccess(booking_id, response.razorpay_payment_id);
             // Payment successful
             try {
-              const verifyResponse = await fetch('http://localhost:5000/api/booking/payments/verify-razorpay', {
+              const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/payments/verify-razorpay`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${accessToken}`,
@@ -196,7 +195,7 @@ const BookingsDashboard = () => {
       setErrorMessage('');
       setSuccessMessage('');
 
-      const response = await fetch(`http://localhost:5000/api/booking/${bookingId}/update-final-status`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/${bookingId}/update-final-status`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
