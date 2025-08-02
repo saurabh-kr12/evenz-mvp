@@ -35,7 +35,6 @@ const BookingsDashboard = () => {
     }
     try {
       setLoading(true);
-      // const token = localStorage.getItem('token');
 
       const [metricsRes, pendingRes, unlockedRes] = await Promise.all([
         fetch('http://localhost:5000/api/booking/vendor/metrics', {

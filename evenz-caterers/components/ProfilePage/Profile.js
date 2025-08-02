@@ -439,8 +439,10 @@ const VendorProfile = () => {
                 ) : (
                   <div className="space-y-3">
                     <input
-                      type="text"
-                      value={otpData.mobile.otp}
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={otpData?.mobile?.otp ?? ''}
                       onChange={(e) => setOtpData(prev => ({
                         ...prev,
                         mobile: { ...prev.mobile, otp: e.target.value }
@@ -541,8 +543,10 @@ const VendorProfile = () => {
                 ) : (
                   <div className="space-y-3">
                     <input
-                      type="text"
-                      value={otpData.email.otp}
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={otpData?.email?.otp ?? ''}
                       onChange={(e) => setOtpData(prev => ({
                         ...prev,
                         email: { ...prev.email, otp: e.target.value }
