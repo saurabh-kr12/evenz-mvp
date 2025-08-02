@@ -106,11 +106,6 @@ class EmailService {
         throw new Error('Email transporter not initialized');
       }
 
-      console.log('=== sendEmailOTP Debug ===');
-      console.log('email:', email);
-      console.log('purpose:', purpose);
-      console.log('userId:', userId);
-
       // Check rate limit
       const rateLimitCheck = await this.checkRateLimit(email, purpose);
       if (!rateLimitCheck.allowed) {
@@ -134,14 +129,6 @@ class EmailService {
         verified: false,
         type: 'email',
         createdAt: new Date()
-      });
-
-      console.log('Email OTP saved to database:', {
-        email,
-        purpose,
-        otp,
-        expiresAt,
-        recordId: otpRecord._id
       });
 
       const mailOptions = {
@@ -180,7 +167,6 @@ class EmailService {
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Email OTP sent successfully:', info.messageId);
 
       // Increment rate limit
       await this.incrementRateLimit(email, purpose);
@@ -199,11 +185,6 @@ class EmailService {
 
   async verifyEmailOTP(email, otp, purpose) {
     try {
-      console.log('=== verifyEmailOTP Debug ===');
-      console.log('email:', email);
-      console.log('otp:', otp);
-      console.log('purpose:', purpose);
-
       const otpRecord = await OTP.findOne({ 
         identifier: email,
         otp: otp,
@@ -212,13 +193,6 @@ class EmailService {
         type: 'email',
         expiresAt: { $gt: new Date() }
       });
-
-      console.log('Found email OTP record:', otpRecord ? {
-        identifier: otpRecord.identifier,
-        purpose: otpRecord.purpose,
-        verified: otpRecord.verified,
-        expiresAt: otpRecord.expiresAt
-      } : null);
 
       if (!otpRecord) {
         return {
@@ -278,7 +252,6 @@ class EmailService {
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Password reset email sent successfully:', info.messageId);
       return info;
 
     } catch (error) {

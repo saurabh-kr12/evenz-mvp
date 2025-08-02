@@ -70,12 +70,6 @@ class OTPService {
     try {
       const fast2smsApiKey = this.getFast2smsApiKey();
 
-      console.log('=== sendOTP Debug ===');
-      console.log('identifier:', identifier);
-      console.log('purpose:', purpose);
-      console.log('userId:', userId);
-      console.log('fast2smsApiKey:', fast2smsApiKey ? 'Set' : 'Not set');
-
       if (!fast2smsApiKey) {
         throw new Error('Fast2SMS API key not configured properly - API key is missing');
       }
@@ -114,14 +108,6 @@ class OTPService {
 
       const otpRecord = await OTP.create(otpData);
 
-      console.log('OTP saved to database:', {
-        identifier,
-        otp,
-        purpose,
-        expiresAt,
-        recordId: otpRecord._id
-      });
-
       // Send OTP via Fast2SMS WhatsApp API
       const response = await axios.get('https://www.fast2sms.com/dev/whatsapp', {
         params: {
@@ -131,8 +117,6 @@ class OTPService {
           variables_values: otp
         }
       });
-
-      console.log('Fast2SMS Response:', response.data);
 
       // Increment rate limit
       await this.incrementRateLimit(identifier, purpose);
@@ -151,12 +135,6 @@ class OTPService {
 
   async verifyOTP(identifier, otp, purpose, markAsVerified = true) {
     try {
-      console.log('=== verifyOTP Debug ===');
-      console.log('identifier:', identifier);
-      console.log('otp:', otp);
-      console.log('purpose:', purpose);
-      console.log('markAsVerified:', markAsVerified);
-
       const otpString = otp.toString();
 
       const otpRecord = await OTP.findOne({ 
@@ -166,14 +144,6 @@ class OTPService {
         verified: false,
         expiresAt: { $gt: new Date() }
       });
-
-      console.log('Found OTP record:', otpRecord ? {
-        otp: otpRecord.otp,
-        purpose: otpRecord.purpose,
-        verified: otpRecord.verified,
-        expiresAt: otpRecord.expiresAt,
-        createdAt: otpRecord.createdAt
-      } : null);
 
       if (!otpRecord) {
         console.log('OTP verification failed - no matching record found');

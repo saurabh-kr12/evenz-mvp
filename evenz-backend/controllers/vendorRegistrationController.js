@@ -1,4 +1,4 @@
-// controllers/registrationController.js
+// controllers/registrationController.js 
 const jwt = require('jsonwebtoken');
 const Vendor = require('../models/Vendor/Vendor');
 const TempRegistration = require('../models/TempRegistration');
@@ -326,7 +326,6 @@ class RegistrationController {
   async resendEmailOTP(req, res) {
     try {
       const { tempId } = req.body;
-      console.log('tempId received:', tempId);
 
       if (!tempId) {
         return res.status(400).json({
@@ -336,7 +335,6 @@ class RegistrationController {
       }
 
       const tempData = await TempRegistration.findOne({ tempId });
-      console.log('tempData found:', tempData ? 'Yes' : 'No');
 
       if (!tempData) {
         return res.status(400).json({
@@ -432,7 +430,6 @@ class RegistrationController {
       const result = await TempRegistration.deleteMany({
         expiresAt: { $lt: new Date() }
       });
-      console.log(`Cleaned up ${result.deletedCount} expired temp registrations`);
     } catch (error) {
       console.error('Cleanup error:', error);
     }

@@ -1,4 +1,4 @@
-// File: controllers/vendor/VendorAuthController.js
+// File: controllers/vendor/VendorAuthController.js 
 const Vendor = require('../../models/Vendor/Vendor');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
@@ -12,36 +12,28 @@ const login = async (req, res) => {
     try {
         const { identifier, password, rememberMe = false } = req.body;
 
-        // --- STEP 1: LOG THE INPUT ---
-        console.log(`[DEBUG] Login attempt for identifier: ${identifier}`);
-
         const vendor = await Vendor.findOne({
             $or: [{ email: identifier }, { mobile: identifier }]
         }).select('+password');
 
         // --- STEP 2: LOG THE FOUND VENDOR'S ID ---
-        if (vendor) {
-            console.log(`[DEBUG] Vendor found in DB with ID: ${vendor._id}`);
-        } else {
-            console.log(`[DEBUG] No vendor found for identifier: ${identifier}`);
+        if (!vendor) {
             return res.status(401).json({ message: 'Vendor not found. Please create an account to continue.' });
         }
 
         const isMatch = await vendor.comparePassword(password);
 
         if (!isMatch) {
-            console.log(`[DEBUG] Password mismatch for vendor ID: ${vendor._id}`);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         
-        console.log(`[DEBUG] Password match successful for vendor ID: ${vendor._id}`);
 
         if (vendor.status !== 'active') {
             return res.status(403).json({ message: `Your account is currently ${vendor.status}. Please contact support.` });
         }
         
         // --- STEP 3: LOG THE ID RIGHT BEFORE CREATING THE TOKEN ---
-        console.log(`[DEBUG] Creating tokens for vendor ID: ${vendor._id}`);
+        
 
         const accessToken = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
         const refreshToken = jwt.sign({ id: vendor._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: rememberMe ? '60d' : '1d' });

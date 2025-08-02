@@ -88,7 +88,7 @@ const bookingRequestSchema = new mongoose.Schema({
   // NEW: Unlock fee configuration
   unlock_fee: {
     type: Number,
-    default: 200
+    default: parseInt(process.env.UNLOCK_FEE) || 200, // Default to 1 if not set in .env
   },
   
   // NEW: Razorpay payment details

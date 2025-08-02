@@ -1,4 +1,4 @@
-// File: routes/vendor/experience.js
+// File:routes/vendor/experience.js
 const express = require('express');
 const { protect } = require('../../middleware/vendor/auth');
 const Media = require('../../models/Vendor/media');
@@ -294,7 +294,6 @@ router.delete('/image', protect, async (req, res) => {
     if (existingProfile.cloudinaryPublicId) {
       try {
         const deleteResult = await cloudinary.uploader.destroy(existingProfile.cloudinaryPublicId);
-        console.log('Cloudinary delete result:', deleteResult);
       } catch (cloudinaryError) {
         console.error('Error deleting image from Cloudinary:', cloudinaryError);
         // Continue with database update even if Cloudinary deletion fails

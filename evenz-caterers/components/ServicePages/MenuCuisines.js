@@ -326,7 +326,6 @@ const MenuCuisinesModule = () => {
       setError('');
       try {
          const itemData = { ...itemForm, cuisine, packageId: packageData._id };
-         console.log('Saving item data:', itemData); // Debugging line
          let response;
          if (editingItem) {
             response = await api.put(`/vendor/menu/items/${editingItem._id}`, itemData);
