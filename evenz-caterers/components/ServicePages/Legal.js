@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect,useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, CreditCard, Users, Calendar, AlertCircle, CheckCircle, Loader, Edit3, Save, XCircle } from 'lucide-react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
 import { useAuth } from '@/context/AuthContext';
-import {api} from '@/context/AuthContext';
+import { api } from '@/context/AuthContext';
 
 const LegalPaymentSection = () => {
    const [legalData, setLegalData] = useState(null);
@@ -14,6 +14,7 @@ const LegalPaymentSection = () => {
    const [success, setSuccess] = useState({});
    const [editMode, setEditMode] = useState({});
    const analytics = useAnalytics();
+   let errorMessage = 'A network error occurred. Please try again later.';
 
    // Form states for each card
    const [gstInfo, setGstInfo] = useState({ gstNumber: '' });
@@ -91,6 +92,17 @@ const LegalPaymentSection = () => {
          }
       } catch (error) {
          showError(section, error.response?.data?.message || 'A network error occurred.');
+
+         // Check if the error is from the API and has the validation errors array
+         if (error.response && error.response.data && Array.isArray(error.response.data.errors)) {
+            // Use the first specific error message from the validator
+            errorMessage = error.response.data.errors[0].msg;
+         } else if (error.response && error.response.data && error.response.data.message) {
+            // Fallback for other server errors that have a single message
+            errorMessage = error.response.data.message;
+         }
+
+         showError(section, errorMessage);
       } finally {
          setSaving(prev => ({ ...prev, [section]: false }));
       }

@@ -5,24 +5,26 @@ const Services = require('../../models/Vendor/Services');
 const { body, validationResult } = require('express-validator');
 const { protect } = require('../../middleware/vendor/auth');
 
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
+
 // Helper function to process custom options
 const processCustomOptions = (sectionData) => {
   if (!sectionData || !sectionData.other) return sectionData;
-  
+
   // If "other" is selected and has a specification, convert it to a custom option
   if (sectionData.other.selected && sectionData.other.specification && sectionData.other.specification.trim()) {
     const specification = sectionData.other.specification.trim();
-    
+
     // Initialize customOptions if it doesn't exist
     if (!sectionData.customOptions) {
       sectionData.customOptions = [];
     }
-    
+
     // Check if this specification already exists in customOptions
     const existingOption = sectionData.customOptions.find(
       option => option.specification.toLowerCase() === specification.toLowerCase()
     );
-    
+
     if (!existingOption) {
       // Add new custom option
       sectionData.customOptions.push({
@@ -33,14 +35,14 @@ const processCustomOptions = (sectionData) => {
       // Update existing option to selected
       existingOption.selected = true;
     }
-    
+
     // Clear the "other" field after moving to custom options
     sectionData.other = {
       selected: false,
       specification: ''
     };
   }
-  
+
   return sectionData;
 };
 
@@ -55,7 +57,7 @@ router.get('/', protect, async (req, res) => {
       services = new Services({ vendor: req.vendor._id });
       await services.save();
     }
-    
+
     res.json({ success: true, data: services });
   } catch (error) {
     console.error('Error fetching services:', error);
@@ -67,153 +69,179 @@ router.get('/', protect, async (req, res) => {
 // @route   PUT /api/services
 // @access  Private (Vendor)
 router.put('/', protect,
-   [ // ADDED: Validation for incoming data
-        body('staffDetails').optional().isString().trim().escape(),
-        body('setupBreakdownProcess').optional().isString().trim().escape(),
-        body('deliveryLogistics').optional().isString().trim().escape(),
-        body('staffProvided.cost').optional().isNumeric().withMessage('Staff cost must be a number.'),
-        body('waterService.jarWaterCharges').optional().isNumeric().withMessage('Jar water charges must be a number.'),
-        body('waterService.bottleWaterCharges').optional().isNumeric().withMessage('Bottle water charges must be a number.')
-    ], 
-    async (req, res) => {
-      const errors = validationResult(req); // ADDED: Check for validation errors
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ success: false, errors: errors.array() });
-        }
+  [ // ADDED: Validation for incoming data
+    // Text fields
+    body('staffDetails').optional().matches(safeTextRegex).withMessage('Staff details field contains invalid characters.').trim().escape(),
+    body('setupBreakdownProcess').optional().matches(safeTextRegex).withMessage('Setup process field contains invalid characters.').trim().escape(),
+    body('deliveryLogistics').optional().matches(safeTextRegex).withMessage('Delivery logistics field contains invalid characters.').trim().escape(),
+
+    // Numeric fields
+    body('staffProvided.cost').optional().isNumeric().withMessage('Staff cost must be a valid number.'),
+    body('waterService.jarWaterCharges').optional().isNumeric().withMessage('Jar water charges must be a valid number.'),
+    body('waterService.bottleWaterCharges').optional().isNumeric().withMessage('Bottle water charges must be a valid number.'),
+
+    // Custom "Other" specification fields
+    body('mealServiceTypes.other.specification').optional().matches(safeTextRegex).withMessage('Custom meal service type contains invalid characters.').trim().escape(),
+    body('tableware.other.specification').optional().matches(safeTextRegex).withMessage('Custom tableware type contains invalid characters.').trim().escape(),
+    body('availableForEvents.other.specification').optional().matches(safeTextRegex).withMessage('Custom event type contains invalid characters.').trim().escape()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req); // ADDED: Check for validation errors
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
-      
-    const {
-      mealServiceTypes,
-      liveCounters,
-      staffDetails,
-      tableware,
-      setupBreakdownProcess,
-      deliveryLogistics,
-      availableForEvents,
-      staffProvided,
-      waterService
-    } = req.body;
 
-    let services = await Services.findOne({ vendor: req.vendor._id });
-    
-    if (!services) {
-      services = new Services({ vendor: req.vendor._id });
-    }
-    
-    // Update fields with custom option processing
-    if (mealServiceTypes !== undefined) {
-      services.mealServiceTypes = processCustomOptions(mealServiceTypes);
-    }
-    if (liveCounters !== undefined) services.liveCounters = liveCounters;
-    if (staffDetails !== undefined) services.staffDetails = staffDetails;
-    if (tableware !== undefined) {
-      services.tableware = processCustomOptions(tableware);
-    }
-    if (setupBreakdownProcess !== undefined) services.setupBreakdownProcess = setupBreakdownProcess;
-    if (deliveryLogistics !== undefined) services.deliveryLogistics = deliveryLogistics;
-    if (availableForEvents !== undefined) {
-      services.availableForEvents = processCustomOptions(availableForEvents);
-    }
-    if (staffProvided !== undefined) services.staffProvided = staffProvided;
-    if (waterService !== undefined) services.waterService = waterService;
+      const {
+        mealServiceTypes,
+        liveCounters,
+        staffDetails,
+        tableware,
+        setupBreakdownProcess,
+        deliveryLogistics,
+        availableForEvents,
+        staffProvided,
+        waterService
+      } = req.body;
 
-    await services.save();
-    
-    res.json({
-      success: true,
-      message: 'Services updated successfully',
-      services
-    });
-  } catch (error) {
-    console.error('Error updating services:', error);
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: Object.values(error.errors).map(e => e.message) 
+      let services = await Services.findOne({ vendor: req.vendor._id });
+
+      if (!services) {
+        services = new Services({ vendor: req.vendor._id });
+      }
+
+      // Update fields with custom option processing
+      if (mealServiceTypes !== undefined) {
+        services.mealServiceTypes = processCustomOptions(mealServiceTypes);
+      }
+      if (liveCounters !== undefined) services.liveCounters = liveCounters;
+      if (staffDetails !== undefined) services.staffDetails = staffDetails;
+      if (tableware !== undefined) {
+        services.tableware = processCustomOptions(tableware);
+      }
+      if (setupBreakdownProcess !== undefined) services.setupBreakdownProcess = setupBreakdownProcess;
+      if (deliveryLogistics !== undefined) services.deliveryLogistics = deliveryLogistics;
+      if (availableForEvents !== undefined) {
+        services.availableForEvents = processCustomOptions(availableForEvents);
+      }
+      if (staffProvided !== undefined) services.staffProvided = staffProvided;
+      if (waterService !== undefined) services.waterService = waterService;
+
+      await services.save();
+
+      res.json({
+        success: true,
+        message: 'Services updated successfully',
+        services
       });
+    } catch (error) {
+      console.error('Error updating services:', error);
+      if (error.name === 'ValidationError') {
+        return res.status(400).json({
+          message: 'Validation error',
+          errors: Object.values(error.errors).map(e => e.message)
+        });
+      }
+      res.status(500).json({ message: 'Server error while updating services' });
     }
-    res.status(500).json({ message: 'Server error while updating services' });
-  }
-});
+  });
 
 // @desc    Add live counter
 // @route   POST /api/services/live-counters
 // @access  Private (Vendor)
 router.post('/live-counters', protect,
   [ // ADDED: Validation
-        body('name', 'Counter name is required').not().isEmpty().trim().escape(),
-        body('description', 'Description is required').not().isEmpty().trim().escape(),
-        body('pricePerPlate', 'Price must be a number').isNumeric()
-    ],
+    body('name').not().isEmpty().withMessage('Counter name is required.')
+      .matches(safeTextRegex).withMessage('Counter name contains invalid characters.')
+      .trim().escape(),
+    body('description').not().isEmpty().withMessage('Description is required.')
+      .matches(safeTextRegex).withMessage('Description contains invalid characters.')
+      .trim().escape(),
+    body('pricePerPlate').isNumeric().withMessage('Price must be a valid number.')
+  ],
   async (req, res) => {
     const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ success: false, errors: errors.array() });
-        }
-  try {
-    const { name, description, pricePerPlate } = req.body;
-    
-    if (!name || !description || pricePerPlate === undefined) {
-      return res.status(400).json({ 
-        message: 'Name, description, and price per plate are required' 
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    try {
+      const { name, description, pricePerPlate } = req.body;
+
+      if (!name || !description || pricePerPlate === undefined) {
+        return res.status(400).json({
+          message: 'Name, description, and price per plate are required'
+        });
+      }
+
+      let services = await Services.findOne({ vendor: req.vendor._id });
+
+      if (!services) {
+        services = new Services({ vendor: req.vendor._id });
+      }
+
+      services.liveCounters.push({ name, description, pricePerPlate });
+      await services.save();
+
+      res.json({
+        success: true,
+        message: 'Live counter added successfully',
+        liveCounter: services.liveCounters[services.liveCounters.length - 1]
       });
+    } catch (error) {
+      console.error('Error adding live counter:', error);
+      res.status(500).json({ message: 'Server error while adding live counter' });
     }
-
-    let services = await Services.findOne({ vendor: req.vendor._id });
-    
-    if (!services) {
-      services = new Services({ vendor: req.vendor._id });
-    }
-
-    services.liveCounters.push({ name, description, pricePerPlate });
-    await services.save();
-    
-    res.json({
-      success: true,
-      message: 'Live counter added successfully',
-      liveCounter: services.liveCounters[services.liveCounters.length - 1]
-    });
-  } catch (error) {
-    console.error('Error adding live counter:', error);
-    res.status(500).json({ message: 'Server error while adding live counter' });
-  }
-});
+  });
 
 // @desc    Update live counter
 // @route   PUT /api/services/live-counters/:id
 // @access  Private (Vendor)
-router.put('/live-counters/:id', protect, async (req, res) => {
-  try {
-    const { name, description, pricePerPlate } = req.body;
-
-    const services = await Services.findOne({ vendor: req.vendor._id });
-    
-    if (!services) {
-      return res.status(404).json({ message: 'Services not found' });
+router.put('/live-counters/:id', protect,
+  [
+    body('name').optional().not().isEmpty().withMessage('Counter name cannot be empty.')
+      .matches(safeTextRegex).withMessage('Counter name contains invalid characters.')
+      .trim().escape(),
+    body('description').optional().not().isEmpty().withMessage('Description cannot be empty.')
+      .matches(safeTextRegex).withMessage('Description contains invalid characters.')
+      .trim().escape(),
+    body('pricePerPlate').optional().isNumeric().withMessage('Price must be a valid number.')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
+    try {
+      const { name, description, pricePerPlate } = req.body;
 
-    const liveCounter = services.liveCounters.id(req.params.id);
-    
-    if (!liveCounter) {
-      return res.status(404).json({ message: 'Live counter not found' });
+      const services = await Services.findOne({ vendor: req.vendor._id });
+
+      if (!services) {
+        return res.status(404).json({ message: 'Services not found' });
+      }
+
+      const liveCounter = services.liveCounters.id(req.params.id);
+
+      if (!liveCounter) {
+        return res.status(404).json({ message: 'Live counter not found' });
+      }
+
+      if (name !== undefined) liveCounter.name = name;
+      if (description !== undefined) liveCounter.description = description;
+      if (pricePerPlate !== undefined) liveCounter.pricePerPlate = pricePerPlate;
+
+      await services.save();
+
+      res.json({
+        success: true,
+        message: 'Live counter updated successfully',
+        liveCounter
+      });
+    } catch (error) {
+      console.error('Error updating live counter:', error);
+      res.status(500).json({ message: 'Server error while updating live counter' });
     }
-
-    if (name !== undefined) liveCounter.name = name;
-    if (description !== undefined) liveCounter.description = description;
-    if (pricePerPlate !== undefined) liveCounter.pricePerPlate = pricePerPlate;
-
-    await services.save();
-    
-    res.json({
-      success: true,
-      message: 'Live counter updated successfully',
-      liveCounter
-    });
-  } catch (error) {
-    console.error('Error updating live counter:', error);
-    res.status(500).json({ message: 'Server error while updating live counter' });
-  }
-});
+  });
 
 // @desc    Delete live counter
 // @route   DELETE /api/services/live-counters/:id
@@ -221,7 +249,7 @@ router.put('/live-counters/:id', protect, async (req, res) => {
 router.delete('/live-counters/:id', protect, async (req, res) => {
   try {
     const services = await Services.findOne({ vendor: req.vendor._id });
-    
+
     if (!services) {
       return res.status(404).json({ message: 'Services not found' });
     }
@@ -229,17 +257,18 @@ router.delete('/live-counters/:id', protect, async (req, res) => {
     const liveCounterIndex = services.liveCounters.findIndex(
       counter => counter._id.toString() === req.params.id
     );
-    
+
     if (liveCounterIndex === -1) {
       return res.status(404).json({ message: 'Live counter not found' });
     }
 
     services.liveCounters.splice(liveCounterIndex, 1);
     await services.save();
-    
-    res.json({ 
+
+    res.json({
       success: true,
-      message: 'Live counter deleted successfully' });
+      message: 'Live counter deleted successfully'
+    });
   } catch (error) {
     console.error('Error deleting live counter:', error);
     res.status(500).json({ message: 'Server error while deleting live counter' });

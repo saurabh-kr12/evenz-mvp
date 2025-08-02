@@ -160,7 +160,7 @@ const MenuCuisinesModule = () => {
          }
       } catch (err) {
          console.error('Failed to load menu data:', err);
-         setError(err.response?.data?.message || 'Failed to load menu data');
+         setError(err.message || 'Failed to load menu data');
       } finally {
          setIsLoading(false);
       }
@@ -236,7 +236,7 @@ const MenuCuisinesModule = () => {
          }
       } catch (err) {
          console.error('Failed to save cuisines:', err);
-         setError(err.response?.data?.message || 'Failed to save cuisines');
+         setError(err.message || 'Failed to save cuisines');
       } finally {
          setIsLoading(false);
       }
@@ -279,7 +279,7 @@ const MenuCuisinesModule = () => {
          }
       } catch (err) {
          console.error('Failed to save package:', err);
-         setError(err.response?.data?.message || 'Failed to save package');
+         setError(err.message || 'Failed to save package');
       } finally {
          setIsLoading(false);
       }
@@ -342,7 +342,7 @@ const MenuCuisinesModule = () => {
          }
       } catch (err) {
          console.error('Failed to save menu item:', err);
-         setError(err.response?.data?.message || 'Failed to save menu item');
+         setError(err.message || 'Failed to save menu item');
       } finally {
          setIsLoading(false);
       }
@@ -364,7 +364,7 @@ const MenuCuisinesModule = () => {
          }
       } catch (err) {
          console.error('Failed to delete menu item:', err);
-         setError(err.response?.data?.message || 'Failed to delete menu item');
+         setError(err.message || 'Failed to delete menu item');
       } finally {
          setIsLoading(false);
       }

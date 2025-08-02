@@ -21,8 +21,6 @@ router.use(protect);
 router.get('/', getAvailability);
 router.get('/summary', getAvailabilitySummary);
 router.get('/:date', getDateAvailability);
-// router.post('/', [...validateAvailability, ...validateBulkUpdate], saveAvailability);
-// router.delete('/', validateDateParam, deleteAvailability);
 
 router.post('/',
     [ // Combined and enhanced validation

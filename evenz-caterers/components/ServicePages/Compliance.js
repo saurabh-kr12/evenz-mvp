@@ -9,11 +9,8 @@ import {
    Edit3,
    Save,
    X,
-   Upload,
    Download,
-   Trash2,
-   CheckCircle,
-   Clock
+   Trash2
 } from 'lucide-react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
@@ -25,7 +22,6 @@ const ComplianceSection = () => {
    const [loading, setLoading] = useState(true);
    const [editingCard, setEditingCard] = useState(null);
    const [formData, setFormData] = useState({});
-   const [uploadFile, setUploadFile] = useState(null);
    const [submitting, setSubmitting] = useState(false);
    const [updateSuccess, setUpdateSuccess] = useState(null); // For success feedback
 
@@ -132,13 +128,6 @@ const ComplianceSection = () => {
          setSubmitting(false);
       }
    };
-
-   const handleCancel = () => {
-      setEditingCard(null);
-      setFormData({});
-   };
-
-   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
    // --- Render Logic ---
    if (loading || authLoading) {

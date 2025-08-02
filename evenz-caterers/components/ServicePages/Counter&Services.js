@@ -496,88 +496,86 @@ const CounterNServices = () => {
          }
       } catch (error) {
          console.error('Error fetching services:', error);
-         setErrors({ general: error.response?.data?.message || 'Could not load your services data.' });
+         setErrors(prev => ({ ...prev, [sectionName]: error.message || 'Could not load your services data.' }));
       } finally {
          setLoading(false);
       }
    }, []);
 
    useEffect(() => {
-        // Only fetch data when authentication is complete and a token is available
-        if (!authLoading && accessToken) {
-            fetchServices();
-            analyticsServices.tabViewed('counter_services');
-        }
-    }, [accessToken, authLoading, fetchServices]);
+      // Only fetch data when authentication is complete and a token is available
+      if (!authLoading && accessToken) {
+         fetchServices();
+         analyticsServices.tabViewed('counter_services');
+      }
+   }, [accessToken, authLoading, fetchServices]);
 
-    const saveSection = async (sectionName, sectionData) => {
-        setSaving(prev => ({ ...prev, [sectionName]: true }));
-        setErrors(prev => ({ ...prev, [sectionName]: null }));
-        try {
-            const response = await api.put('/vendor/services', { [sectionName]: sectionData });
-            if (response.data.success) {
-                setServices(prev => ({ ...prev, ...response.data.services }));
-                setSaving(prev => ({ ...prev, [sectionName]: 'success' }));
-                setEditingSections(prev => ({ ...prev, [sectionName]: false }));
-                analyticsServices.sectionUpdated('counter_services', sectionName, 'save');
-                setTimeout(() => setSaving(prev => ({ ...prev, [sectionName]: false })), 2000);
-            } else {
-                throw new Error(response.data.message || 'Failed to save');
-            }
-        } catch (error) {
-            console.error(`Error saving ${sectionName}:`, error);
-            const errorMessage = error.response?.data?.message || 'An error occurred while saving.';
-            setErrors(prev => ({ ...prev, [sectionName]: errorMessage }));
-            setSaving(prev => ({ ...prev, [sectionName]: 'error' }));
-            setTimeout(() => setSaving(prev => ({ ...prev, [sectionName]: false })), 3000);
-        }
-    };
+   const saveSection = async (sectionName, sectionData) => {
+      setSaving(prev => ({ ...prev, [sectionName]: true }));
+      setErrors(prev => ({ ...prev, [sectionName]: null }));
+      try {
+         const response = await api.put('/vendor/services', { [sectionName]: sectionData });
+         if (response.data.success) {
+            setServices(prev => ({ ...prev, ...response.data.services }));
+            setSaving(prev => ({ ...prev, [sectionName]: 'success' }));
+            setEditingSections(prev => ({ ...prev, [sectionName]: false }));
+            analyticsServices.sectionUpdated('counter_services', sectionName, 'save');
+            setTimeout(() => setSaving(prev => ({ ...prev, [sectionName]: false })), 2000);
+         } else {
+            throw new Error(response.data.message || 'Failed to save');
+         }
+      } catch (error) {
+         console.error(`Error saving ${sectionName}:`, error);
+         setErrors(prev => ({ ...prev, [sectionName]: error.message || error.response?.data?.message || 'An unexpected error occurred' }));
+         setSaving(prev => ({ ...prev, [sectionName]: 'error' }));
+         setTimeout(() => setSaving(prev => ({ ...prev, [sectionName]: false })), 3000);
+      }
+   };
 
-    const saveLiveCounter = async (counter, isNew = false) => {
-        const savingKey = `liveCounter-${counter._id || 'new'}`;
-        setSaving(prev => ({ ...prev, [savingKey]: true }));
-        setErrors(prev => ({ ...prev, [savingKey]: null }));
-        try {
-            const payload = {
-                name: counter.name,
-                description: counter.description,
-                pricePerPlate: counter.pricePerPlate
-            };
-            const response = isNew
-                ? await api.post('/vendor/services/live-counters', payload)
-                : await api.put(`/vendor/services/live-counters/${counter._id}`, payload);
+   const saveLiveCounter = async (counter, isNew = false) => {
+      const savingKey = `liveCounter-${counter._id || 'new'}`;
+      setSaving(prev => ({ ...prev, [savingKey]: true }));
+      setErrors(prev => ({ ...prev, [savingKey]: null }));
+      try {
+         const payload = {
+            name: counter.name,
+            description: counter.description,
+            pricePerPlate: counter.pricePerPlate
+         };
+         const response = isNew
+            ? await api.post('/vendor/services/live-counters', payload)
+            : await api.put(`/vendor/services/live-counters/${counter._id}`, payload);
 
-            if (response.data.success) {
-                await fetchServices(); // Refresh all data
-                setSaving(prev => ({ ...prev, [savingKey]: 'success' }));
-                if (isNew) analyticsServices.counterAdded('live_counter', counter.name);
-                else analyticsServices.sectionUpdated('counter_services', 'live_counter', 'edit');
-                setTimeout(() => setSaving(prev => ({ ...prev, [savingKey]: false })), 2000);
-            } else {
-                throw new Error(response.data.message || 'Failed to save live counter');
-            }
-        } catch (error) {
-            console.error('Error saving live counter:', error);
-            const errorMessage = error.response?.data?.message || 'An error occurred.';
-            setErrors(prev => ({ ...prev, [savingKey]: errorMessage }));
-            setSaving(prev => ({ ...prev, [savingKey]: 'error' }));
-            setTimeout(() => setSaving(prev => ({ ...prev, [savingKey]: false })), 3000);
-        }
-    };
+         if (response.data.success) {
+            await fetchServices(); // Refresh all data
+            setSaving(prev => ({ ...prev, [savingKey]: 'success' }));
+            if (isNew) analyticsServices.counterAdded('live_counter', counter.name);
+            else analyticsServices.sectionUpdated('counter_services', 'live_counter', 'edit');
+            setTimeout(() => setSaving(prev => ({ ...prev, [savingKey]: false })), 2000);
+         } else {
+            throw new Error(response.data.message || 'Failed to save live counter');
+         }
+      } catch (error) {
+         console.error('Error saving live counter:', error);
+         setErrors(prev => ({ ...prev, [savingKey]: error.message }));
+         setSaving(prev => ({ ...prev, [savingKey]: 'error' }));
+         setTimeout(() => setSaving(prev => ({ ...prev, [savingKey]: false })), 3000);
+      }
+   };
 
-    const deleteLiveCounter = async (counterId) => {
-        try {
-            const response = await api.delete(`/vendor/services/live-counters/${counterId}`);
-            if (response.data.success) {
-                await fetchServices(); // Refresh data
-            } else {
-                throw new Error(response.data.message || 'Failed to delete live counter');
-            }
-        } catch (error) {
-            console.error('Error deleting live counter:', error);
-            setErrors(prev => ({ ...prev, liveCounters: error.response?.data?.message || 'Could not delete counter.' }));
-        }
-    };
+   const deleteLiveCounter = async (counterId) => {
+      try {
+         const response = await api.delete(`/vendor/services/live-counters/${counterId}`);
+         if (response.data.success) {
+            await fetchServices(); // Refresh data
+         } else {
+            throw new Error(response.data.message || 'Failed to delete live counter');
+         }
+      } catch (error) {
+         console.error('Error deleting live counter:', error);
+         setErrors(prev => ({ ...prev, liveCounters: error.message }));
+      }
+   };
 
    const toggleSection = (sectionName) => {
       const isExpanding = !expandedSections[sectionName];

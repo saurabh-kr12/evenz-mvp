@@ -4,7 +4,6 @@ import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { AuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import RegistrationForm from './Register';
 import useAnalytics from '@/hooks/useAnalytics';
 
 const Login = () => {

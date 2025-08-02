@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
             response => response,
             async (error) => {
                 const originalRequest = error.config;
-                
+
                 // --- THE FIX IS HERE ---
                 // Add a check to prevent the interceptor from retrying the refresh token route itself.
                 if (error.response.status === 401 && originalRequest.url === '/vendor/auth/refresh') {
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
                     try {
                         const refreshResponse = await api.get('/vendor/auth/refresh');
                         const newAccessToken = refreshResponse.data.accessToken;
-                        
+
                         setAccessToken(newAccessToken);
                         api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
                         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
@@ -54,6 +54,19 @@ export const AuthProvider = ({ children }) => {
                         delete api.defaults.headers.common['Authorization'];
                         return Promise.reject(refreshError);
                     }
+                }
+
+                // For all other errors (including 400 validation errors), create a new, cleaner error message.
+                let customError = new Error('An unexpected error occurred.');
+                // For all other errors (including 400 validation errors), create a new, cleaner error message.
+                if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+                    // This is a validation error from express-validator. Use the first message.
+                    error.message = error.response.data.errors[0].msg;
+                } else if (error.response?.data?.message) {
+                    // This is a standard server error with a single message.
+                    error.message = error.response.data.message;
+                } else {
+                    error.message = 'An unexpected error occurred.';
                 }
                 return Promise.reject(error);
             }
@@ -71,8 +84,8 @@ export const AuthProvider = ({ children }) => {
                 const newAccessToken = response.data.accessToken;
                 setAccessToken(newAccessToken);
                 api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-                
-                const userResponse = await api.get('/vendor-profile'); 
+
+                const userResponse = await api.get('/vendor-profile');
                 setCurrentUser(userResponse.data.data); // Your profile route returns { success: true, data: vendor }
             } catch (error) {
                 console.log("No active session found on refresh.");
@@ -86,13 +99,13 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (credentials) => {
         const res = await axios.post('http://localhost:5000/api/vendor/auth/login', credentials, { withCredentials: true });
-        
+
         const { accessToken, vendor } = res.data;
-        
+
         setAccessToken(accessToken);
         api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         setCurrentUser(vendor);
-        
+
         return res.data;
     };
 

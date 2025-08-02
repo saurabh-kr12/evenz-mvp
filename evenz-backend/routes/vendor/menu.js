@@ -8,6 +8,8 @@ const { protect } = require('../../middleware/vendor/auth');
 // Apply auth middleware to all routes
 router.use(protect);
 
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
+
 // @desc    Get vendor's menu data
 // @route   GET /api/vendor/menu
 // @access  Private (Vendor)
@@ -55,7 +57,7 @@ router.get('/', async (req, res) => {
 // @access  Private (Vendor)
 router.post('/cuisines',
   [ // ADDED: Sanitize each element in the cuisines array
-    body('cuisines.*').isString().trim().escape()
+    body('cuisines.*').matches(safeTextRegex).withMessage('Cuisine name contains invalid characters.').trim().escape()
   ],
   async (req, res) => {
     const errors = validationResult(req); // ADDED: Check for validation errors
@@ -128,11 +130,13 @@ router.post('/cuisines',
 // @access  Private (Vendor)
 router.post('/packages',
   [ // ADDED: Validation and sanitization for all string inputs
-    body('cuisine').isString().trim().escape(),
-    body('name').isString().trim().escape(),
-    body('type').isString().trim().escape(),
-    body('description').optional().isString().trim().escape(),
-    body('pricePerPlate').isNumeric().withMessage('Price must be a number')
+    body('cuisine').matches(safeTextRegex).withMessage('Cuisine name contains invalid characters.').trim().escape(),
+    body('name').not().isEmpty().withMessage('Package name is required.')
+      .matches(safeTextRegex).withMessage('Package name contains invalid characters.')
+      .trim().escape(),
+    body('type').isIn(['veg', 'non-veg', 'both']).withMessage('Invalid package type.'),
+    body('description').optional().matches(safeTextRegex).withMessage('Description contains invalid characters.').trim().escape(),
+    body('pricePerPlate').isNumeric().withMessage('Price must be a valid number.')
   ],
   async (req, res) => {
     const errors = validationResult(req); // ADDED: Check for validation errors
@@ -207,11 +211,11 @@ router.post('/packages',
 // @access  Private (Vendor)
 router.put('/packages/:packageId',
   [ // ADDED: Optional validation and sanitization
-    body('cuisine').isString().trim().escape(),
-    body('name').optional().isString().trim().escape(),
-    body('type').optional().isString().trim().escape(),
-    body('description').optional().isString().trim().escape(),
-    body('pricePerPlate').optional().isNumeric().withMessage('Price must be a number')
+    body('cuisine').matches(safeTextRegex).withMessage('Cuisine name contains invalid characters.').trim().escape(),
+    body('name').optional().matches(safeTextRegex).withMessage('Package name contains invalid characters.').trim().escape(),
+    body('description').optional().matches(safeTextRegex).withMessage('Description contains invalid characters.').trim().escape(),
+    body('pricePerPlate').optional().isNumeric().withMessage('Price must be a number.'),
+    body('type').optional().isString().trim().escape()
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -381,8 +385,8 @@ router.put('/items/:itemId',
     body('packageId').isMongoId(),
     body('type').optional().isString().trim().escape(),
     body('vegNonVeg').optional().isString().trim().escape(),
-    body('name').optional().isString().trim().escape(),
-    body('extraPrice').optional().isNumeric()
+    body('name').optional().matches(safeTextRegex).withMessage('Item name contains invalid characters.').trim().escape(),
+    body('extraPrice').optional().isNumeric().withMessage('Extra price must be a number.')
   ],
   async (req, res) => {
     const errors = validationResult(req); // ADDED: Check for validation errors
