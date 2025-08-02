@@ -7,21 +7,6 @@ const legalSchema = new mongoose.Schema({
     ref: 'Vendor',
     required: true
   },
-  // File uploads
-  agreementContract: {
-    filename: String,
-    originalName: String,
-    path: String,
-    size: Number,
-    uploadedAt: { type: Date, default: Date.now }
-  },
-  certificates: [{
-    filename: String,
-    originalName: String,
-    path: String,
-    size: Number,
-    uploadedAt: { type: Date, default: Date.now }
-  }],
   // GST and business info
   gstRegistrationNumber: {
     type: String,

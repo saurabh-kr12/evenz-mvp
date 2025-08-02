@@ -55,12 +55,6 @@ const complianceSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
-    document: {
-      filename: String,
-      path: String,
-      size: Number,
-      mimetype: String
-    },
     updatedAt: {
       type: Date,
       default: Date.now
