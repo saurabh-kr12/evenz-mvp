@@ -117,7 +117,7 @@ const CatererProfileView = () => {
             0
          );
 
-         const response = await fetch(`http://localhost:5000/api/caterers-details/${catererId}/view-profile`);
+         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
 
          if (!response.ok) {
             throw new Error('Failed to fetch caterer profile');
@@ -154,7 +154,7 @@ const CatererProfileView = () => {
          const catererIdString = typeof catererId === 'object' ? catererId._id || catererId.id : catererId;
 
          const token = localStorage.getItem('clientToken');
-         const response = await fetch(`http://localhost:5000/api/user/shortlist/${catererIdString}/status`, {
+         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererIdString}/status`, {
             headers: {
                'Authorization': `Bearer ${token}`,
                'Content-Type': 'application/json'
@@ -208,7 +208,7 @@ const CatererProfileView = () => {
 
          if (isShortlisted) {
             // Remove from shortlist
-            const response = await fetch(`http://localhost:5000/api/user/shortlist/${catererIdString}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererIdString}`, {
                method: 'DELETE',
                headers: {
                   'Authorization': `Bearer ${token}`,
@@ -240,7 +240,7 @@ const CatererProfileView = () => {
             }
          } else {
             // Add to shortlist
-            const response = await fetch(`http://localhost:5000/api/user/shortlist/${catererIdString}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererIdString}`, {
                method: 'POST',
                headers: {
                   'Authorization': `Bearer ${token}`,
@@ -410,20 +410,6 @@ const CatererProfileView = () => {
    };
 
    const safeObjectEntries = (obj) => { if (!obj || typeof obj !== 'object') return []; return Object.entries(obj); };
-   // Add this helper function at the top of your component
-   const getImageUrl = (imagePath) => {
-      if (!imagePath) return '/placeholder-image.jpg'; // fallback image
-
-      // If it's already a full URL, return as is
-      if (imagePath.startsWith('http')) {
-         return imagePath;
-      }
-
-      // Convert backslashes to forward slashes and construct full URL
-      const normalizedPath = imagePath.replace(/\\/g, '/');
-      return `http://localhost:5000/${normalizedPath}`;
-   };
-
 
    if (loading) {
       return (
@@ -539,21 +525,6 @@ const CatererProfileView = () => {
                            }`}
                      >
                         <FaUtensils className="text-6xl text-indigo-300" />
-                     </div>
-
-                     <div className="flex gap-2 mt-3">
-                        {gallery.images?.slice(1, 4).map((item, index) => (
-                           <div key={index} className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden">
-                              <img
-                                 src={getImageUrl(item.url || item.path)}
-                                 alt=""
-                                 className="w-full h-full object-cover"
-                                 onError={(e) => {
-                                    e.target.src = '/placeholder-image.jpg';
-                                 }}
-                              />
-                           </div>
-                        ))}
                      </div>
                   </div>
 

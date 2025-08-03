@@ -19,7 +19,7 @@ const UserShortlists = () => {
   const fetchShortlistedCaterers = async () => {
     try {
       const token = localStorage.getItem('clientToken');
-      const response = await fetch('http://localhost:5000/api/user/shortlist', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -50,7 +50,7 @@ const UserShortlists = () => {
       analytics.trackCustomEvent('shortlist_remove_attempt', 'user_action', catererName);
       
       const token = localStorage.getItem('clientToken');
-      const response = await fetch(`http://localhost:5000/api/user/shortlist/${catererId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

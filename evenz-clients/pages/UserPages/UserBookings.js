@@ -18,7 +18,7 @@ const ClientBookings = () => {
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem('clientToken');
-      const response = await fetch('http://localhost:5000/api/booking/client', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/client`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -64,7 +64,7 @@ const ClientBookings = () => {
       setCancellingBookings(prev => new Set(prev).add(bookingId));
 
       const token = localStorage.getItem('clientToken');
-      const response = await fetch(`http://localhost:5000/api/booking/cancel/${bookingId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/cancel/${bookingId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

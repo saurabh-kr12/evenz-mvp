@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('clientToken');
         if (token) {
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const res = await fetch('http://localhost:5000/api/user/auth/me', {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/me`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/user/auth/send-otp', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobile })
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/user/auth/verify-otp', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobile: mobile || currentMobile, otp })
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
   // Registration function
   const register = async (userData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/user/auth/register', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -184,7 +184,7 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (credentials) => {
     try {
-      const response = await fetch('http://localhost:5000/api/user/auth/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)

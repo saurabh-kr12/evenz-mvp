@@ -68,7 +68,7 @@ const SearchPage = () => {
   useEffect(() => {
     const fetchCuisines = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/search/cuisines');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search/cuisines`);
         const data = await response.json();
         if (data.success) {
           setAvailableCuisines(data.data);
@@ -110,7 +110,7 @@ const SearchPage = () => {
         params.append('page', pagination.currentPage);
         params.append('limit', '12');
 
-        const response = await fetch(`http://localhost:5000/api/search/vendors?${params}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search/vendors?${params}`);
         const data = await response.json();
         console.log(data)
         
@@ -272,13 +272,6 @@ const SearchPage = () => {
   };
 
   // Function to get the full image URL
-  const getImageUrl = (coverImage) => {
-    if (!coverImage) return null;
-    // If the URL is already absolute, return as is, otherwise prepend base URL
-    return coverImage.url.startsWith('http') 
-      ? coverImage.url 
-      : `http://localhost:5000${coverImage.url}`;
-  };
 
   const handleVendorClick = (vendor) => {
     // Track vendor profile click with vendor ID

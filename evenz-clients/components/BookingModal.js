@@ -47,7 +47,7 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
     setAvailabilityResult(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/public/availability/${vendor.id}/${selectedDate}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/public/availability/${vendor.id}/${selectedDate}`);
       const data = await response.json();
 
       if (data.success) {

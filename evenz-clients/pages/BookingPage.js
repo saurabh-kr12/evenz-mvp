@@ -65,7 +65,7 @@ const BookingRequestForm = () => {
    const fetchCatererProfile = async (catererId) => {
       try {
          setLoading(true);
-         const response = await fetch(`http://localhost:5000/api/caterers-details/${catererId}/view-profile`);
+         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
 
          if (!response.ok) {
             throw new Error('Failed to fetch caterer profile');
@@ -258,7 +258,7 @@ const BookingRequestForm = () => {
       try {
          const catererId = params.vendorId;
 
-         const response = await fetch('http://localhost:5000/api/booking/booking-requests', {
+         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/booking-requests`, {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json',
