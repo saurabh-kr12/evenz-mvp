@@ -2,13 +2,14 @@
 import React, { useState, useContext } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { AuthContext } from '@/context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import useAnalytics from '@/hooks/useAnalytics';
 
 const Login = () => {
   const router = useRouter();
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
   const { login: loginAnalytics, ui } = useAnalytics();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

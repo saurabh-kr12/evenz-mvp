@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (credentials) => {
-        const res = await axios.post('http://localhost:5000/api/vendor/auth/login', credentials, { withCredentials: true });
+        const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/vendor/auth/login`, credentials, { withCredentials: true });
 
         const { accessToken, vendor } = res.data;
 

@@ -35,7 +35,7 @@ const ProfileCompletionCard = () => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch('http://localhost:5000/api/caterers-details/profile-status', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/profile-status`, {
           method: 'GET',
           headers: {
             // This will now use the valid token
