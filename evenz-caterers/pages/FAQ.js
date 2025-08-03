@@ -7,7 +7,7 @@ const CatererFAQs = () => {
   const faqs = [
     {
       question: "How do I register my catering business on Evenz.in?",
-      answer: "You can register by clicking 'Become a Partner' or 'Register as Caterer' on our homepage. Follow the steps to create your account and then set up your comprehensive caterer profile in your dashboard.",
+      answer: "You can register by clicking 'Register as Caterer' on our homepage. Follow the steps to create your account and then set up your comprehensive caterer profile in your dashboard.",
       category: "Getting Started"
     },
     {
@@ -23,7 +23,7 @@ const CatererFAQs = () => {
     },
     {
       question: "How do I receive booking requests from Evenz.in?",
-      answer: "Once your profile is complete and visible, clients will send booking requests directly to you through your Evenz.in profile for their specific event needs. You will receive notifications via email and on your dashboard.",
+      answer: "Once your profile is complete and visible, clients will send booking requests directly to you through your Evenz.in profile for their specific event needs. You will receive booking requests on your dashboard.",
       category: "Booking Process"
     },
     {
@@ -35,7 +35,7 @@ const CatererFAQs = () => {
     {
       question: "Is the unlocking fee refundable?",
       answer: "No, the unlocking fee of ₹200 is a non-refundable fee for providing you with a client's contact details for a specific booking request. It is a charge for the lead generated and access to the contact information, irrespective of whether the booking is finalized or not.",
-      category: "Pricing"
+      category: "Refund"
     },
     {
       question: "How does Evenz.in's payment model compare to other platforms' subscription fees?",
@@ -51,7 +51,7 @@ const CatererFAQs = () => {
     },
     {
       question: "How do I update my catering packages and services?",
-      answer: "Log in to your caterer dashboard and navigate to the 'Services & Logistics' tab. Here you can add, edit, or remove your packages, cuisines, service types, and other offerings.",
+      answer: "Log in to your caterer dashboard and navigate to the 'Services' page. Here you can add, edit, or remove your packages, cuisines, service types, and other offerings.",
       category: "Profile Management"
     },
     {

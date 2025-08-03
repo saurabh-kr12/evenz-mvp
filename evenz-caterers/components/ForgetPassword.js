@@ -37,7 +37,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/vendor-profile/forgot-password/send-otp', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/vendor-profile/forgot-password/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/vendor-profile/forgot-password/verify-otp', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/vendor-profile/forgot-password/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/vendor-profile/reset-password', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/vendor-profile/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/vendor-profile/forgot-password/send-otp', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/vendor-profile/forgot-password/send-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

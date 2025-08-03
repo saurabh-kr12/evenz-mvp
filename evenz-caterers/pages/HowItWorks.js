@@ -131,10 +131,6 @@ const HowItWorksCaterers = () => {
 
                   {/* Progress Indicator */}
                   <div className="mt-4 sm:mt-6">
-                    <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 mb-2">
-                      <span>Step Progress</span>
-                      <span>Ready to start!</span>
-                    </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
                       <div className={`bg-gradient-to-r ${step.color} h-1.5 sm:h-2 rounded-full w-0 group-hover:w-full transition-all duration-1000 ease-out`}></div>
                     </div>

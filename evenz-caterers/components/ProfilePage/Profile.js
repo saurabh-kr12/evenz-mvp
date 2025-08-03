@@ -31,7 +31,7 @@ const VendorProfile = () => {
   const [showPassword, setShowPassword] = useState({});
 
   // --- Hooks ---
-  const { accessToken, loading: authLoading, setAccessToken } = useAuth(); // 3. Get auth state
+  const { accessToken, loading: authLoading, setAccessToken } = useAuth();
   const { dashboard, ui } = useAnalytics();
 
   // --- Data Fetching ---
@@ -39,7 +39,7 @@ const VendorProfile = () => {
     setLoading(true);
     try {
       const [profileRes, statesRes] = await Promise.all([
-        api.get('/vendor-profile'), // Use the api instance
+        api.get('/vendor-profile'),
         api.get('/vendor-profile/states')
       ]);
 
@@ -58,7 +58,9 @@ const VendorProfile = () => {
         });
         // Pre-fetch cities for the vendor's current state
         if (vendorData.state) {
-          fetchCities(vendorData.state);
+          // Find state code if states are objects with code/name structure
+          const stateForCities = vendorData.state;
+          fetchCities(stateForCities);
         }
       }
       if (statesRes.data.success) {
@@ -69,11 +71,18 @@ const VendorProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array means this function is created only once
+  }, []);
 
   const fetchCities = async (state) => {
     try {
-      const response = await api.get(`/vendor-profile/cities/${state}`);
+      // If states API returns objects with code/name, we need to find the code
+      let stateCode = state;
+      if (states.length > 0 && typeof states[0] === 'object') {
+        const stateObj = states.find(s => s.name === state);
+        stateCode = stateObj ? stateObj.code : state;
+      }
+      
+      const response = await api.get(`/vendor-profile/cities/${stateCode}`);
       if (response.data.success) {
         setCities(response.data.data);
       }
@@ -83,7 +92,6 @@ const VendorProfile = () => {
   };
 
   useEffect(() => {
-    // 4. Wait for auth to be ready before fetching
     if (!authLoading && accessToken) {
       fetchVendorProfile();
       dashboard.pageViewed('vendor_profile');
@@ -93,7 +101,7 @@ const VendorProfile = () => {
   // --- API Handlers ---
   const updateField = async (field, data) => {
     try {
-      const response = await api.put(`/vendor-profile/${field}`, data); // Use api instance
+      const response = await api.put(`/vendor-profile/${field}`, data);
       if (response.data.success) {
         setVendor(response.data.data);
         setEditingField(null);
@@ -136,8 +144,6 @@ const VendorProfile = () => {
     }
   };
 
-  // ... (Your other handlers like handleInputChange, handleEdit, handleCancel should work as is)
-  // Update the specific save handlers to use the new functions
   const handleOwnerNameUpdate = () => updateField('owner-name', { ownerName: formData.ownerName });
   const handleBusinessNameUpdate = () => updateField('business-name', { businessName: formData.businessName });
   const handleLocationUpdate = () => updateField('location', { pinCode: formData.pinCode, locality: formData.locality, city: formData.city, state: formData.state });
@@ -145,10 +151,10 @@ const VendorProfile = () => {
   const verifyMobileOTP = () => verifyOtp('mobile', formData.mobile, otpData.mobile.otp);
   const sendEmailOTP = () => sendOtp('email', formData.email);
   const verifyEmailOTP = () => verifyOtp('email', formData.email, otpData.email.otp);
+
   const handlePasswordUpdate = async () => {
     const { currentPassword, newPassword, confirmPassword } = formData;
 
-    // --- (Your existing validation is fine) ---
     if (!currentPassword || !newPassword || !confirmPassword) {
       setError('All password fields are required');
       return;
@@ -165,16 +171,10 @@ const VendorProfile = () => {
     try {
       const response = await api.put('/vendor-profile/password', { currentPassword, newPassword });
 
-      // --- THE FIX IS HERE ---
       if (response.data.success) {
-        // 1. Get the new access token from the response.
         const newAccessToken = response.data.accessToken;
-
-        // 2. Update the AuthContext with the new token.
-        // You will need to add `setAccessToken` to your AuthContext value.
         setAccessToken(newAccessToken);
 
-        // 3. Clear the form and show the success message.
         setEditingField(null);
         setFormData(prev => ({
           ...prev,
@@ -185,8 +185,6 @@ const VendorProfile = () => {
         setSuccess(response.data.message);
         setTimeout(() => setSuccess(''), 3000);
       }
-      // --- END OF FIX ---
-
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to update password.');
     }
@@ -203,7 +201,6 @@ const VendorProfile = () => {
     setEditingField(field);
     setError('');
     setSuccess('');
-
     ui.buttonClicked(`edit_${field}`, 'vendor_profile');
   };
 
@@ -226,15 +223,15 @@ const VendorProfile = () => {
       mobile: { otp: '', sent: false, loading: false },
       email: { otp: '', sent: false, loading: false }
     });
-
     ui.buttonClicked('cancel_edit', 'vendor_profile');
   };
 
-  const handleStateChange = (state) => {
-    handleInputChange('state', state);
-    handleInputChange('city', '');
-    if (state) {
-      fetchCities(state);
+  // FIXED: State change handler
+  const handleStateChange = (stateName) => {
+    handleInputChange('state', stateName);
+    handleInputChange('city', ''); // Clear city when state changes
+    if (stateName) {
+      fetchCities(stateName);
       ui.buttonClicked('state_selected', 'vendor_profile');
     }
   };
@@ -462,7 +459,7 @@ const VendorProfile = () => {
                       <button
                         onClick={() => {
                           sendMobileOTP();
-                          ui.buttonClicked('mobile_otp_resent', 'vendor_profile'); // Add this line
+                          ui.buttonClicked('mobile_otp_resent', 'vendor_profile');
                         }}
                         className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
                       >
@@ -566,7 +563,7 @@ const VendorProfile = () => {
                       <button
                         onClick={() => {
                           sendEmailOTP();
-                          ui.buttonClicked('email_otp_resent', 'vendor_profile'); // Add this line
+                          ui.buttonClicked('email_otp_resent', 'vendor_profile');
                         }}
                         className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
                       >
@@ -589,8 +586,7 @@ const VendorProfile = () => {
             )}
           </div>
 
-          {/* Location */}
-          {/* Location */}
+          {/* Location - FIXED */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -629,33 +625,41 @@ const VendorProfile = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* FIXED: State Selection */}
                   <select
                     value={formData.state}
-                    onChange={(e) => {
-                      handleInputChange('city', e.target.value);
-                      if (e.target.value) {
-                        ui.buttonClicked('city_selected', 'vendor_profile'); // Add this line
-                      }
-                    }}
+                    onChange={(e) => handleStateChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select State</option>
                     {states.map((state, index) => (
-                      <option key={typeof state === 'string' ? state : `state-${index}`} value={typeof state === 'string' ? state : state.name || state.state}>
+                      <option 
+                        key={typeof state === 'string' ? state : `state-${index}`} 
+                        value={typeof state === 'string' ? state : state.name || state.state}
+                      >
                         {typeof state === 'string' ? state : state.name || state.state}
                       </option>
                     ))}
                   </select>
 
+                  {/* FIXED: City Selection */}
                   <select
                     value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    onChange={(e) => {
+                      handleInputChange('city', e.target.value);
+                      if (e.target.value) {
+                        ui.buttonClicked('city_selected', 'vendor_profile');
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={!formData.state}
                   >
                     <option value="">Select City</option>
                     {cities.map((city, index) => (
-                      <option key={typeof city === 'string' ? city : `city-${index}`} value={typeof city === 'string' ? city : city.name || city.city}>
+                      <option 
+                        key={typeof city === 'string' ? city : `city-${index}`} 
+                        value={typeof city === 'string' ? city : city.name || city.city}
+                      >
                         {typeof city === 'string' ? city : city.name || city.city}
                       </option>
                     ))}

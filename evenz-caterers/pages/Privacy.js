@@ -30,7 +30,7 @@ const CatererPrivacyPolicy = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-3">2. Information We Collect Automatically</h2>
             <p>We automatically collect usage data to monitor platform performance and improve the experience:</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li><strong>Device & Usage Info:</strong> IP address, device/browser type, OS, referral URLs, and site interaction stats.</li>
+              <li><strong>Device & Usage Info:</strong> IP address, device/browser type, OS, referral URLs, user behaviour and site interaction stats.</li>
               <li><strong>Cookies:</strong> Used to enhance functionality, personalize content, and analyze traffic.</li>
             </ul>
           </section>
