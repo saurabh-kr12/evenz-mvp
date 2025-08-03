@@ -19,6 +19,7 @@ import {
 import ProfileCompletionCard from '@/components/ProfileCompletionCard';
 import useAnalytics from '@/hooks/useAnalytics';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
 const CatererDashboard = () => {
   const navigate = useRouter().push;

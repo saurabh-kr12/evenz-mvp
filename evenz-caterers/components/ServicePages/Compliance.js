@@ -184,7 +184,6 @@ const ComplianceSection = () => {
                                     <button
                                        onClick={() => {
                                           setEditingCard(null);
-                                          setUploadFile(null);
                                        }}
                                        className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                                     >
