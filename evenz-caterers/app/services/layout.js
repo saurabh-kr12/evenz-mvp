@@ -1,6 +1,5 @@
-// File: app/services/layout.js
 "use client";
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { FaUtensils, FaTruck, FaConciergeBell, FaShieldAlt, FaFileContract, FaImages } from 'react-icons/fa';
 import useAnalytics from '@/hooks/useAnalytics';
@@ -32,9 +31,9 @@ export default function ServicesLayout({ children }) {
     return (
         <ProtectedRoute>
             <div className="bg-gray-50">
-                <div className="flex px-4 sm:px-6 lg:px-8 py-4 md:py-6 max-w-7xl mx-auto flex-col lg:flex-row sm:gap-6">
+                <div className="flex px-4 sm:px-6 lg:px-8 py-4 md:py-6 max-w-7xl mx-auto flex-col lg:flex-row gap-4 sm:gap-6">
                     {/* Sidebar Navigation */}
-                    <div className="lg:w-1/5 space-y-6">
+                    <div className="lg:w-64 lg:flex-shrink-0 mt-0">
                         {/* Dropdown for mobile */}
                         <div className="lg:hidden bg-white rounded-lg shadow-sm p-4">
                             <select
@@ -50,7 +49,7 @@ export default function ServicesLayout({ children }) {
                             </select>
                         </div>
                         {/* Sidebar for desktop */}
-                        <div className="hidden w-60 lg:block bg-white rounded-lg shadow-sm p-4">
+                        <div className="hidden lg:block bg-white rounded-lg shadow-sm p-4">
                             <nav>
                                 <ul className="space-y-1">
                                     {menuItems.map((item) => (
@@ -76,7 +75,7 @@ export default function ServicesLayout({ children }) {
                     </div>
 
                     {/* Page Content */}
-                    <div className="lg:w-4/5 min-h-screen">
+                    <div className="flex-1 lg:flex-shrink min-h-screen">
                         {children} {/* This is where the specific page content will be rendered */}
                     </div>
                 </div>

@@ -42,7 +42,7 @@ const VendorProfile = () => {
         const stateObj = states.find(s => s.name === state);
         stateCode = stateObj ? stateObj.code : state;
       }
-      
+
       const response = await api.get(`/vendor-profile/cities/${stateCode}`);
       if (response.data.success) {
         setCities(response.data.data);
@@ -50,7 +50,7 @@ const VendorProfile = () => {
     } catch (error) {
       console.error('Error fetching cities:', error);
     }
-  },[]);
+  }, []);
 
   // --- Data Fetching ---
   const fetchVendorProfile = useCallback(async () => {
@@ -278,9 +278,9 @@ const VendorProfile = () => {
         )}
 
         {/* Profile Form */}
-        <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:items-start">
           {/* Owner Name */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <User className="h-5 w-5 text-gray-400 mr-3" />
@@ -324,12 +324,14 @@ const VendorProfile = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-900 font-medium">{vendor.ownerName}</p>
+              <div className="flex-grow">
+                <p className="text-gray-900 font-medium">{vendor.ownerName}</p>
+              </div>
             )}
           </div>
 
           {/* Business Name */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <Building className="h-5 w-5 text-gray-400 mr-3" />
@@ -373,12 +375,14 @@ const VendorProfile = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-900 font-medium">{vendor.businessName}</p>
+              <div className="flex-grow">
+                <p className="text-gray-900 font-medium">{vendor.businessName}</p>
+              </div>
             )}
           </div>
 
           {/* Mobile Number */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <Phone className="h-5 w-5 text-gray-400 mr-3" />
@@ -478,12 +482,14 @@ const VendorProfile = () => {
                 )}
               </div>
             ) : (
-              <p className="text-gray-900 font-medium">{vendor.mobile}</p>
+              <div className="flex-grow">
+                <p className="text-gray-900 font-medium">{vendor.mobile}</p>
+              </div>
             )}
           </div>
 
           {/* Email Address */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <Mail className="h-5 w-5 text-gray-400 mr-3" />
@@ -582,12 +588,14 @@ const VendorProfile = () => {
                 )}
               </div>
             ) : (
-              <p className="text-gray-900 font-medium">{vendor.email}</p>
+              <div className="flex-grow">
+                <p className="text-gray-900 font-medium">{vendor.email}</p>
+              </div>
             )}
           </div>
 
           {/* Location - FIXED */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <MapPin className="h-5 w-5 text-gray-400 mr-3" />
@@ -633,8 +641,8 @@ const VendorProfile = () => {
                   >
                     <option value="">Select State</option>
                     {states.map((state, index) => (
-                      <option 
-                        key={typeof state === 'string' ? state : `state-${index}`} 
+                      <option
+                        key={typeof state === 'string' ? state : `state-${index}`}
                         value={typeof state === 'string' ? state : state.name || state.state}
                       >
                         {typeof state === 'string' ? state : state.name || state.state}
@@ -656,8 +664,8 @@ const VendorProfile = () => {
                   >
                     <option value="">Select City</option>
                     {cities.map((city, index) => (
-                      <option 
-                        key={typeof city === 'string' ? city : `city-${index}`} 
+                      <option
+                        key={typeof city === 'string' ? city : `city-${index}`}
                         value={typeof city === 'string' ? city : city.name || city.city}
                       >
                         {typeof city === 'string' ? city : city.name || city.city}
@@ -684,16 +692,18 @@ const VendorProfile = () => {
                 </div>
               </div>
             ) : (
-              <div className="text-gray-900 font-medium">
-                <p>{vendor.locality}</p>
-                <p>{vendor.city}, {vendor.state}</p>
-                <p>{vendor.pinCode}</p>
+              <div className="flex-grow">
+                <div className="text-gray-900 font-medium">
+                  <p>{vendor.locality}</p>
+                  <p>{vendor.city}, {vendor.state}</p>
+                  <p>{vendor.pinCode}</p>
+                </div>
               </div>
             )}
           </div>
 
           {/* Password */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <Lock className="h-5 w-5 text-gray-400 mr-3" />
@@ -793,7 +803,9 @@ const VendorProfile = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-gray-900 font-medium">••••••••</p>
+              <div className="flex-grow">
+                <p className="text-gray-900 font-medium">••••••••</p>
+              </div>
             )}
           </div>
         </div>
