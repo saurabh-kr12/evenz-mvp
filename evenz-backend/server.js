@@ -57,7 +57,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL, // e.g., http://localhost:3000
   'https://evenz.in', // Your future client production URL
   'https://vendors.evenz.in', // Your future vendor production URL
-  'http://localhost:3001'  // Local development for vendors
+  'http://localhost:3001' , // Local development for vendors
+  'https://evenz-caterers.vercel.app' // vercel app
 ];
 app.use(cors({
   origin: function (origin, callback) {
