@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Eye, EyeOff, MapPin, User, Mail, Phone, Buil
 import useAnalytics from '@/hooks/useAnalytics';
 
 // API Service
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const api = {
   post: async (endpoint, data) => {
@@ -76,7 +76,6 @@ const FormInput = ({
   </div>
 );
 
-// Step 1: Personal Contact & Location
 // Step 1: Personal Contact & Location
 const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) => {
   const [states, setStates] = useState([]);

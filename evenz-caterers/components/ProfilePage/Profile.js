@@ -94,7 +94,7 @@ const VendorProfile = () => {
   useEffect(() => {
     if (!authLoading && accessToken) {
       fetchVendorProfile();
-      // dashboard.pageViewed('vendor_profile');
+      dashboard.pageViewed('vendor_profile');
     }
   }, [accessToken, authLoading, fetchVendorProfile]);
 
