@@ -34,6 +34,24 @@ const VendorProfile = () => {
   const { accessToken, loading: authLoading, setAccessToken } = useAuth();
   const { dashboard, ui } = useAnalytics();
 
+  const fetchCities = useCallback(async (state) => {
+    try {
+      // If states API returns objects with code/name, we need to find the code
+      let stateCode = state;
+      if (states.length > 0 && typeof states[0] === 'object') {
+        const stateObj = states.find(s => s.name === state);
+        stateCode = stateObj ? stateObj.code : state;
+      }
+      
+      const response = await api.get(`/vendor-profile/cities/${stateCode}`);
+      if (response.data.success) {
+        setCities(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  },[]);
+
   // --- Data Fetching ---
   const fetchVendorProfile = useCallback(async () => {
     setLoading(true);
@@ -71,30 +89,12 @@ const VendorProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const fetchCities = async (state) => {
-    try {
-      // If states API returns objects with code/name, we need to find the code
-      let stateCode = state;
-      if (states.length > 0 && typeof states[0] === 'object') {
-        const stateObj = states.find(s => s.name === state);
-        stateCode = stateObj ? stateObj.code : state;
-      }
-      
-      const response = await api.get(`/vendor-profile/cities/${stateCode}`);
-      if (response.data.success) {
-        setCities(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-    }
-  };
+  }, [fetchCities]);
 
   useEffect(() => {
     if (!authLoading && accessToken) {
       fetchVendorProfile();
-      dashboard.pageViewed('vendor_profile');
+      // dashboard.pageViewed('vendor_profile');
     }
   }, [accessToken, authLoading, fetchVendorProfile]);
 

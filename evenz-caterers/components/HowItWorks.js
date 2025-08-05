@@ -1,3 +1,4 @@
+"use client"
 import React from 'react';
 import { UserPlus, Settings, Mail, Wallet, PhoneCall, Award, ArrowRight, ArrowDown, Trophy, Star } from 'lucide-react';
 

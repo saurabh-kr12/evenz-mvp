@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
    Heart,
    MapPin,
@@ -17,10 +17,11 @@ import {
 } from 'lucide-react';
 import { FaUtensils } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
+import Image from 'next/image';
 
 const CatererProfileView = () => {
    const { currentUser } = useAuth();
-   const  catererId  = currentUser?._id 
+   const catererId = currentUser?._id
 
    const [catererData, setCatererData] = useState(null);
    const [isShortlisted, setIsShortlisted] = useState(false);
@@ -29,11 +30,7 @@ const CatererProfileView = () => {
    const [error, setError] = useState(null);
    const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
-      fetchCatererProfile();
-   }, [catererId]);
-
-   const fetchCatererProfile = async () => {
+   const fetchCatererProfile = useCallback(async () => {
       try {
          setLoading(true);
          const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
@@ -53,7 +50,11 @@ const CatererProfileView = () => {
       } finally {
          setLoading(false);
       }
-   };
+   }, [catererId]);
+
+   useEffect(() => {
+      fetchCatererProfile();
+   }, [catererId, fetchCatererProfile]);
 
    // Helper function to safely render values
    const safeRender = (value, defaultText = 'Not specified') => {
@@ -129,18 +130,23 @@ const CatererProfileView = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-9 py-6">
                <div className="flex flex-col lg:flex-row gap-6">
                   {/* Gallery */}
-                   <div className="lg:w-1/2">
+                  <div className="lg:w-1/2">
                      {gallery?.cloudinaryUrl ? (
 
                         <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden relative">
-                           <img
-                              src={gallery?.cloudinaryUrl}
-                              alt="Caterer"
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                 e.target.src = '/placeholder-image.jpg'; // Fallback if image fails to load
-                              }}
-                           />
+                           <div className='relative w-full h-full'>
+                              <Image
+                                 src={gallery?.cloudinaryUrl}
+                                 alt="Caterer"
+                                 fill
+                                 className="w-full h-full object-cover"
+                                 onError={(e) => {
+                                    e.target.src = '/placeholder-image.jpg'; // Fallback if image fails to load
+                                 }}
+                              />
+
+                           </div>
+
                         </div>
                      ) : null}
 

@@ -1,8 +1,6 @@
 "use client"
 
-import { useContext } from 'react';
-import React, { useState, useEffect } from 'react';
-import { AuthContext } from '@/context/AuthContext';
+import React, { useState, useEffect,useCallback } from 'react';
 import useAnalytics from '@/hooks/useAnalytics';
 import { useAuth } from '@/context/AuthContext';
 
@@ -28,7 +26,7 @@ const BookingsDashboard = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!accessToken) {
       setLoading(false);
       return;
@@ -62,12 +60,13 @@ const BookingsDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  },[accessToken]);
+
   useEffect(() => {
     if (!authLoading) {
       fetchDashboardData();
     }
-  }, [accessToken, authLoading]);
+  }, [accessToken, authLoading,fetchDashboardData]);
 
   // Auto-hide toast messages after 5 seconds
   useEffect(() => {
@@ -327,7 +326,7 @@ const BookingsDashboard = () => {
       {/* Special Requests */}
       {booking.specialRequests && (
         <div className="mb-3">
-          <p className="text-xs text-gray-500 italic">"{booking.specialRequests}"</p>
+          <p className="text-xs text-gray-500 italic">&quot;{booking.specialRequests}&quot;</p>
         </div>
       )}
 
@@ -450,7 +449,7 @@ const BookingsDashboard = () => {
       {/* Special Requests */}
       {booking.specialRequests && (
         <div className="mb-3">
-          <p className="text-xs text-gray-500 italic">"{booking.specialRequests}"</p>
+          <p className="text-xs text-gray-500 italic">&quot;{booking.specialRequests}&quot;</p>
         </div>
       )}
 

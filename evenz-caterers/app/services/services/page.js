@@ -3,8 +3,8 @@ import ServicesLogistics from '@/components/ServicePages/Counter&Services'
 
 export default function ServicesLogisticsPage() {
   return (
-    <ProtectedRoute>
+    // <ProtectedRoute>
       <ServicesLogistics />
-    </ProtectedRoute>
+    // </ProtectedRoute>
   )
 }

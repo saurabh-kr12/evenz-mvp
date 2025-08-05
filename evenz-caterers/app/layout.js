@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { AuthProvider } from '@/context/AuthContext';
 import ClientLayout from '@/components/ClientLayout';
 import GoogleAnalytics from "@/components/GoogleAnalytics";
@@ -13,6 +14,15 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// 2. Create a simple loading component for the initial page load
+function RootLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+    </div>
+  );
+}
 
 export const metadata = {
   title: "Evenz Caterers",
@@ -28,11 +38,15 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GoogleAnalytics />
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         <AuthProvider>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+          <Suspense fallback={<RootLoading />}>
+            <ClientLayout>
+              {children}
+            </ClientLayout>
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

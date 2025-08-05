@@ -5,6 +5,7 @@ import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
 import useAnalytics from '@/hooks/useAnalytics';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/context/AuthContext'; // Ensure this is the correct import path
+import Image from 'next/image';
 
 const ExperienceMedia = () => {
   const [profile, setProfile] = useState(null);
@@ -297,9 +298,11 @@ const ExperienceMedia = () => {
               <h3 className="text-lg font-medium text-gray-900">Current Profile Image</h3>
             </div>
             <div className="flex items-center gap-4">
-              <img
+              <Image
                 src={profile.cloudinaryUrl}
                 alt={profile.originalName}
+                width={80} // w-20 = 80px
+                height={80} // h-20 = 80px
                 className="w-20 h-20 object-cover rounded-lg shadow-sm"
               />
               <div className="flex-1">
@@ -366,7 +369,7 @@ const ExperienceMedia = () => {
                     Selected Image
                   </h4>
                   <div className="relative inline-block">
-                    <img
+                    <Image
                       src={previewUrl}
                       alt="Preview"
                       className="w-32 h-32 object-cover rounded-lg"
@@ -424,11 +427,15 @@ const ExperienceMedia = () => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Profile Image</h4>
                     {profile.cloudinaryUrl ? (
-                      <img
-                        src={profile.cloudinaryUrl}
-                        alt={profile.originalName}
-                        className="w-full h-48 object-cover rounded-lg shadow-sm"
-                      />
+                      <div className='relative w-full h-48'>
+                        <Image
+                          src={profile.cloudinaryUrl}
+                          alt={profile.originalName}
+                          fill
+                          className="object-cover rounded-lg shadow-sm"
+                        />
+                      </div>
+
                     ) : (
                       <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
                         <div className="text-center">

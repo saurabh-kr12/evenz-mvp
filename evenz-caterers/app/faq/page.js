@@ -1,4 +1,4 @@
-import CatererFAQs from "@/pages/FAQ"
+import CatererFAQs from "@/components/FAQ"
 
 export default function FAQPage() {
   return (

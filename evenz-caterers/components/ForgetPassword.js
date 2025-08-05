@@ -373,7 +373,7 @@ const ForgotPassword = () => {
                   disabled={loading}
                   className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors disabled:opacity-50"
                 >
-                  Didn't receive OTP? Resend
+                  Didn&apos;t receive OTP? Resend
                 </button>
               </div>
             </div>

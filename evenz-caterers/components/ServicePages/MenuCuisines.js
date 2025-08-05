@@ -444,7 +444,7 @@ const MenuCuisinesModule = () => {
                   ))}
                </div>
             ) : (
-               <p className="text-gray-500 text-sm">No cuisines added yet. Click "Add Your Cuisines" to get started.</p>
+               <p className="text-gray-500 text-sm">No cuisines added yet. Click &quot;Add Your Cuisines&quot; to get started.</p>
             )}
 
             {/* Expandable Cuisine Selection Form */}
@@ -808,7 +808,7 @@ const MenuCuisinesModule = () => {
                                        </div>
                                     </div>
                                  ) : (
-                                    <p className="text-gray-500 text-sm">No menu items added yet. Click "Add Item" to get started.</p>
+                                    <p className="text-gray-500 text-sm">No menu items added yet. Click &quot;Add Item&quot; to get started.</p>
                                  )}
                               </div>
                            )}
@@ -816,7 +816,7 @@ const MenuCuisinesModule = () => {
                      ))}
 
                      {(!packages[cuisine] || packages[cuisine].length === 0) && (
-                        <p className="text-gray-500 text-sm">No packages created yet. Click "Add Package" to get started.</p>
+                        <p className="text-gray-500 text-sm">No packages created yet. Click &quot;Add Package&quot; to get started.</p>
                      )}
                   </div>
                ))}

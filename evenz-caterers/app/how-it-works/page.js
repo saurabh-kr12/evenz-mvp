@@ -1,4 +1,4 @@
-import HowItWorksCaterers from "@/pages/HowItWorks";
+import HowItWorksCaterers from "@/components/HowItWorks"
 
 export default function HowItWorksPage() { 
    return (

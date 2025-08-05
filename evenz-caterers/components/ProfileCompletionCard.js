@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+"use client"
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -19,88 +20,44 @@ const ProfileCompletionCard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get auth token from localStorage
-  // const authToken = localStorage.getItem('token');
   const { accessToken: vendorAccessToken, loading: authLoading } = useAuth();
 
+  const fetchProfileStatus = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  // useEffect(() => {
-  //   fetchProfileStatus();
-  // }, []);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/profile-status`, {
+        method: 'GET',
+        headers: {
+          // This will now use the valid token
+          'Authorization': `Bearer ${vendorAccessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile status');
+      }
+
+      const result = await response.json();
+      setProfileStatus(result.profileStatus);
+    } catch (err) {
+      setError(err.message);
+      console.error('Profile status fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [vendorAccessToken]);
 
   useEffect(() => {
-    // We create the function inside useEffect to avoid stale closures
-    const fetchProfileStatus = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/profile-status`, {
-          method: 'GET',
-          headers: {
-            // This will now use the valid token
-            'Authorization': `Bearer ${vendorAccessToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile status');
-        }
-
-        const result = await response.json();
-        setProfileStatus(result.profileStatus);
-      } catch (err) {
-        setError(err.message);
-        console.error('Profile status fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     // Only run the fetch function if auth is no longer loading AND we have a token
     if (!authLoading && vendorAccessToken) {
       fetchProfileStatus();
     }
   }, [vendorAccessToken, authLoading]);
 
-  useEffect(() => {
-    if (profileStatus && !loading) {
-      const completionStatus = getCompletionStatus();
-      if (completionStatus) {
-        dashboard.profileCompletionCardViewed(completionStatus.priority);
-      }
-    }
-  }, [profileStatus, loading, dashboard]);
-
-  // const fetchProfileStatus = async () => {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
-
-  //     const response = await fetch('http://localhost:5000/api/caterers-details/profile-status', {
-  //       method: 'GET',
-  //       headers: {
-  //         'Authorization': `Bearer ${vendorAccessToken}`,
-  //         'Content-Type': 'application/json'
-  //       }
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error('Failed to fetch profile status');
-  //     }
-
-  //     const result = await response.json();
-  //     setProfileStatus(result.profileStatus);
-  //   } catch (err) {
-  //     setError(err.message);
-  //     console.error('Profile status fetch error:', err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const getCompletionStatus = () => {
+  const getCompletionStatus = useCallback(() => {
     if (!profileStatus) return null;
 
     const {
@@ -180,7 +137,16 @@ const ProfileCompletionCard = () => {
       buttonColor: 'bg-emerald-600 hover:bg-emerald-700',
       icon: CheckCircle
     };
-  };
+  },[profileStatus]);
+
+  useEffect(() => {
+    if (profileStatus && !loading) {
+      const completionStatus = getCompletionStatus();
+      if (completionStatus) {
+        dashboard.profileCompletionCardViewed(completionStatus.priority);
+      }
+    }
+  }, [profileStatus, loading, dashboard, getCompletionStatus]);
 
   const handleNavigation = (link) => {
     const completionStatus = getCompletionStatus();

@@ -742,7 +742,7 @@ const SuccessPage = ({ vendor, token }) => {
       </div>
 
       <div className="bg-gray-50 rounded-lg p-6 text-left">
-        <h3 className="font-semibold text-gray-900 mb-3">What's Next?</h3>
+        <h3 className="font-semibold text-gray-900 mb-3">What&apos;s Next?</h3>
         <ul className="space-y-2 text-sm text-gray-600">
           <li>• Complete your profile and add business details</li>
           <li>• Upload photos of your food and services</li>

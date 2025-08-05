@@ -1,4 +1,4 @@
-import CatererPrivacyPolicy from "@/pages/Privacy";
+import CatererPrivacyPolicy from "@/components/Privacy";
 
 export default function PrivacyPage() {
   return <CatererPrivacyPolicy />;

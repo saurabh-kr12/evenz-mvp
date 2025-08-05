@@ -1,3 +1,4 @@
+"use client"
 import React from 'react';
 
 const CatererTermsAndConditions = () => {
@@ -10,7 +11,7 @@ const CatererTermsAndConditions = () => {
 
         <div className="space-y-8 text-gray-700 text-[15px] leading-relaxed">
           <p>
-            Welcome to <strong>Evenz.in</strong>. These Caterer Terms & Conditions ("Terms") govern your use of the Evenz.in platform as a caterer. By registering, you agree to these Terms.
+            Welcome to <strong>Evenz.in</strong>. These Caterer Terms & Conditions (&quot;Terms&quot;) govern your use of the Evenz.in platform as a caterer. By registering, you agree to these Terms.
           </p>
 
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">

@@ -1,11 +1,11 @@
 "use client";
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
-import { AuthContext } from '@/context/AuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import useAnalytics from '@/hooks/useAnalytics';
+import Image from 'next/image';
 
 const Login = () => {
   const router = useRouter();
@@ -57,21 +57,21 @@ const Login = () => {
       setLoading(true);
       await login({ ...formData, rememberMe });
       setLoading(false);
-      
+
       // Track successful login
       loginAnalytics.loginSuccess();
-      
+
       // Navigate to profile page
       router.push('/dashboard');
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
       setLoading(false);
-      
+
       // Track failed login with reason
-      const failureReason = error.response?.status === 401 ? 'invalid_credentials' : 
-                           error.response?.status === 400 ? 'bad_request' : 
-                           'server_error';
+      const failureReason = error.response?.status === 401 ? 'invalid_credentials' :
+        error.response?.status === 400 ? 'bad_request' :
+          'server_error';
       loginAnalytics.loginFailed(failureReason);
     }
   };
@@ -80,20 +80,24 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br text-gray-700 from-indigo-50 via-white to-cyan-50 flex xl:flex-row">
       {/* Left side - Image (only on extra large screens) */}
       <div className="hidden xl:flex xl:w-1/2 relative overflow-hidden">
-        <img
-          src="/catering_services_img.jpeg"
-          alt="Catering Business"
-          className="w-full h-full object-cover"
-        />
+        <div className="relative w-full h-full"> {/* adjust height as needed */}
+          <Image
+            src="/catering_services_img.jpeg"
+            alt="Catering Business"
+            fill
+            className="object-cover"
+          />
+        </div>
+
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/80 to-purple-900/60"></div>
         <div className="absolute inset-0 flex items-center justify-center p-8">
           <div className="text-center text-white max-w-md">
             <div className="mb-8">
               <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-                <img
+                <Image
                   src="/Evenz_app_logo.png"
-                  alt="logo" 
-                  
+                  alt="logo"
+                  fill
                 />
               </div>
               <h2 className="text-3xl font-bold mb-4">Welcome to Evenz.in</h2>
@@ -249,7 +253,7 @@ const Login = () => {
               {/* Register link */}
               <div className="text-center pt-4 border-t border-gray-100">
                 <p className="text-gray-600 text-sm">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link
                     href={'/register'}
                     onClick={() => ui.buttonClicked('create_account_link', 'login_page')}
@@ -261,7 +265,7 @@ const Login = () => {
               </div>
             </form>
           </div>
-        </div>      
+        </div>
       </div>
     </div>
   );

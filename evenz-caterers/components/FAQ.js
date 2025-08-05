@@ -171,7 +171,7 @@ const CatererFAQs = () => {
                               </>
                             ) : (
                               <>
-                                The 'Unlocking Fee' is a nominal charge of <strong className="text-blue-800">₹200 (Rupees Two Hundred Only)</strong> per booking request. This fee gives you immediate access to the client's direct contact details (mobile number) so you can communicate with them personally to discuss their event, negotiate prices, finalize menus, and ultimately secure the booking. This fee covers our costs in providing you with qualified leads and maintaining the platform.
+                                The &apos;Unlocking Fee&apos; is a nominal charge of <strong className="text-blue-800">₹200 (Rupees Two Hundred Only)</strong> per booking request. This fee gives you immediate access to the client&apos;s direct contact details (mobile number) so you can communicate with them personally to discuss their event, negotiate prices, finalize menus, and ultimately secure the booking. This fee covers our costs in providing you with qualified leads and maintaining the platform.
                               </>
                             )}
                           </span>
@@ -179,11 +179,11 @@ const CatererFAQs = () => {
                           <span>
                             {faq.category === 'Platform Role' ? (
                               <>
-                                <strong className="text-amber-800">Evenz.in is solely a platform to connect you with potential clients.</strong> Once you have paid the unlocking fee and gained access to the client's contact details, our role in that specific connection is complete. <strong className="text-amber-800">We are not involved in the actual booking process, contract negotiation, payment collection from the client, or the delivery of catering services.</strong> All aspects of the booking, service quality, terms, and execution are your direct responsibility to manage with the client.
+                                <strong className="text-amber-800">Evenz.in is solely a platform to connect you with potential clients.</strong> Once you have paid the unlocking fee and gained access to the client&apos;s contact details, our role in that specific connection is complete. <strong className="text-amber-800">We are not involved in the actual booking process, contract negotiation, payment collection from the client, or the delivery of catering services.</strong> All aspects of the booking, service quality, terms, and execution are your direct responsibility to manage with the client.
                               </>
                             ) : (
                               <>
-                                To be visible and receive leads, you <strong className="text-amber-800">MUST complete your 'Menu & Cuisines' section</strong> (adding at least one package with pricing). Additionally, ensuring your 'Cover Image', 'Min/Max Guests', and 'Available for Events' details are filled is crucial for client search visibility.
+                                To be visible and receive leads, you <strong className="text-amber-800">MUST complete your &apos;Menu & Cuisines&apos; section</strong> (adding at least one package with pricing). Additionally, ensuring your &apos;Cover Image&apos;, &apos;Min/Max Guests&apos;, and &apos;Available for Events&apos; details are filled is crucial for client search visibility.
                               </>
                             )}
                           </span>
