@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /bookings
+Disallow: /services
+Disallow: /calendar
+Disallow: /your-profile
+
+Sitemap: https://vendors.evenz.in/sitemap.xml
