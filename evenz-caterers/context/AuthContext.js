@@ -118,6 +118,8 @@ export const AuthProvider = ({ children }) => {
             delete api.defaults.headers.common['Authorization'];
             setCurrentUser(null);
             setAccessToken(null);
+
+            window.location.href = '/login';
         }
     };
 

@@ -97,7 +97,7 @@ const handleLogout = (req, res) => {
     }
 
     // Clear the secure cookie
-    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'strict', secure: true });
+    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'none', secure: true });
     res.json({ message: 'Cookie cleared' });
 };
 
