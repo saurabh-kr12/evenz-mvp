@@ -97,11 +97,11 @@ const MenuCuisinesModule = () => {
       description: '',
       pricePerPlate: '',
       itemCounts: {
-         starters: 0,
-         mains: 0,
-         breads: 0,
-         beverages: 0,
-         desserts: 0
+         starters: '',
+         mains: '',
+         breads: '',
+         beverages: '',
+         desserts: ''
       },
       menuItems: []
    };
@@ -601,7 +601,6 @@ const MenuCuisinesModule = () => {
                                            [&::-webkit-outer-spin-button]:appearance-none
                                            [appearance:textfield]
                                            "
-
                                     />
                                  </div>
                               ))}
