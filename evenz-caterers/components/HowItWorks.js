@@ -98,12 +98,6 @@ const HowItWorksCaterers = () => {
           {steps.map((step, index) => (
             <React.Fragment key={index}>
               <div className="group relative bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
-                {/* Level Badge */}
-                <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-10">
-                  <div className={`inline-flex items-center px-2 py-1 sm:px-3 sm:py-1 bg-gradient-to-r ${step.color} rounded-full text-white text-xs sm:text-sm font-bold shadow-lg`}>
-                    Level {step.level}
-                  </div>
-                </div>
 
                 {/* Gradient Background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${step.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>

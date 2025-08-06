@@ -72,7 +72,7 @@ const CatererFAQs = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">
+          <h1 className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl bg-gradient-to-r from-blue-600 font-bold to-purple-600 bg-clip-text text-transparent mt-1 sm:mt-2">
             Caterer FAQs
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -199,46 +199,6 @@ const CatererFAQs = () => {
           </div>
         </div>
 
-        {/* Quick Tips Section - Updated with professional colors */}
-        <div className="mt-12 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg shadow-lg p-8 text-white">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-white bg-opacity-10 rounded-full mb-4 backdrop-blur-sm">
-              <svg className="w-6 h-6 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-2 text-slate-100">
-              Quick Tips for Success
-            </h3>
-            <p className="text-slate-300">
-              Maximize your success on Evenz.in with these key strategies
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                <span className="text-sm font-bold text-white">1</span>
-              </div>
-              <h4 className="font-medium mb-2 text-slate-100">Complete Your Profile</h4>
-              <p className="text-sm text-slate-300">Add all menu items, photos, and compliance details</p>
-            </div>
-            <div className="text-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                <span className="text-sm font-bold text-white">2</span>
-              </div>
-              <h4 className="font-medium mb-2 text-slate-100">Respond Quickly</h4>
-              <p className="text-sm text-slate-300">Fast responses to inquiries increase booking chances</p>
-            </div>
-            <div className="text-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                <span className="text-sm font-bold text-white">3</span>
-              </div>
-              <h4 className="font-medium mb-2 text-slate-100">Quality Photos</h4>
-              <p className="text-sm text-slate-300">High-quality food and setup photos attract more clients</p>
-            </div>
-          </div>
-        </div>
-
         {/* Support Section */}
         <div className="mt-12 bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-slate-100 rounded-full mb-4">
@@ -255,7 +215,7 @@ const CatererFAQs = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
               href="mailto:partners@evenz.in"
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-slate-700 hover:bg-slate-800 transition-colors duration-200"
+              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 transition-colors duration-200"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
