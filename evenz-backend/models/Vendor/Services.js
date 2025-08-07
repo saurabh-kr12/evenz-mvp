@@ -94,8 +94,8 @@ const servicesSchema = new mongoose.Schema({
   },
   staffProvided: {
     ratio: {
-      staffCount: { type: Number, default: 1, min: 1 },
-      guestCount: { type: Number, default: 10, min: 1 }
+      staffCount: { type: Number, min: 1 },
+      guestCount: { type: Number, min: 1 }
     },
     cost: { type: Number, default: 0, min: 0 },
     costType: {

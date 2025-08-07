@@ -31,6 +31,8 @@ const vendorDashboardRoutes = require('./routes/vendor/dashboardRoutes');
 // Initialize Express app
 const app = express();
 
+app.set('trust proxy', 1);
+
 // --- Security Middleware Stack (Order is important!) ---
 
 // 1. Set various security HTTP headers

@@ -1002,7 +1002,7 @@ const CounterNServices = () => {
                               type="number"
                               inputMode="numeric"
                               min="1"
-                              value={services.staffProvided.ratio.staffCount}
+                              value={services?.staffProvided?.ratio?.staffCount || ''}
                               onChange={(e) => updateServices('staffProvided.ratio.staffCount', Number(e.target.value) || 1)}
                               disabled={!editingSections.staffProvided}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50
@@ -1018,7 +1018,7 @@ const CounterNServices = () => {
                               type="number"
                               inputMode="numeric"
                               min="1"
-                              value={services.staffProvided.ratio.guestCount}
+                              value={services?.staffProvided?.ratio?.guestCount || ''}
                               onChange={(e) => updateServices('staffProvided.ratio.guestCount', Number(e.target.value) || 10)}
                               disabled={!editingSections.staffProvided}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50

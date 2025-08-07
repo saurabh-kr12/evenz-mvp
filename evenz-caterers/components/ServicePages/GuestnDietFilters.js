@@ -687,7 +687,7 @@ const GuestnDietFilters = () => {
                         inputMode="numeric"
                         min="0"
                         step="1"
-                        value={formData.customizationCharges.amount}
+                        value={formData?.customizationCharges?.amount || ''}
                         onChange={(e) => handleNestedInputChange('customizationCharges', 'amount', parseFloat(e.target.value) || 0)}
                         disabled={!editingSections.customization}
                         className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed
