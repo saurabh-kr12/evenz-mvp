@@ -27,7 +27,7 @@ const LegalPaymentSection = () => {
    });
    const [bookingAdvance, setBookingAdvance] = useState({
       type: 'percentage',
-      value: 0
+      value: ''
    });
    const [policies, setPolicies] = useState({
       minimumNoticeDays: 1,
@@ -47,7 +47,7 @@ const LegalPaymentSection = () => {
             // Populate form states from the fetched data
             setGstInfo({ gstNumber: data.gstRegistrationNumber || '' });
             setPaymentModes(data.acceptedPaymentModes || { upi: false, cash: false, card: false, netBanking: false, wallet: false });
-            setBookingAdvance(data.bookingAdvance || { type: 'percentage', value: 0 });
+            setBookingAdvance(data.bookingAdvance || { type: 'percentage', value: '' });
             setPolicies({
                minimumNoticeDays: data.minimumNoticeDays || 1,
                cancellationRefundPolicy: data.cancellationRefundPolicy || ''
@@ -178,22 +178,22 @@ const LegalPaymentSection = () => {
                <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center">
-                        <Shield className="w-5 h-5 text-green-600 mr-2" />
-                        <h2 className="text-xl font-semibold text-gray-900">GST Information</h2>
+                        <Shield className="sm:w-5 sm:h-5 w-4 h-4 text-green-600 mr-2" />
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900">GST Information</h2>
                         <SectionHeaderWithTooltip />
                      </div>
                      <button
                         onClick={() => toggleEditMode('gst')}
-                        className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="inline-flex cursor-pointer items-center px-3 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                      >
                         {editMode.gst ? (
                            <>
-                              <XCircle className="w-4 h-4 mr-1" />
+                              <XCircle className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Cancel
                            </>
                         ) : (
                            <>
-                              <Edit3 className="w-4 h-4 mr-1" />
+                              <Edit3 className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Edit
                            </>
                         )}
@@ -240,16 +240,16 @@ const LegalPaymentSection = () => {
                            <button
                               onClick={updateGstInfo}
                               disabled={saving.gst}
-                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                              className="inline-flex text-xs sm:text-sm items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                            >
                               {saving.gst ? (
                                  <>
-                                    <Loader className="w-4 h-4 animate-spin mr-2" />
+                                    <Loader className="sm:w-4 sm:h-4 h-3 w-3 mr-2" />
                                     Saving...
                                  </>
                               ) : (
                                  <>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="sm:w-4 sm:h-4 h-3 w-3 mr-2" />
                                     Save GST Info
                                  </>
                               )}
@@ -263,22 +263,22 @@ const LegalPaymentSection = () => {
                <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center">
-                        <CreditCard className="w-5 h-5 text-purple-600 mr-2" />
-                        <h2 className="text-xl font-semibold text-gray-900">Accepted Payment Modes</h2>
+                        <CreditCard className="sm:w-5 sm:h-5 w-4 h-4 text-purple-600 mr-2" />
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900">Accepted Payment Modes</h2>
                         <SectionHeaderWithTooltip />
                      </div>
                      <button
                         onClick={() => toggleEditMode('payment')}
-                        className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="inline-flex cursor-pointer items-center px-3 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                      >
                         {editMode.payment ? (
                            <>
-                              <XCircle className="w-4 h-4 mr-1" />
+                              <XCircle className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Cancel
                            </>
                         ) : (
                            <>
-                              <Edit3 className="w-4 h-4 mr-1" />
+                              <Edit3 className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Edit
                            </>
                         )}
@@ -322,16 +322,16 @@ const LegalPaymentSection = () => {
                            <button
                               onClick={updatePaymentModes}
                               disabled={saving.payment}
-                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                              className="inline-flex text-xs sm:text-sm items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                            >
                               {saving.payment ? (
                                  <>
-                                    <Loader className="w-4 h-4 animate-spin mr-2" />
+                                    <Loader className="sm:w-4 sm:h-4 h-3 w-3 animate-spin mr-2" />
                                     Saving...
                                  </>
                               ) : (
                                  <>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="sm:w-4 sm:h-4 h-3 w-3 mr-2" />
                                     Save Payment Modes
                                  </>
                               )}
@@ -345,22 +345,22 @@ const LegalPaymentSection = () => {
                <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center">
-                        <CreditCard className="w-5 h-5 text-orange-600 mr-2" />
-                        <h2 className="text-xl font-semibold text-gray-900">Booking Advance</h2>
+                        <CreditCard className="sm:w-5 sm:h-5 w-4 h-4 text-orange-600 mr-2" />
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900">Booking Advance</h2>
                         <SectionHeaderWithTooltip />
                      </div>
                      <button
                         onClick={() => toggleEditMode('advance')}
-                        className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="inline-flex cursor-pointer items-center px-3 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                      >
                         {editMode.advance ? (
                            <>
-                              <XCircle className="w-4 h-4 mr-1" />
+                              <XCircle className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Cancel
                            </>
                         ) : (
                            <>
-                              <Edit3 className="w-4 h-4 mr-1" />
+                              <Edit3 className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Edit
                            </>
                         )}
@@ -422,7 +422,7 @@ const LegalPaymentSection = () => {
                                  <input
                                     type="number"
                                     inputMode="numeric"
-                                    value={bookingAdvance.value}
+                                    value={bookingAdvance?.value || ''}
                                     onChange={(e) => setBookingAdvance({ ...bookingAdvance, value: parseFloat(e.target.value) || 0 })}
                                     placeholder={bookingAdvance.type === 'percentage' ? 'Enter percentage' : 'Enter amount'}
                                     min="0"
@@ -440,16 +440,16 @@ const LegalPaymentSection = () => {
                               <button
                                  onClick={updateBookingAdvance}
                                  disabled={saving.advance}
-                                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                 className="inline-flex text-xs sm:text-sm items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                               >
                                  {saving.advance ? (
                                     <>
-                                       <Loader className="w-4 h-4 animate-spin mr-2" />
+                                       <Loader className="sm:w-4 sm:h-4 h-3 w-3 animate-spin mr-2" />
                                        Saving...
                                     </>
                                  ) : (
                                     <>
-                                       <Save className="w-4 h-4 mr-2" />
+                                       <Save className="sm:w-4 sm:h-4 h-3 w-3 mr-2" />
                                        Save Advance
                                     </>
                                  )}
@@ -471,22 +471,22 @@ const LegalPaymentSection = () => {
                <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center">
-                        <Calendar className="w-5 h-5 text-teal-600 mr-2" />
-                        <h2 className="text-xl font-semibold text-gray-900">Booking Policies</h2>
+                        <Calendar className="sm:w-5 sm:h-5 w-4 h-4 text-teal-600 mr-2" />
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900">Booking Policies</h2>
                         <SectionHeaderWithTooltip />
                      </div>
                      <button
                         onClick={() => toggleEditMode('policies')}
-                        className="flex items-center text-white px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 rounded-md cursor-pointer"
+                        className="flex items-center text-white px-3 py-1.5 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 rounded-md cursor-pointer"
                      >
                         {editMode.policies ? (
                            <>
-                              <XCircle className="w-4 h-4 mr-1" />
+                              <XCircle className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Cancel
                            </>
                         ) : (
                            <>
-                              <Edit3 className="w-4 h-4 mr-1" />
+                              <Edit3 className="sm:w-4 sm:h-4 h-3 w-3 mr-1" />
                               Edit
                            </>
                         )}
@@ -558,16 +558,16 @@ const LegalPaymentSection = () => {
                            <button
                               onClick={updatePolicies}
                               disabled={saving.policies}
-                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                              className="inline-flex text-xs sm:text-sm items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                            >
                               {saving.policies ? (
                                  <>
-                                    <Loader className="w-4 h-4 animate-spin mr-2" />
+                                    <Loader className="sm:w-4 sm:h-4 h-3 w-3 animate-spin mr-2" />
                                     Saving...
                                  </>
                               ) : (
                                  <>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="sm:w-4 sm:h-4 h-3 w-3 mr-2" />
                                     Save Policies
                                  </>
                               )}

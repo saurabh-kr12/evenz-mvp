@@ -2,69 +2,89 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const InfoTooltip = ({ message, children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const wrapperRef = useRef(null);
+    const tooltipRef = useRef(null);
+    
+    // State to hold the dynamic position classes
+    const [positionClasses, setPositionClasses] = useState('left-1/2 -translate-x-1/2');
 
-  // Toggle tooltip visibility on click/tap
-  const handleClick = (e) => {
-    // Prevent the click from propagating immediately if children also have clicks
-    e.stopPropagation();
-    setIsOpen(prev => !prev);
-  };
-
-  // Hide tooltip when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+    const handleClick = (e) => {
+        e.stopPropagation();
+        setIsOpen(prev => !prev);
     };
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      // Optional: Add touchstart for better mobile responsiveness on initial tap
-      document.addEventListener("touchstart", handleClickOutside);
-    }
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-    };
-  }, [isOpen]);
+        if (isOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
 
-  return (
-    // Use a ref to detect clicks outside this component
-    <span
-      ref={wrapperRef}
-      className="relative inline-flex items-center ml-1"
-      // Desktop hover behavior: show on mouse enter, hide on mouse leave
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
-    >
-      {/* We clone the child (the icon) to inject the onClick handler */}
-      {React.cloneElement(children, {
-        onClick: handleClick,
-        // Ensure cursor-pointer is on the icon for better UX
-        className: `${children.props.className || ''} cursor-pointer select-none`
-      })}
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [isOpen]);
 
-      {/* Tooltip content - visibility controlled by 'isOpen' state */}
-      {isOpen && (
-        <div
-          className="absolute bg-gray-800 text-white text-xs rounded py-2 px-3 z-[9999]
-                     bottom-full left-1/2 transform -translate-x-1/2 mb-2
-                     whitespace-nowrap opacity-80  transition-opacity duration-300
-                     shadow-lg pointer-events-none" // pointer-events-none prevents blocking clicks through the tooltip
-          // Allow clicks on the tooltip itself if it contained interactive elements (though ours doesn't)
-          // onMouseDown={(e) => e.stopPropagation()} // Prevent closing immediately if clicked inside tooltip
+    // --- THE FIX: Dynamic Positioning Logic ---
+    // This effect runs when the tooltip opens to calculate the best position.
+    useEffect(() => {
+        if (isOpen && tooltipRef.current && wrapperRef.current) {
+            const tooltipRect = tooltipRef.current.getBoundingClientRect();
+            
+            // Check if the centered position would overflow the right edge of the screen
+            if (tooltipRect.right > window.innerWidth) {
+                // If it overflows, align it to the right edge of the icon
+                setPositionClasses('right-0');
+            } 
+            // Check if the centered position would overflow the left edge
+            else if (tooltipRect.left < 0) {
+                // If it overflows, align it to the left edge of the icon
+                setPositionClasses('left-0');
+            } 
+            // If it fits, keep it centered
+            else {
+                setPositionClasses('left-1/2 -translate-x-1/2');
+            }
+        }
+    }, [isOpen]);
+
+    return (
+        <span
+            ref={wrapperRef}
+            className="relative inline-flex items-center"
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
         >
-          {message}
-          {/* Optional: Add a small triangle 'arrow' at the bottom */}
-          <div className="absolute left-1/2 -ml-1 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800 bottom-[-4px]"></div>
-        </div>
-      )}
-    </span>
-  );
+            {React.cloneElement(children, {
+                onClick: handleClick,
+                className: `${children.props.className || ''} cursor-pointer select-none`
+            })}
+
+            {isOpen && (
+                <div
+                    ref={tooltipRef}
+                    // --- THE FIX: Updated classes for wrapping and positioning ---
+                    className={`absolute bg-gray-900 text-white text-xs rounded-lg py-2 px-3 z-50
+                                bottom-full mb-2
+                                w-56 text-center whitespace-normal  // Allows text to wrap within a 56-unit width
+                                ${positionClasses} // Applies the dynamic position
+                                opacity-95 transition-opacity duration-300
+                                shadow-lg pointer-events-none`}
+                >
+                    {message}
+                    {/* The arrow will now correctly point down from the tooltip */}
+                    <div className="absolute left-1/2 -ml-1 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900 bottom-[-4px]"></div>
+                </div>
+            )}
+        </span>
+    );
 };
 
 export default InfoTooltip;

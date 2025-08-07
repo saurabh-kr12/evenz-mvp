@@ -306,7 +306,7 @@ const ExperienceMedia = () => {
                 className="w-20 h-20 object-cover rounded-lg shadow-sm"
               />
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{profile.originalName}</p>
+                <p className="font-medium text-sm sm:text-base text-gray-900">{profile.originalName}</p>
                 <p className="text-sm text-gray-600">This is your profile image</p>
                 <p className="text-xs text-gray-500">Experience: {profile.experience} years</p>
               </div>

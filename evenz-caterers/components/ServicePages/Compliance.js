@@ -131,7 +131,7 @@ const ComplianceSection = () => {
 
    // --- Render Logic ---
    if (loading || authLoading) {
-      return <div>Loading compliance information...</div>;
+      return <div className="text-sm sm:text-base">Loading compliance information...</div>;
    }
 
    const cards = [
@@ -145,11 +145,11 @@ const ComplianceSection = () => {
    return (
       <div className="max-w-5xl min-h-screen text-gray-700">
          <div className="bg-indigo-600 mb-5 text-white rounded-lg shadow-sm p-4 sm:p-6">
-            <h1 className="text-xl  sm:text-2xl font-bold">Compliance & Food Safety</h1>
-            <p className="mt-1 text-sm sm:text-base">Manage your compliance documentation and safety protocols</p>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold">Compliance & Food Safety</h1>
+            <p className="mt-1 text-xs sm:text-sm md:text-base">Manage your compliance documentation and safety protocols</p>
          </div>
 
-         <div className="grid w-full gap-6 ">
+         <div className="grid w-full gap-4 sm:gap-6">
             {cards.map((card) => {
                const Icon = card.icon;
                const isEditing = editingCard === card.id;
@@ -157,60 +157,49 @@ const ComplianceSection = () => {
                return (
                   <div key={card.id} className="bg-white min-w-full rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                      {/* Card Header */}
-                     <div className={`px-6 py-4 border-b border-gray-100 bg-${card.color}-50 rounded-t-lg`}>
+                     <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-${card.color}-50 rounded-t-lg`}>
                         <div className="flex items-center justify-between">
-                           <div className="flex items-center gap-3">
-                              <div className={`p-2 bg-${card.color}-100 rounded-lg`}>
-                                 <Icon className={`w-5 h-5 text-${card.color}-600`} />
+                           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                              <div className={`p-1.5 sm:p-2 bg-${card.color}-100 rounded-lg flex-shrink-0`}>
+                                 <Icon className={`w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-${card.color}-600`} />
                               </div>
-                              <div className='flex'>
-                                 <h3 className="font-semibold text-gray-900">{card.title}</h3>
+                              <div className='flex items-center flex-1 min-w-0'>
+                                 <h3 className="font-semibold text-sm sm:text-base md:text-lg text-gray-900 truncate">{card.title}</h3>
                                  <SectionHeaderWithTooltip />
                               </div>
                            </div>
-                           <div className="flex items-center gap-2">
-
+                           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
                               {!isEditing ? (
                                  <button
                                     onClick={() => handleEdit(card.id)}
-                                    className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="inline-flex cursor-pointer items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium bg-blue-600 text-white rounded-md sm:rounded-lg hover:bg-blue-700 transition-colors"
                                  >
-                                    <Edit3 className="w-4 h-4 mr-1" />
-                                    Edit
+                                    <Edit3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                    <span className="hidden xs:inline">Edit</span>
                                  </button>
                               ) : (
-                                 <div className="flex gap-1">
-
-                                    <button
-                                       onClick={() => {
-                                          setEditingCard(null);
-                                       }}
-                                       className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                                    >
-                                       <X className="w-4 h-4 mr-1" />
-                                       Cancel
-                                    </button>
-                                    <button
-                                       onClick={() => handleSave(card.id)}
-                                       disabled={submitting}
-                                       className="inline-flex cursor-pointer items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                       <Save className="w-4 h-4 mr-1" />
-                                       Save
-                                    </button>
-                                 </div>
+                                 // Only show Cancel button on mobile, Save will be at bottom
+                                 <button
+                                    onClick={() => {
+                                       setEditingCard(null);
+                                    }}
+                                    className="inline-flex cursor-pointer items-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium bg-gray-200 text-gray-700 rounded-md sm:rounded-lg hover:bg-gray-300 transition-colors"
+                                 >
+                                    <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                    <span className="hidden xs:inline">Cancel</span>
+                                 </button>
                               )}
                            </div>
                         </div>
                      </div>
 
                      {/* Card Content */}
-                     <div className="p-6">
+                     <div className="p-4 sm:p-6">
                         {card.id === 'fssai' && (
-                           <div className="space-y-4">
+                           <div className="space-y-3 sm:space-y-4">
                               {isEditing ? (
                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                        FSSAI License Number
                                     </label>
                                     <input
@@ -218,17 +207,17 @@ const ComplianceSection = () => {
                                        value={formData.number || ''}
                                        onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                                        placeholder="Enter your FSSAI license number"
-                                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     />
                                  </div>
                               ) : (
                                  <div>
                                     {card.data?.number ? (
-                                       <div className="p-4 bg-gray-50 rounded-lg">
-                                          <p className="font-mono text-lg text-gray-900">{card.data.number}</p>
+                                       <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                                          <p className="font-mono text-sm sm:text-base md:text-lg text-gray-900 break-all">{card.data.number}</p>
                                        </div>
                                     ) : (
-                                       <p className="text-gray-500 italic">No FSSAI license number provided</p>
+                                       <p className="text-xs sm:text-sm text-gray-500 italic">No FSSAI license number provided</p>
                                     )}
                                  </div>
                               )}
@@ -236,28 +225,28 @@ const ComplianceSection = () => {
                         )}
 
                         {(card.id === 'hygiene' || card.id === 'ingredients' || card.id === 'allergens') && (
-                           <div className="space-y-4">
+                           <div className="space-y-3 sm:space-y-4">
                               {isEditing ? (
                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                        Details
                                     </label>
                                     <textarea
                                        value={formData.details || ''}
                                        onChange={(e) => setFormData({ ...formData, details: e.target.value })}
                                        placeholder={`Enter details about ${card.title.toLowerCase()}`}
-                                       rows={6}
-                                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                                       rows={4}
+                                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
                                     />
                                  </div>
                               ) : (
                                  <div>
                                     {card.data?.details ? (
-                                       <div className="p-4 bg-gray-50 rounded-lg">
-                                          <p className="text-gray-900 whitespace-pre-wrap">{card.data.details}</p>
+                                       <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                                          <p className="text-xs sm:text-sm md:text-base text-gray-900 whitespace-pre-wrap">{card.data.details}</p>
                                        </div>
                                     ) : (
-                                       <p className="text-gray-500 italic">No details provided</p>
+                                       <p className="text-xs sm:text-sm text-gray-500 italic">No details provided</p>
                                     )}
                                  </div>
                               )}
@@ -265,9 +254,9 @@ const ComplianceSection = () => {
                         )}
 
                         {card.id === 'insurance' && (
-                           <div className="space-y-4">
+                           <div className="space-y-3 sm:space-y-4">
                               {isEditing ? (
-                                 <div className="space-y-4">
+                                 <div className="space-y-3 sm:space-y-4">
                                     <div className="flex items-center gap-3">
                                        <input
                                           type="checkbox"
@@ -282,7 +271,7 @@ const ComplianceSection = () => {
                                           }}
                                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                        />
-                                       <label htmlFor="insuranceProvided" className="text-sm font-medium text-gray-700">
+                                       <label htmlFor="insuranceProvided" className="text-xs sm:text-sm font-medium text-gray-700">
                                           We provide insurance coverage for mishaps
                                        </label>
                                     </div>
@@ -290,7 +279,7 @@ const ComplianceSection = () => {
                                     {formData.provided && (
                                        <>
                                           <div>
-                                             <label className="block text-sm font-medium text-gray-700 mb-2">
+                                             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                                 Insurance Details
                                              </label>
                                              <textarea
@@ -298,17 +287,17 @@ const ComplianceSection = () => {
                                                 onChange={(e) => setFormData({ ...formData, details: e.target.value })}
                                                 placeholder="Provide details about your insurance coverage"
                                                 rows={4}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
                                              />
                                           </div>
                                        </>
                                     )}
                                  </div>
                               ) : (
-                                 <div className="space-y-4">
+                                 <div className="space-y-3 sm:space-y-4">
                                     <div className="flex items-center gap-3">
                                        <div className={`w-3 h-3 rounded-full ${card.data?.provided ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                       <span className="font-medium">
+                                       <span className="text-xs sm:text-sm font-medium">
                                           {card.data?.provided ? 'Insurance provided' : 'No insurance coverage'}
                                        </span>
                                     </div>
@@ -316,34 +305,34 @@ const ComplianceSection = () => {
                                     {card.data?.provided && (
                                        <>
                                           {card.data.details && (
-                                             <div className="p-4 bg-gray-50 rounded-lg">
-                                                <p className="text-gray-900 whitespace-pre-wrap">{card.data.details}</p>
+                                             <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                                                <p className="text-xs sm:text-sm md:text-base text-gray-900 whitespace-pre-wrap">{card.data.details}</p>
                                              </div>
                                           )}
 
                                           {card.data.document && (
                                              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                                                <div className="flex items-center gap-3">
-                                                   <FileText className="w-5 h-5 text-blue-600" />
-                                                   <div>
-                                                      <p className="font-medium text-blue-900">{card.data.document.filename}</p>
-                                                      <p className="text-sm text-blue-600">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                   <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                                                   <div className="min-w-0">
+                                                      <p className="text-xs sm:text-sm font-medium text-blue-900 truncate">{card.data.document.filename}</p>
+                                                      <p className="text-xs text-blue-600">
                                                          {(card.data.document.size / 1024 / 1024).toFixed(2)} MB
                                                       </p>
                                                    </div>
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                                                    <button
                                                       onClick={downloadDocument}
                                                       className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
                                                    >
-                                                      <Download className="w-4 h-4" />
+                                                      <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                                                    </button>
                                                    <button
                                                       onClick={deleteDocument}
                                                       className="p-2 text-red-600 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors"
                                                    >
-                                                      <Trash2 className="w-4 h-4" />
+                                                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                                    </button>
                                                 </div>
                                              </div>
@@ -355,6 +344,36 @@ const ComplianceSection = () => {
                            </div>
                         )}
                      </div>
+
+                     {/* Mobile Save Button - Only show when editing on small screens */}
+                     {isEditing && (
+                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg sm:hidden">
+                           <button
+                              onClick={() => handleSave(card.id)}
+                              disabled={submitting}
+                              className="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                           >
+                              <Save className="w-4 h-4 mr-2" />
+                              {submitting ? 'Saving...' : 'Save Changes'}
+                           </button>
+                        </div>
+                     )}
+
+                     {/* Desktop Save Button - Only show when editing on larger screens */}
+                     {isEditing && (
+                        <div className="hidden sm:block px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+                           <div className="flex justify-end">
+                              <button
+                                 onClick={() => handleSave(card.id)}
+                                 disabled={submitting}
+                                 className="inline-flex items-center px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                              >
+                                 <Save className="w-4 h-4 mr-2" />
+                                 {submitting ? 'Saving...' : 'Save Changes'}
+                              </button>
+                           </div>
+                        </div>
+                     )}
                   </div>
                );
             })}

@@ -358,14 +358,13 @@ const LiveCounterCard = ({
                   <div>
                      <label className="block text-xs font-medium text-gray-600 mb-1">Price per Plate</label>
                      <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500 text-sm">₹</span>
+                        <span className="absolute  left-3 top-2 text-gray-500 text-sm">₹</span>
                         <input
                            type="number"
                            inputMode="numeric"
-                           placeholder="0"
                            min="0"
-                           value={counter.pricePerPlate}
-                           onChange={(e) => onUpdate(index, 'pricePerPlate', Number(e.target.value) || 0)}
+                           value={counter?.pricePerPlate || ''}
+                           onChange={(e) => onUpdate(index, 'pricePerPlate', Number(e.target.value))}
                            className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors
                            [&::-webkit-inner-spin-button]:appearance-none
                                            [&::-webkit-outer-spin-button]:appearance-none
@@ -1041,7 +1040,7 @@ const CounterNServices = () => {
                               type="number"
                               min="0"
                               inputMode="numeric"
-                              value={services.staffProvided.cost}
+                              value={services?.staffProvided?.cost || ''}
                               onChange={(e) => updateServices('staffProvided.cost', Number(e.target.value) || 0)}
                               disabled={!editingSections.staffProvided}
                               className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:opacity-50
