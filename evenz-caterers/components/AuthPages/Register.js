@@ -206,7 +206,7 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
         placeholder="Enter 10-digit mobile number"
       />
       <p className="text-xs text-gray-500 mt-1 ml-1">
-        We'll send a verification OTP to this number on WhatsApp.
+        We&apos;ll send a verification OTP to this number on WhatsApp.
       </p>
 
       <FormInput
