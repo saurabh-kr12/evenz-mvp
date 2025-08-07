@@ -144,7 +144,7 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
     const selectedCity = e.target.value;
     setData({ ...data, city: selectedCity });
     setErrors({ ...errors, city: '' });
-    
+
     // Track location selection
     if (selectedCity && data.state) {
       registration.locationSelected(data.state, selectedCity);
@@ -182,8 +182,8 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
   return (
     <div className="space-y-6">
       <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Personal & Location Details</h2>
-        <p className="text-gray-600">Step 1 of 3</p>
+        <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">Personal & Location Details</h2>
+        <p className="text-gray-600 text-base sm:text-lg">Step 1 of 3</p>
       </div>
 
       <FormInput
@@ -205,6 +205,9 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
         icon={Phone}
         placeholder="Enter 10-digit mobile number"
       />
+      <p className="text-xs text-gray-500 mt-1 ml-1">
+        We'll send a verification OTP to this number on WhatsApp.
+      </p>
 
       <FormInput
         label="Email Address"
@@ -227,9 +230,8 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
           value={data.state}
           onChange={handleStateChange}
           disabled={loadingStates}
-          className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-            errors.state ? 'border-red-500 bg-red-50' : 'border-gray-300'
-          } ${loadingStates ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${errors.state ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            } ${loadingStates ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         >
           <option value="">
             {loadingStates ? 'Loading states...' : 'Select a state'}
@@ -252,9 +254,8 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
           value={data.city}
           onChange={handleCityChange}
           disabled={loadingCities || !data.state}
-          className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-            errors.city ? 'border-red-500 bg-red-50' : 'border-gray-300'
-          } ${(loadingCities || !data.state) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${errors.city ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            } ${(loadingCities || !data.state) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         >
           <option value="">
             {loadingCities ? 'Loading cities...' : 'Select a city'}
@@ -299,10 +300,10 @@ const Step1Personal = ({ data, setData, errors, setErrors, onNext, loading }) =>
       <div className='flex justify-center'>
         Already have an account ?
         <Link
-           href={'/login'}
-           className=' text-purple-700 px-2 hover:underline '
+          href={'/login'}
+          className=' text-purple-700 px-2 hover:underline '
         >
-           Login
+          Login
         </Link>
       </div>
     </div>
@@ -320,7 +321,7 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, l
   useEffect(() => {
     // Track when user reaches step 2
     registration.stepStarted(2, 'Verification & Password Setup');
-    
+
     // Start cooldown timers
     const timer = setInterval(() => {
       setOtpCooldown(prev => ({
@@ -388,8 +389,8 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, l
   return (
     <div className="space-y-6">
       <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification & Password Setup</h2>
-        <p className="text-gray-600">Step 2 of 3</p>
+        <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">Verification & Password Setup</h2>
+        <p className="text-gray-600 text-base sm:text-lg">Step 2 of 3</p>
         <p className="text-sm text-gray-500 mt-2">
           OTPs have been sent to your mobile and email
         </p>
@@ -468,9 +469,8 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, l
             value={data.password}
             onChange={(e) => setData({ ...data, password: e.target.value })}
             placeholder="Create a strong password"
-            className={`w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-              errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
-            }`}
+            className={`w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}
           />
           <button
             type="button"
@@ -497,9 +497,8 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, l
             value={data.confirmPassword}
             onChange={(e) => setData({ ...data, confirmPassword: e.target.value })}
             placeholder="Confirm your password"
-            className={`w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-              errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
-            }`}
+            className={`w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}
           />
           <button
             type="button"
@@ -598,8 +597,8 @@ const Step3Business = ({ data, setData, errors, setErrors, onNext, onBack, loadi
   return (
     <div className="space-y-6">
       <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Details</h2>
-        <p className="text-gray-600">Step 3 of 3</p>
+        <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">Business Details</h2>
+        <p className="text-gray-600 text-base sm:text-lg">Step 3 of 3</p>
         <p className="text-sm text-gray-500 mt-2">
           Final step to complete your registration
         </p>
@@ -642,9 +641,8 @@ const Step3Business = ({ data, setData, errors, setErrors, onNext, onBack, loadi
             id="agreeToTerms"
             checked={data.agreeToTerms}
             onChange={handleTermsChange}
-            className={`mt-1 h-4 w-4 rounded ${
-              errors.agreeToTerms ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`mt-1 h-4 w-4 rounded ${errors.agreeToTerms ? 'border-red-500' : 'border-gray-300'
+              }`}
           />
           <label htmlFor="agreeToTerms" className="text-sm text-gray-700 leading-relaxed">
             <span className="text-red-500">*</span> I agree to the{' '}
@@ -714,7 +712,7 @@ const SuccessPage = ({ vendor, token }) => {
   useEffect(() => {
     // Track successful registration completion
     registration.registrationCompleted(vendor?.city || 'unknown', vendor?.state || 'unknown');
-    
+
     // Store token in memory (you can implement localStorage when deploying)
     if (token) {
       console.log('Token received:', token);
@@ -734,7 +732,7 @@ const SuccessPage = ({ vendor, token }) => {
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
+        <h2 className="sm:text-2xl text-lg font-bold text-gray-900 mb-2">Registration Successful!</h2>
         <p className="text-gray-600">
           Welcome to Evenz.in, {vendor?.ownerName || 'there'}!
         </p>

@@ -2,6 +2,8 @@
 import React from 'react';
 import RegistrationForm from '@/components/AuthPages/Register';
 import Image from 'next/image';
+// ADDED: Import icons for the new section
+import { CheckCircle, DollarSign } from 'lucide-react';
 
 const RegisterPage = () => {
 
@@ -22,11 +24,12 @@ const RegisterPage = () => {
         <div className="absolute inset-0 flex items-center justify-center p-8">
           <div className="text-center text-white max-w-md">
             <div className="mb-8">
-              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm relative">
                 <Image
                   src="/Evenz_app_logo.png"
                   alt="logo"
                   fill
+                  className="p-2" // Added padding to the logo
                 />
               </div>
               <h2 className="text-3xl font-bold mb-4">Welcome to Evenz.in</h2>
@@ -53,7 +56,29 @@ const RegisterPage = () => {
       </div>
 
       {/* Right side - RegisterPage Form */}
-      <div className="flex-1 flex flex-col ">
+      {/* CHANGED: Added justify-center to vertically align content on mobile/tablet */}
+      <div className="flex-1 flex flex-col justify-center">
+        
+        {/* --- ADDED: Mobile & Tablet Header --- */}
+        {/* This block is visible on screens smaller than 'xl' and provides context */}
+        <div className="block xl:hidden px-6 pt-3 pb-2 text-center">
+          <div className="mb-3">
+            <h2 className="text-xl font-bold text-gray-800">Welcome to Evenz.in</h2>
+            <p className="text-gray-600 mt-2">The smart way to grow your catering business.</p>
+          </div>
+          <div className="space-y-2 text-sm text-indigo-800 font-medium inline-flex flex-col items-start bg-indigo-100/50 p-2 rounded-lg border border-indigo-200">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <span>No Subscription Fee, Ever.</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <DollarSign className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <span>Pay Only For Leads You Want.</span>
+            </div>
+          </div>
+        </div>
+        {/* --- END OF ADDED BLOCK --- */}
+
         <div className="w-full mx-auto">
           <RegistrationForm />
         </div>
