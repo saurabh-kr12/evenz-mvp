@@ -217,7 +217,7 @@ const Login = () => {
                     onChange={handleRememberMeChange}
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-colors"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="remember-me" className="ml-2 block text-xs sm:text-sm text-gray-700">
                     Remember me for 60 days
                   </label>
                 </div>
@@ -227,7 +227,7 @@ const Login = () => {
                     href="/forget-password"
                     type="button"
                     onClick={handleForgotPasswordClick}
-                    className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors underline-offset-4 hover:underline"
+                    className="font-medium text-xs sm:text-sm text-indigo-600 hover:text-indigo-500 transition-colors underline-offset-4 hover:underline"
                   >
                     Forgot password?
                   </Link>
