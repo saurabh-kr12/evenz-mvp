@@ -982,7 +982,7 @@ const CounterNServices = () => {
                title="Staff Provided"
                priority="medium"
                sectionName="staffProvided"
-               onSave={() => saveSection('staffProvided', services.staffProvided)}
+               onSave={() => saveSection('staffProvided', services?.staffProvided)}
                saving={saving}
                errors={errors}
                expandedSections={expandedSections}
@@ -990,7 +990,7 @@ const CounterNServices = () => {
                toggleSection={toggleSection}
                toggleEditing={toggleEditing}
                showEditInCollapsed={true}
-               summary={`${services.staffProvided.ratio.staffCount} staff per ${services.staffProvided.ratio.guestCount} guests - ₹${services.staffProvided.cost} ${services.staffProvided.costType.replace('_', ' ')}`}
+               summary={`${services?.staffProvided?.ratio?.staffCount} staff per ${services?.staffProvided?.ratio?.guestCount} guests - ₹${services?.staffProvided?.cost} ${services?.staffProvided?.costType?.replace('_', ' ')}`}
             >
                <div className="space-y-4">
                   <div>
