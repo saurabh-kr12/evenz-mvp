@@ -153,7 +153,7 @@ const SectionCard = ({
                onClick={() => toggleSection(sectionName)}
             >
                <div className='flex flex-row'>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
+                  <h3 className="sm:text-lg text-base font-semibold text-gray-900 mb-1">{title}</h3>
                   <SectionHeaderWithTooltip priority={priority} />
                </div>
                {!isExpanded && summary && (

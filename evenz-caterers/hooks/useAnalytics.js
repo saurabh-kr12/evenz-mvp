@@ -15,10 +15,6 @@ const useAnalytics = () => {
          ...customParameters
       });
 
-      // Optional: Console log for debugging (remove in production)
-      if (process.env.NODE_ENV === 'development') {
-         console.log('Analytics Event:', { action, category, label, value, customParameters });
-      }
    }, []);
 
    // Registration specific events

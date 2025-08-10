@@ -208,7 +208,7 @@ const ProfileCompletionCard = () => {
             <div className={`p-2 rounded-lg ${completionStatus.bgColor}`}>
               <Icon className={`w-6 h-6 ${completionStatus.iconColor}`} />
             </div>
-            <h2 className={`text-lg font-semibold ${completionStatus.textColor}`}>
+            <h2 className={`sm:text-lg text-base font-semibold ${completionStatus.textColor}`}>
               {completionStatus.title}
             </h2>
           </div>
@@ -239,7 +239,7 @@ const ProfileCompletionCard = () => {
         <div className="flex-shrink-0">
           <button
             onClick={() => handleNavigation(completionStatus.buttonLink)}
-            className={`${completionStatus.buttonColor} text-white px-6 py-3 rounded-md transition-colors flex items-center space-x-2 font-medium shadow-sm hover:shadow-md`}
+            className={`${completionStatus.buttonColor} text-white sm:px-6 sm:py-3 py-2 px-4 rounded-md transition-colors flex items-center space-x-2 font-medium shadow-sm hover:shadow-md`}
           >
             <span>{completionStatus.buttonText}</span>
             {completionStatus.priority === 'complete' ? (
