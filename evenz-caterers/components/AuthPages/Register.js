@@ -293,7 +293,7 @@ const Step1Business = ({ data, setData, errors, setErrors, onNext, loading }) =>
             onClick={() => ui.buttonClicked('login_account_link', 'register_page')}
             className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors underline-offset-4 hover:underline"
           >
-            Login now
+            Login
           </Link>
         </p>
       </div>
