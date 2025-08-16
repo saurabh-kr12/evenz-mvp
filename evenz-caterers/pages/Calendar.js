@@ -439,7 +439,7 @@ const AvailabilityCalendar = () => {
                         ${isToday ? 'font-bold ring-2 ring-blue-300' : ''}
                         ${isPast ? 'opacity-30 bg-gray-100' : ''}
                         ${isPast && bulkMode ? 'cursor-not-allowed' : 'cursor-pointer'}
-                        ${status === 'available' ? 'bg-green-300 text-green-800' : ''}
+                        ${status === 'available' ? 'bg-gray-100 text-green-800' : ''}
                         ${status === 'unavailable' ? 'bg-red-400 text-white' : ''}
                         ${!status && !isSelected && !isBulkSelected ? 'bg-gray-100 hover:bg-gray-200' : ''}
                       `}

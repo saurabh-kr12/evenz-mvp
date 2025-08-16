@@ -3,6 +3,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaUser, FaBars, FaTimes, FaChevronDown, FaCalendarCheck, FaHeart, FaBell, FaSignOutAlt } from 'react-icons/fa';
+import { User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import useAnalytics from '@/hooks/useAnalytics';
 
@@ -66,13 +67,9 @@ const Navbar = ({ User, setUser }) => {
                   onClick={handleDropdownToggle}
                   onMouseEnter={() => setDropdownOpen(true)}
                 >
-                  <div className="w-8 h-8 rounded-full overflow-hidden mr-2 border-2 border-pink-200">
-                    <img
-                      src='/cat_profile_pic.jpg'
-                      alt={currentUser.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                 
+                    <FaUser className="mr-3 fill-blue-700"/>
+                  
                   <span className="text-gray-700 font-semibold">{currentUser.name}</span>
                   <FaChevronDown className="ml-2 text-gray-500" />
                 </div>
