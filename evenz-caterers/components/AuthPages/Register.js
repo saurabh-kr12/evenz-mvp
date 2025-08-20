@@ -643,7 +643,7 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, t
 
 // --- Main Component ---
 const RegistrationForm = () => {
-  const [currentStep, setCurrentStep] = useState(2);
+  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [tempId, setTempId] = useState('');
   const [errors, setErrors] = useState({});
