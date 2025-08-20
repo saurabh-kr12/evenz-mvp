@@ -82,7 +82,7 @@ const Step1Business = ({ data, setData, errors, setErrors, onNext, loading }) =>
   const [showPatnaMessage, setShowPatnaMessage] = useState(false);
 
   // Google Analytics
-  const { registration: analytics , ui } = useAnalytics();
+  const { registration: analytics, ui } = useAnalytics();
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -450,6 +450,7 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, t
           placeholder="Enter 10-digit WhatsApp number"
           maxLength="10"
         />
+
         {!verificationStatus.mobile && (
           <div className="flex flex-col sm:flex-row gap-2">
             {otpSent.mobile ? (
@@ -472,13 +473,19 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, t
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => handleSendOTP('mobile')}
-                disabled={loading.send_mobile || !validateMobile(data.mobileNumber)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {loading.send_mobile ? <LoadingSpinner /> : 'Send OTP'}
-              </button>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <p className="text-xs text-gray-500 ml-1">
+                  We&apos;ll send a verification OTP to this number on{' '}
+                  <strong>WhatsApp.</strong>
+                </p>
+                <button
+                  onClick={() => handleSendOTP('mobile')}
+                  disabled={loading.send_mobile || !validateMobile(data.mobileNumber)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading.send_mobile ? <LoadingSpinner /> : 'Send OTP'}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -636,7 +643,7 @@ const Step2Verification = ({ data, setData, errors, setErrors, onNext, onBack, t
 
 // --- Main Component ---
 const RegistrationForm = () => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(2);
   const [loading, setLoading] = useState(false);
   const [tempId, setTempId] = useState('');
   const [errors, setErrors] = useState({});
