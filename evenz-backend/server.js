@@ -83,6 +83,11 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// --- Health Check Endpoint ---
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+});
+
 // --- API Routes ---
 app.use('/api/user/auth', userAuthRoutes);
 app.use('/api/user/shortlist',shortlist)
