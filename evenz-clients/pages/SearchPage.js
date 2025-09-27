@@ -433,7 +433,7 @@ const SearchPage = () => {
               <input
                 type="text"
                 placeholder="Search by caterer name, cuisine or location..."
-                className="w-full px-5 py-3 md:px-6 md:py-4 rounded-full text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md text-base md:text-lg font-medium"
+                className="w-full sm:placeholder:text-lg placeholder:text-sm  px-2 sm:px-5 py-3 md:px-6 md:py-4 rounded-full text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md text-base md:text-lg font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => {

@@ -380,8 +380,7 @@ const BookingRequestForm = () => {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                {/* Header */}
                <div className="bg-blue-600 text-white p-6">
-                  <h1 className="text-2xl font-bold mb-2">Booking Request (Debug Version)</h1>
-                  <p className="text-blue-100">Test the estimated cost calculation</p>
+                  <h1 className="text-2xl font-bold mb-2">Booking Request Form</h1>
                </div>
 
                {/* Error Alert */}

@@ -48,12 +48,44 @@ const Navbar = ({ User, setUser }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link 
-              href={currentUser ? "/dashboard" : "/"} 
+            <Link
+              href={currentUser ? "/dashboard" : "/"}
               className="flex-shrink-0 flex items-center"
               onClick={() => analytics.trackLinkClick('logo', currentUser ? 'dashboard' : 'home', 'branding')}
             >
-              <span className="text-2xl font-bold text-pink-600">Evenz.in</span>
+              <span>
+                <svg
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="32"
+                  height="32"
+                >
+                  <defs>
+                    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: '#667eea' }} />
+                      <stop offset="100%" style={{ stopColor: '#764ba2' }} />
+                    </linearGradient>
+                  </defs>
+
+                  <circle cx="12" cy="12" r="4" fill="url(#iconGradient)" />
+                  <circle cx="36" cy="12" r="4" fill="url(#iconGradient)" />
+                  <circle cx="24" cy="36" r="4" fill="url(#iconGradient)" />
+
+                  <path d="M16 12 L32 12" stroke="url(#iconGradient)" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M15 15 L21 33" stroke="url(#iconGradient)" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M33 15 L27 33" stroke="url(#iconGradient)" strokeWidth="2" strokeLinecap="round" />
+
+                  <circle cx="24" cy="6" r="1.5" fill="#ff6b6b" />
+                  <circle cx="6" cy="24" r="1.5" fill="#ffd700" />
+                  <circle cx="42" cy="24" r="1.5" fill="#ff6b6b" />
+                  <circle cx="24" cy="24" r="1.5" fill="#ffd700" />
+                </svg>
+              </span>
+
+              <span className="text-xl sm:text-2xl font-bold text-[#667eea] ml-2">Evenz.in</span>
+
+
             </Link>
           </div>
 
@@ -67,9 +99,9 @@ const Navbar = ({ User, setUser }) => {
                   onClick={handleDropdownToggle}
                   onMouseEnter={() => setDropdownOpen(true)}
                 >
-                 
-                    <FaUser className="mr-3 fill-blue-700"/>
-                  
+
+                  <FaUser className="mr-3 fill-blue-700" />
+
                   <span className="text-gray-700 font-semibold">{currentUser.name}</span>
                   <FaChevronDown className="ml-2 text-gray-500" />
                 </div>
@@ -127,49 +159,49 @@ const Navbar = ({ User, setUser }) => {
           ) : (
             // Not logged in state - show regular menu
             <div className="hidden md:flex items-center space-x-4">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out"
                 onClick={() => analytics.trackLinkClick('nav_home', 'home', 'main_nav')}
               >
                 Home
               </Link>
-              <Link 
-                href="/search" 
+              <Link
+                href="/search"
                 className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out"
                 onClick={() => analytics.trackLinkClick('nav_search', 'search', 'main_nav')}
               >
                 Find Caterers
               </Link>
-              <Link 
-                href="/about" 
+              <Link
+                href="/about"
                 className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out"
                 onClick={() => analytics.trackLinkClick('nav_about', 'about', 'main_nav')}
               >
                 About
               </Link>
-              <Link 
-                href="/contact" 
+              <Link
+                href="/contact"
                 className="px-3 py-2 text-gray-700 hover:text-pink-600 transition duration-300 ease-in-out"
                 onClick={() => analytics.trackLinkClick('nav_contact', 'contact', 'main_nav')}
               >
                 Contact
               </Link>
-              <Link 
-                href="/login" 
+              <Link
+                href="/login"
                 className="px-4 py-2 text-gray-700 hover:text-pink-600 font-medium transition duration-300 ease-in-out"
                 onClick={() => analytics.trackLinkClick('nav_login', 'login', 'authentication')}
               >
                 Login
               </Link>
               <a
-                href='http://localhost:3001/register'
+                href='https://vendors.evenz.in/register'
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ml-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600  transition duration-300 ease-in-out"
                 onClick={() => analytics.trackLinkClick('vendor_signup', 'vendor_portal', 'conversion')}
               >
-                Are you a Vendor?
+                Are you a Caterer?
               </a>
             </div>
           )}
@@ -292,7 +324,7 @@ const Navbar = ({ User, setUser }) => {
                 Login
               </Link>
               <a
-                href='http://localhost:3001/#/login'
+                href='https://vendors.evenz.in/register'
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block px-3 py-2 rounded-md text-base font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition duration-300 ease-in-out mt-2"
@@ -301,7 +333,7 @@ const Navbar = ({ User, setUser }) => {
                   setMenuOpen(false);
                 }}
               >
-                Are you a Vendor?
+                Are you a Caterer?
               </a>
             </>
           )}

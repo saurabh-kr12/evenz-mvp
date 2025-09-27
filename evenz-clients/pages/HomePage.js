@@ -16,7 +16,7 @@ const HomePage = () => {
     analytics.trackPageView('home_page', 'landing');
   }, [analytics]);
 
-  // Mock data for vendors with descriptive image placeholders
+  // Mock data for Caterers with descriptive image placeholders
   const vendorCategories = [
     {
       id: 'caterers',
@@ -47,18 +47,18 @@ const HomePage = () => {
   const steps = [
     {
       step: "1",
-      title: "Browse Vendors",
-      description: "Explore our curated list of verified event vendors in your city"
+      title: "Browse Caterers",
+      description: "Explore our curated list of verified event Caterers in your city"
     },
     {
       step: "2",
       title: "Check Availability",
-      description: "View real-time availability and compare pricing from multiple vendors"
+      description: "View real-time availability and compare pricing from multiple Caterers"
     },
     {
       step: "3",
       title: "Send Booking Request",
-      description: "Connect directly with vendors and secure your booking with confidence"
+      description: "Connect directly with Caterers and secure your booking with confidence"
     }
   ];
 
@@ -102,7 +102,7 @@ const HomePage = () => {
   };
 
   // Track vendor signup CTA
-  const handleVendorSignupClick = () => {
+  const handleCaterersignupClick = () => {
     analytics.trackLinkClick('vendor_signup', 'vendor_registration', 'conversion_cta');
     analytics.trackCustomEvent('vendor_interest', 'business_growth', 'vendor_cta_clicked');
     analytics.trackConversion('vendor_signup_intent', 1);
@@ -128,8 +128,8 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-pink-500 to-purple-600 py-20 px-6 md:px-12 text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Find the Perfect Vendors for Your Special events</h1>
-          <p className="text-xl mb-10">Browse, compare, and book best vendors in Patna</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Find the Perfect Caterers for Your Special events</h1>
+          <p className="text-xl mb-10">Browse, compare, and book best Caterers in Patna</p>
           <div className="bg-white rounded-lg shadow-lg p-2 flex flex-col md:flex-row">
             <input
               type="text"
@@ -155,7 +155,7 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
-              How Evenz Works
+              How Evenz.in Works
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Getting your perfect event organized is just three simple steps away
@@ -244,7 +244,7 @@ const HomePage = () => {
           <a
             href="http://localhost:3001/register"
             target='_blank'
-            onClick={handleVendorSignupClick}
+            onClick={handleCaterersignupClick}
             className="inline-block bg-white text-purple-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg shadow-md transition duration-300">
             Join as a Caterer
           </a>

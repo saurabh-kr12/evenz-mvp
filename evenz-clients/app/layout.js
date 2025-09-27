@@ -7,7 +7,10 @@ import GoogleAnalytics from '../components/GoogleAnalytics';
 
 export const metadata = {
   title: 'Evenz - Event Planning Made Easy',
-  description: 'Find and book the best vendors for your events',
+  description: 'Find and book the best caterers for your events',
+  icons: {
+    icon: '/Evenz_app_logo.png', // /public is implied
+  },
 };
 
 export default function RootLayout({ children }) {

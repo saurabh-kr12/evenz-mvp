@@ -199,7 +199,7 @@ const LoginPage = () => {
 
          <div className="mt-6 w-full mx-auto md:mt-8 pb-3 text-center">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-               <p className="text-gray-800 text-sm md:text-md">Are you a Vendor?</p>
+               <p className="text-gray-800 text-sm md:text-md">Are you a Caterer?</p>
                <a
                   href='http://localhost:3001/login'
                   target="_blank"
@@ -207,7 +207,7 @@ const LoginPage = () => {
                   onClick={handleVendorLoginClick}
                   className="inline-block cursor-pointer px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs md:text-sm rounded-full shadow-md hover:shadow-lg transition duration-300 ease-in-out"
                >
-                  Login as Vendor
+                  Login as Caterer
                </a>
             </div>
          </div>

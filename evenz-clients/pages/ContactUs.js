@@ -1,86 +1,68 @@
 "use client";
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Send } from 'lucide-react';
+import React from 'react';
+import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from 'lucide-react';
 import Link from 'next/link';
 
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    setFormData({ name: '', email: '', subject: '', message: '' });
-  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 bg-clip-text text-transparent mb-6">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
             Contact Us
           </h1>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Have questions, feedback, or need assistance? Reach out to our team. We're here to help you connect with the perfect caterer for your event.
           </p>
         </div>
 
-        {/* Contact Information - Full Width */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 lg:p-10">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
+        {/* Contact Information Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 lg:p-10">
+          <h2 className="text-3xl font-bold text-gray-800 mb-10">
             Let's Connect
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-            <div className="flex items-start space-x-6">
-              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-500 w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            {/* Email */}
+            <div className="flex items-start space-x-5">
+              <div className="bg-indigo-600 w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Mail className="w-7 h-7 text-white" />
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Email Support</h3>
-                <p className="text-gray-600 mb-3 text-base">For general inquiries and support</p>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Email Support</h3>
+                <p className="text-gray-500 mb-3">For general inquiries and support</p>
                 <a
                   href="mailto:support@evenz.in"
-                  className="text-lg font-medium text-purple-700 bg-clip-text  hover:opacity-80 transition-opacity"
+                  className="text-lg font-medium text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
                 >
                   support@evenz.in
                 </a>
               </div>
             </div>
 
-            <div className="flex items-start space-x-6">
-              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-500 w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                <Phone className="w-7 h-7 text-white" />
+            {/* Phone */}
+            <div className="flex items-start space-x-5">
+               <div className="bg-gray-300 w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Phone className="w-7 h-7 text-gray-500" />
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Phone Support</h3>
-                <p className="text-gray-600 text-base">Currently unavailable, please use email for support</p>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Phone Support</h3>
+                <p className="text-gray-500">Currently unavailable, please use email for support.</p>
               </div>
             </div>
 
-            <div className="flex items-start space-x-6">
-              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-teal-500 w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+            {/* Office */}
+            <div className="flex items-start space-x-5">
+              <div className="bg-indigo-600 w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0">
                 <MapPin className="w-7 h-7 text-white" />
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Our Office</h3>
-                <p className="text-gray-600 leading-relaxed text-base">
-                  Evenz.in Headquarters<br />
-                  123, Main Street<br />
-                  Patna, Bihar - 800001<br />
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Our Service Area</h3>
+                <p className="text-gray-500 leading-relaxed">
+                  Proudly serving the greater<br />
+                  Patna Metropolitan Area, Bihar<br />
                   India
                 </p>
               </div>
@@ -89,13 +71,13 @@ const ContactPage = () => {
 
           {/* Social Media */}
           <div className="mt-10 pt-8 border-t border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Connect With Us</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Follow Us</h3>
             <div className="flex space-x-4">
               <a
                 href="https://www.instagram.com/evenz_in"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-14 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="w-14 h-14 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 hover:scale-105 transition-all duration-300"
               >
                 <Instagram className="w-7 h-7" />
               </a>
@@ -103,7 +85,7 @@ const ContactPage = () => {
                 href="https://www.facebook.com/Evenz.inOfficial"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-14 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="w-14 h-14 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 hover:scale-105 transition-all duration-300"
               >
                 <Facebook className="w-7 h-7" />
               </a>
@@ -111,7 +93,7 @@ const ContactPage = () => {
                 href="https://www.linkedin.com/company/evenz-india"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-14 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="w-14 h-14 rounded-xl bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 hover:scale-105 transition-all duration-300"
               >
                 <Linkedin className="w-7 h-7" />
               </a>
@@ -120,17 +102,14 @@ const ContactPage = () => {
         </div>
 
         {/* Bottom CTA Section */}
-        <div className="mt-20 text-center bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 rounded-3xl p-12 text-white">
-          <h3 className="text-3xl lg:text-4xl font-bold mb-6">Ready to Plan Your Perfect Event?</h3>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href={'catering-services'}
-              className="bg-white text-indigo-600 font-semibold py-4 px-8 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300">
-              Browse Caterers
-            </Link>
-
-          </div>
+        <div className="mt-20 text-center bg-indigo-600 rounded-2xl p-12 text-white">
+          <h3 className="text-4xl font-bold mb-6">Ready to Plan Your Perfect Event?</h3>
+          <p className="text-indigo-200 text-lg max-w-2xl mx-auto mb-8">Browse our network of trusted, professional caterers in Patna and send a booking request today.</p>
+          <Link
+            href={'/catering-services'}
+            className="bg-white text-indigo-600 font-bold py-4 px-8 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 text-lg">
+            Browse Caterers
+          </Link>
         </div>
       </div>
     </div>

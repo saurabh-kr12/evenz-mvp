@@ -8,12 +8,12 @@ const ClientFAQs = () => {
    const faqs = [
       {
          question: "How do I find a caterer on Evenz.in for my event?",
-         answer: "You can use our search bar to look for caterers by location (e.g., Patna), cuisine type, event size, and specific services. Our filters help you narrow down your options to find the perfect match.",
+         answer: "You can use our search bar to look for caterers by location (e.g., Patna), cuisine type, or caterer name. Our filters help you narrow down your options to find the perfect match.",
          category: "Getting Started"
       },
       {
          question: "How does the real-time availability check work?",
-         answer: "Once on a caterer's profile, you'll see a 'Check Availability' button. Click this to select your desrired event date. Our system will instantly show you if the caterer is available on that specific date, saving you time and ensuring you only send booking requests to available caterers.",
+         answer: "On a caterer's profile, you'll see a 'Check Availability' button. Click this to select your desired event date. Our system will instantly show you if the caterer is available on that date, saving you time and ensuring you only send booking requests to available caterers.",
          category: "Unique Feature"
       },
       {
@@ -23,23 +23,23 @@ const ClientFAQs = () => {
       },
       {
          question: "How do I send an inquiry to a caterer?",
-         answer: "Once you find a caterer you like, click on their profile and use the 'Check Availability' button to check availability and if caterer is available on the event date use 'Send Booking Request' button. Fill in your event details, guest count, catering preferences, and any specific requirements. The caterer will then review your request and reach out to you.",
+         answer: "Once you find a caterer you like, click on their profile and use the 'Check Availability' button. If the caterer is available on your event date, click the 'Send Booking Request' button. Fill in your event details, guest count, catering preferences, and any specific requirements. The caterer will then review your request and reach out to you.",
          category: "Communication"
       },
       {
          question: "What happens after I send a booking request?",
-         answer: "After you send a booking request, the caterer will receive your details and will contact you directly (via phone or Whatsapp) to discuss your requirements further, negotiate prices, finalize menu items, and secure the booking. Evenz.in's role in the connection process is complete once your contact details are shared with caterer.",
+         answer: "After you send a booking request, the caterer will receive your details and contact you directly (via phone or WhatsApp) to discuss your requirements, negotiate pricing, finalize menu items, and secure the booking. Evenz.in’s role is complete once your contact details are shared with the caterer.",
          category: "Communication"
       },
       {
          question: "What is Evenz.in's role in the booking and service delivery process?",
-         answer: "Evenz.in is solely a platform to connect clients with caterers. We facilitate your ability to find caterers send intial booking requests. However, we are not involved in the actual booking, payment processing, service delivery, or any direct agreements made between you and the caterer. All responsibilities related to the catering service, including its quality, terms, and execution, lie solely with the client and the chosen caterer.",
+         answer: "Evenz.in is solely a platform to connect clients with caterers. We facilitate your ability to find and communicate with caterers. However, we are not involved in the actual booking, payment processing, service delivery, or any direct agreements between you and the caterer. All responsibilities related to the catering service—including quality, terms, and execution—lie solely with the client and the chosen caterer.",
          category: "Platform Role",
          isImportant: true
       },
       {
          question: "What if a caterer doesn't respond to my inquiry?",
-         answer: "While caterers are encouraged to respond promptly, if you don't hear back within 24-48 hours, we recommend trying another caterer or contacting our support team at support@evenz.in for assistance.",
+         answer: "While caterers are encouraged to respond promptly, if you don’t hear back within 24–48 hours, we recommend trying another caterer or contacting our support team at support@evenz.in for assistance.",
          category: "Support"
       },
       {
@@ -128,7 +128,7 @@ const ClientFAQs = () => {
                                  <p className="text-gray-700 leading-relaxed">
                                     {faq.isImportant ? (
                                        <span>
-                                          <strong className="text-amber-800">Evenz.in is solely a platform to connect clients with caterers.</strong> We facilitate your ability to find and communicate with caterers. However, <strong className="text-amber-800">we are not involved in the actual booking, payment processing, service delivery, or any direct agreements made between you and the caterer.</strong> All responsibilities related to the catering service, including its quality, terms, and execution, lie solely with the client and the chosen caterer.
+                                          <strong className="text-amber-800">Evenz.in is solely a platform to connect clients with caterers.</strong> We facilitate your ability to find and communicate with caterers. However, <strong className="text-amber-800">we are not involved in the actual booking, payment processing, service delivery, or any direct agreements between you and the caterer.</strong> All responsibilities related to the catering service—including its quality, terms, and execution—lie solely with the client and the chosen caterer.
                                        </span>
                                     ) : (
                                        faq.answer
@@ -153,7 +153,7 @@ const ClientFAQs = () => {
                   Still have questions?
                </h3>
                <p className="text-gray-600 mb-6">
-                  Our support team is here to help you get the most out of Evenz.in
+                  Our support team is here to help you get the most out of Evenz.in.
                </p>
                <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <a

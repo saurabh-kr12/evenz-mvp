@@ -7,7 +7,7 @@ const HowItWorksClients = () => {
     {
       icon: <Search className="w-8 h-8 text-indigo-600" />,
       title: "Step 1: Browse Caterers",
-      description: "Explore our curated list of professional caterers. Use filters for cuisine, location, guest count, and service type to find the perfect match for your event needs."
+      description: "Explore our curated list of professional caterers. Use filters for cuisine, location, and caterer name to find the perfect match for your event needs."
     },
     {
       icon: <UserRoundCheck className="w-8 h-8 text-indigo-600" />,
@@ -16,8 +16,8 @@ const HowItWorksClients = () => {
     },
     {
       icon: <CalendarCheck2 className="w-8 h-8 text-indigo-600" />, // Icon for availability check
-      title: "*Step 3: Check Real-time Availability*",
-      description: "*Before sending a request, use the 'Check Availability' button on the caterer's profile to see if they are available for your specific event date. This saves you time!*"
+      title: "Step 3: Check Real-time Availability",
+      description: "Before sending a request, use the 'Check Availability' button on the caterer's profile to see if they are available for your specific event date. This saves you time!"
     },
     {
       icon: <MailCheck className="w-8 h-8 text-indigo-600" />,
@@ -26,8 +26,8 @@ const HowItWorksClients = () => {
     },
     {
       icon: <Phone className="w-8 h-8 text-indigo-600" />,
-      title: "*Step 5: Caterer Contacts YOU*",
-      description: "*The caterer will review your request. If interested, they will gain access to your contact details and reach out to you directly (via call or WhatsApp) to discuss your event. You do not need to make the first call!*"
+      title: "Step 5: Caterer Contacts YOU",
+      description: "The caterer will review your request. If interested, they will gain access to your contact details and reach out to you directly (via call or WhatsApp) to discuss your event. You do not need to make the first call!"
     },
     {
       icon: <Handshake className="w-8 h-8 text-indigo-600" />,
