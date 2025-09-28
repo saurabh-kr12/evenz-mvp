@@ -201,7 +201,7 @@ const LoginPage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
                <p className="text-gray-800 text-sm md:text-md">Are you a Caterer?</p>
                <a
-                  href='http://localhost:3001/login'
+                  href='https://vendors.evenz.in/login'
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleVendorLoginClick}

@@ -48,13 +48,6 @@ const UserDashboard = ({ children }) => {
         <div className="lg:w-1/4 space-y-6">
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <div className="flex items-center">
-              {/* <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden mr-4 border-2 border-pink-200">
-                <img
-                  src="/cat_profile_pic.jpg"
-                  alt={currentUser?.name || "User"}
-                  className="w-full h-full object-cover"
-                />
-              </div> */}
               <User className="w-8 h-8 sm:w-12 sm:h-12 text-blue-700 mr-4" />
               <div>
                 <p className="text-sm sm:text-base text-gray-600">Hello,</p>
