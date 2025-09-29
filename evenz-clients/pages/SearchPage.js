@@ -112,7 +112,6 @@ const SearchPage = () => {
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search/vendors?${params}`);
         const data = await response.json();
-        console.log(data)
         
         if (data.success) {
           // Filter vendors to only include those with required details
