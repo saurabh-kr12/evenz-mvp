@@ -104,11 +104,6 @@ const CatererProfileView = () => {
       };
    }, []);
 
-   // useEffect(() => {
-   //    fetchCatererProfile();
-   //    checkShortlistStatus(catererId);
-   // }, [catererId]);
-
    // Track tab changes and time spent
    useEffect(() => {
       // Record time spent in previous tab
