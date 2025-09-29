@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Timer from '../components/Timer';
-import api from '../services/api';
+import {api} from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const YourProfile = () => {
@@ -89,7 +89,7 @@ const YourProfile = () => {
         return;
       }
 
-      const response = await api.post('/api/user/auth/send-email-otp', {
+      const response = await api.post('/user/auth/send-email-otp', {
         email: formData.email
       });
 
@@ -129,7 +129,7 @@ const YourProfile = () => {
         return;
       }
 
-      const response = await api.put('/api/user/auth/update-email', {
+      const response = await api.put('/user/auth/update-email', {
         email: formData.email,
         otp: formData.otp
       });
@@ -214,7 +214,7 @@ const YourProfile = () => {
       }
 
       // Make API request to update mobile
-      const response = await api.put('/api/user/auth/update-mobile', {
+      const response = await api.put('/user/auth/update-mobile', {
         mobile: formData.mobile,
         otp: formData.otp
       });
@@ -248,7 +248,7 @@ const YourProfile = () => {
         return;
       }
 
-      await api.post('/api/user/auth/send-mobile-otp', {
+      await api.post('/user/auth/send-mobile-otp', {
         mobile: formData.mobile
         // Pass user ID for context
       });
@@ -295,7 +295,7 @@ const YourProfile = () => {
       }
 
       // Make API request to update password
-      await api.put('/api/user/auth/update-password', {
+      await api.put('/user/auth/update-password', {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword
       });
@@ -315,7 +315,6 @@ const YourProfile = () => {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="">

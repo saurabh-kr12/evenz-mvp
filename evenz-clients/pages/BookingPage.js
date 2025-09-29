@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams,useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { AuthContext } from '@/context/AuthContext';
 import { Calendar, MapPin, Users, Phone, Mail, User, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext'; // 1. Import useAuth
+import { api } from '@/context/AuthContext';    // 2. Import the central api instance
 
 const BookingRequestForm = () => {
    const params = useParams();
@@ -33,11 +34,12 @@ const BookingRequestForm = () => {
    const [success, setSuccess] = useState(false);
    const [estimatedCost, setEstimatedCost] = useState(0);
    const [debugInfo, setDebugInfo] = useState('');
-   const { currentUser } = useContext(AuthContext);
+   // const { currentUser } = useContext(AuthContext);
 
    // Analytics
    const analytics = useAnalytics();
 
+   const { currentUser } = useAuth();
    // Track form initialization
    useEffect(() => {
       if (params.vendorId && eventDate) {
@@ -72,10 +74,10 @@ const BookingRequestForm = () => {
          }
 
          const data = await response.json();
-         console.log(data);
+
          if (data.success) {
             setCatererData(data.data);
-            
+
             // Track successful caterer data load
             analytics.trackCustomEvent(
                'caterer_profile_loaded',
@@ -88,7 +90,7 @@ const BookingRequestForm = () => {
          }
       } catch (err) {
          setError(err.message);
-         
+
          // Track profile loading error
          analytics.trackError(
             'caterer_profile_load_failed',
@@ -102,12 +104,6 @@ const BookingRequestForm = () => {
 
    // Calculate estimated cost with debugging
    const calculateEstimatedCost = () => {
-      console.log('Calculating cost...', {
-         numGuests: formData.numGuests,
-         selectedPackage: formData.selectedPackage,
-         selectedLiveCounters: formData.selectedLiveCounters
-      });
-
       if (!formData.numGuests || !formData.selectedPackage) {
          setEstimatedCost(0);
          setDebugInfo('Missing numGuests or selectedPackage');
@@ -131,8 +127,8 @@ const BookingRequestForm = () => {
 
       // Add live counters cost
       formData.selectedLiveCounters.forEach(counter => {
-         let counterCost = 0;     
-         counterCost = numGuests * counter.pricePerPlate;       
+         let counterCost = 0;
+         counterCost = numGuests * counter.pricePerPlate;
          totalCost += counterCost;
          breakdown.push(`${counter.name}: ${numGuests} × ₹${counter.pricePerPlate} = ₹${counterCost}`);
       });
@@ -151,7 +147,6 @@ const BookingRequestForm = () => {
 
       setEstimatedCost(totalCost);
       setDebugInfo(breakdown.join('\n'));
-      console.log('Final cost:', totalCost);
 
       // Track cost calculation milestones
       if (totalCost > 0) {
@@ -237,7 +232,7 @@ const BookingRequestForm = () => {
 
    const handlePackageSelection = (pkg) => {
       handleInputChange('selectedPackage', pkg);
-      
+
       // Track package selection
       analytics.trackCustomEvent(
          'package_selected',
@@ -257,24 +252,17 @@ const BookingRequestForm = () => {
 
       try {
          const catererId = params.vendorId;
-
-         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/booking-requests`, {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json',
-               Authorization: `Bearer ${localStorage.getItem('clientToken')}`
-            },
-            body: JSON.stringify({
-               ...formData,
-               catererId,
-               eventDate,
-               estimatedCost
-            })
+         // 4. Use the central 'api' instance for the POST request
+         const response = await api.post('/booking/booking-requests', {
+            ...formData,
+            catererId,
+            eventDate,
+            estimatedCost
          });
 
-         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to submit booking request');
+         if (!response.data.success) {
+            // const errorData = await response.json();
+            throw new Error('Failed to submit booking request');
          }
 
          setSuccess(true);
@@ -297,7 +285,15 @@ const BookingRequestForm = () => {
          );
 
       } catch (err) {
-         setError(err.message || 'Failed to submit booking request. Please try again.');
+         if (err.response && err.response.status === 400 && err.response.data.errors) {
+            // Validation errors from backend
+            const fieldErrors = err.response.data.errors; // array of { msg, param, ... }
+
+            // Option 1: Show first error
+            setError(fieldErrors[0].msg);
+         } else {
+            setError(err.message || 'Failed to submit booking request. Please try again.');
+         }
          console.error(err);
 
          // Track submission failure
@@ -350,7 +346,7 @@ const BookingRequestForm = () => {
                   Your booking request has been submitted successfully. The caterer will review your request and contact you soon.
                </p>
                <Link
-                  href={'/dashboard'} 
+                  href={'/dashboard'}
                   onClick={() => analytics.trackLinkClick('dashboard_from_success', 'dashboard', 'post_booking')}
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                >
@@ -599,7 +595,7 @@ const BookingRequestForm = () => {
                                        <span className="ml-2 text-sm text-gray-700">{counter.name}</span>
                                     </div>
                                     <span className="text-sm font-medium text-gray-900">
-                                       ₹{counter.pricePerPlate } per person 
+                                       ₹{counter.pricePerPlate} per person
                                     </span>
                                  </label>
                               ))}

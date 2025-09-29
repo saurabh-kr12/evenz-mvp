@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import { Calendar, MapPin, Users, Phone, Clock, CheckCircle, AlertCircle, Eye, Package, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext'; // 1. Import useAuth
+import { api } from '@/context/AuthContext';    // 2. Import the central api instance
 
 const ClientBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -11,85 +13,55 @@ const ClientBookings = () => {
   const [cancellingBookings, setCancellingBookings] = useState(new Set());
   const analytics = useAnalytics();
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
+  // 3. Get the authentication state from the context
+  const { accessToken, loading: authLoading } = useAuth();
 
-  const fetchBookings = async () => {
+  // 4. Wrap the data fetching in a useCallback and useEffect
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
     try {
-      const token = localStorage.getItem('clientToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/client`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setBookings(data.data);
+      // Use the central 'api' instance, which automatically adds the auth token
+      const response = await api.get('/booking/client');
+      if (response.data.success) {
+        setBookings(response.data.data);
       } else {
-        setError(data.message);
+        setError(response.data.message);
       }
     } catch (err) {
-      setError('Failed to fetch bookings');
+      setError(err.message || 'Failed to fetch bookings');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Only fetch data when auth is ready and a token exists
+    if (!authLoading && accessToken) {
+      fetchBookings();
+    } else if (!authLoading && !accessToken) {
+      // If the user is definitely logged out, stop loading
+      setLoading(false);
+    }
+  }, [accessToken, authLoading, fetchBookings]);
 
   const handleCancelBooking = async (bookingId) => {
-
-    // Track cancellation intent
-    analytics.trackCustomEvent(
-      'booking_cancel_initiated',
-      'booking_management',
-      `booking_${bookingId}`,
-      0
-    );
-
-    // Add confirmation dialog
-    if (!window.confirm('Are you sure you want to cancel this booking request? This action cannot be undone.')) {
-      // Track cancellation abandoned in confirmation
-      analytics.trackCustomEvent(
-        'booking_cancel_abandoned',
-        'booking_management',
-        `booking_${bookingId}_confirmation_declined`,
-        0
-      );
+    if (!window.confirm('Are you sure you want to cancel this booking request?')) {
       return;
     }
 
+    setCancellingBookings(prev => new Set(prev).add(bookingId));
     try {
-      setCancellingBookings(prev => new Set(prev).add(bookingId));
+      // Use the central 'api' instance for the DELETE request
+      const response = await api.delete(`/booking/cancel/${bookingId}`);
 
-      const token = localStorage.getItem('clientToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/booking/cancel/${bookingId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Remove the cancelled booking from the state
+      if (response.data.success) {
         setBookings(prev => prev.filter(booking => booking._id !== bookingId));
-        // Track successful cancellation
-        analytics.trackCustomEvent(
-          'booking_cancelled_successfully',
-          'booking_management',
-          `booking_${bookingId}`,
-          0
-        );
-
+        // Add a success toast if you have one
       } else {
-        setError(data.message);
+        setError(response.data.message);
       }
     } catch (err) {
-      setError('Failed to cancel booking request');
+      setError(err.message || 'Failed to cancel booking request');
     } finally {
       setCancellingBookings(prev => {
         const newSet = new Set(prev);

@@ -4,119 +4,73 @@ const Vendor = require('../models/Vendor/Vendor');
 const Menu = require('../models/Vendor/Menu');
 const Media = require('../models/Vendor/media');
 const Legal = require('../models/Vendor/legal');
+const { validationResult } = require('express-validator');
 
 // Add to shortlist
 const addToShortlist = async (req, res) => {
-   try {
-      const { catererId } = req.params;
-      const userId = req.user._id;
+    // 2. Check for validation errors from the route
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+    }
 
-      // Validate inputs
-      if (!catererId) {
-         return res.status(400).json({
-            success: false,
-            message: 'Caterer ID is required'
-         });
-      }
+    try {
+        const { catererId } = req.params;
+        const userId = req.user._id;
 
-      if (!userId) {
-         return res.status(401).json({
-            success: false,
-            message: 'User not authenticated'
-         });
-      }
-      // Check if vendor exists
-      const vendor = await Vendor.findById(catererId);
+        // 3. Removed redundant manual validation
 
-      if (!vendor) {
-         return res.status(404).json({
-            success: false,
-            message: 'Caterer not found'
-         });
-      }
+        const vendor = await Vendor.findById(catererId);
+        if (!vendor) {
+            return res.status(404).json({ success: false, message: 'Caterer not found' });
+        }
 
-      // Check if already shortlisted
-      const existingShortlist = await Shortlist.findOne({
-         user: userId,
-         vendor: catererId
-      });
+        const existingShortlist = await Shortlist.findOne({ user: userId, vendor: catererId });
+        if (existingShortlist) {
+            return res.status(400).json({ success: false, message: 'Caterer already in shortlist' });
+        }
 
-      if (existingShortlist) {
-         return res.status(400).json({
-            success: false,
-            message: 'Caterer already in shortlist'
-         });
-      }
+        const shortlist = new Shortlist({ user: userId, vendor: catererId });
+        await shortlist.save();
 
-      // Add to shortlist
-      const shortlist = new Shortlist({
-         user: userId,
-         vendor: catererId
-      });
+        res.status(201).json({
+            success: true,
+            message: 'Caterer added to shortlist',
+            data: shortlist
+        });
 
-      await shortlist.save();
-
-      res.status(201).json({
-         success: true,
-         message: 'Caterer added to shortlist',
-         data: shortlist
-      });
-
-   } catch (error) {
-      console.error('Error adding to shortlist:', error);
-      res.status(500).json({
-         success: false,
-         message: 'Internal server error',
-         error: error.message
-      });
-   }
+    } catch (error) {
+        console.error('Error adding to shortlist:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
 };
 
 // Remove from shortlist
 const removeFromShortlist = async (req, res) => {
-   try {
-      const { catererId } = req.params;
-      const userId = req.user._id;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+    }
 
-      if (!catererId) {
-         return res.status(400).json({
-            success: false,
-            message: 'Caterer ID is required'
-         });
-      }
+    try {
+        const { catererId } = req.params;
+        const userId = req.user._id;
 
-      if (!userId) {
-         return res.status(401).json({
-            success: false,
-            message: 'User not authenticated'
-         });
-      }
+        const result = await Shortlist.findOneAndDelete({ user: userId, vendor: catererId });
 
-      const result = await Shortlist.findOneAndDelete({
-         user: userId,
-         vendor: catererId
-      });
+        if (!result) {
+            return res.status(404).json({ success: false, message: 'Shortlist entry not found' });
+        }
 
-      if (!result) {
-         return res.status(404).json({
-            success: false,
-            message: 'Shortlist entry not found'
-         });
-      }
+        res.status(200).json({
+            success: true,
+            message: 'Caterer removed from shortlist'
+        });
 
-      res.status(200).json({
-         success: true,
-         message: 'Caterer removed from shortlist'
-      });
-
-   } catch (error) {
-      console.error('Error removing from shortlist:', error);
-      res.status(500).json({
-         success: false,
-         message: 'Internal server error',
-         error: error.message
-      });
-   }
+    } catch (error) {
+        console.error('Error removing from shortlist:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
 };
 
 // Get user's shortlist
@@ -205,42 +159,26 @@ const getShortlist = async (req, res) => {
 
 // Check if caterer is shortlisted
 const checkShortlistStatus = async (req, res) => {
-   try {
-      const { catererId } = req.params;
-      const userId = req.user._id;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    
+    try {
+        const { catererId } = req.params;
+        const userId = req.user._id;
 
-      if (!catererId) {
-         return res.status(400).json({
-            success: false,
-            message: 'Caterer ID is required'
-         });
-      }
+        const shortlist = await Shortlist.findOne({ user: userId, vendor: catererId });
 
-      if (!userId) {
-         return res.status(401).json({
-            success: false,
-            message: 'User not authenticated'
-         });
-      }
+        res.status(200).json({
+            success: true,
+            isShortlisted: !!shortlist
+        });
 
-      const shortlist = await Shortlist.findOne({
-         user: userId,
-         vendor: catererId
-      });
-
-      res.status(200).json({
-         success: true,
-         isShortlisted: !!shortlist
-      });
-
-   } catch (error) {
-      console.error('Error checking shortlist status:', error);
-      res.status(500).json({
-         success: false,
-         message: 'Internal server error',
-         error: error.message
-      });
-   }
+    } catch (error) {
+        console.error('Error checking shortlist status:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
 };
 
 module.exports = {

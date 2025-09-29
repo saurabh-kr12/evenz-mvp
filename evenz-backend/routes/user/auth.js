@@ -3,11 +3,15 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User/User');
 const bcrypt = require('bcrypt');
+const { body, validationResult } = require('express-validator');
 const OTPService = require('../../services/otpService');
 const EmailService = require('../../services/emailService');
 const { protect } = require('../../middleware/user/auth');
 
 const router = express.Router();
+
+// This regex is a whitelist for common text, allowing letters, numbers, spaces, and basic punctuation.
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
 
 // Send OTP
 router.post('/send-otp', async (req, res) => {
@@ -65,11 +69,6 @@ router.post('/verify-otp', async (req, res) => {
   try {
     const { mobile, otp } = req.body;
 
-    console.log('=== verify-otp endpoint ===');
-    console.log('mobile:', mobile);
-    console.log('otp:', otp);
-    console.log('otp type:', typeof otp);
-
     if (!mobile || !otp) {
       return res.status(400).json({
         success: false,
@@ -100,182 +99,128 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// Register user
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, mobile, password, otp, agreeToTerms } = req.body;
-
-    console.log('=== register endpoint ===');
-    console.log('mobile:', mobile);
-    console.log('otp:', otp);
-    console.log('otp type:', typeof otp);
-
-    // Validate required fields
-    if (!name || !email || !mobile || !password || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
+// @desc    Register a new client user
+// @route   POST /api/user/auth/register
+router.post('/register', [
+    body('name').matches(safeTextRegex).withMessage('Name contains invalid characters.').trim().escape(),
+    body('email').isEmail().withMessage('Please provide a valid email.').normalizeEmail(),
+    body('mobile').isMobilePhone('en-IN').withMessage('Please provide a valid 10-digit mobile number.'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long.'),
+    body('otp').isNumeric().isLength({ min: 6, max: 6 }).withMessage('OTP must be a 6-digit number.'),
+    body('agreeToTerms').equals('true').withMessage('You must agree to the terms.')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
     }
+    try {
+        const { name, email, mobile, password, otp } = req.body;
 
-    // Validate terms agreement
-    if (!agreeToTerms) {
-      return res.status(400).json({
-        success: false,
-        message: 'You must agree to the Terms and Conditions and Privacy Policy'
-      });
+        const otpResult = await OTPService.verifyOTP(mobile, otp, 'client_mobile_registration', true);
+        if (!otpResult.success) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'User already exists with this email or mobile number' });
+        }
+
+        const user = await User.create({
+            name, email, mobile, password,
+            isMobileVerified: true, role: 'client', agreeToTerms: true, termsAcceptedAt: new Date()
+        });
+
+        const expiresIn = '30d'; // New users get a long session by default
+        const accessToken = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ userId: user._id, role: user.role }, process.env.REFRESH_TOKEN_SECRET, { expiresIn });
+
+        res.cookie('clientRefreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            accessToken,
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
     }
-
-    const purpose = 'client_mobile_registration';
-
-    // Verify OTP and mark as verified
-    const otpResult = await OTPService.verifyOTP(mobile, otp, purpose, true);
-    if (!otpResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired OTP'
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { mobile }]
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email or mobile number'
-      });
-    }
-
-    // Validate password strength
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters long'
-      });
-    }
-
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      mobile,
-      password,
-      isMobileVerified: true,
-      role: 'client',
-      agreeToTerms: true,
-      termsAcceptedAt: new Date()
-    });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        isMobileVerified: user.isMobileVerified,
-        agreeToTerms: user.agreeToTerms,
-        termsAcceptedAt: user.termsAcceptedAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
 });
 
-// Login user
-router.post('/login', async (req, res) => {
-  try {
-    const { mobile, password, rememberMe } = req.body;
-
-    if (!mobile || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mobile number and password are required'
-      });
+// @desc    Login a client user
+// @route   POST /api/user/auth/login
+router.post('/login', [
+    body('mobile').isMobilePhone('en-IN').withMessage('Please enter a valid 10-digit mobile number.'),
+    body('password').not().isEmpty().withMessage('Password is required.')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
     }
+    try {
+        const { mobile, password, rememberMe } = req.body;
+        const user = await User.findOne({ mobile }).select('+password');
 
-    // Find user
-    const user = await User.findOne({ mobile });
+        if (!user || !(await user.comparePassword(password))) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your mobile number and password.' });
+        }
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'No user found with this mobile number, please sign up first.'
-      });
+        const expiresIn = rememberMe ? '60d' : '7d';
+        const accessToken = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ userId: user._id, role: user.role }, process.env.REFRESH_TOKEN_SECRET, { expiresIn });
+
+        res.cookie('clientRefreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            maxAge: (rememberMe ? 60 : 7) * 24 * 60 * 60 * 1000
+        });
+        
+        res.json({
+            success: true,
+            message: 'Login successful',
+            accessToken,
+            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ success: false, message: 'An internal server error occurred.' });
     }
+});
 
-    if (!user || !user.isMobileVerified) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+// @desc    Get a new access token for a client
+// @route   GET /api/user/auth/refresh
+router.get('/refresh', async (req, res) => {
+    const refreshToken = req.cookies.clientRefreshToken;
+    if (!refreshToken) return res.sendStatus(401);
+
+    try {
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decoded.userId).select('-password');
+        if (!user) return res.sendStatus(403);
+
+        const accessToken = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        res.json({ success: true, accessToken });
+    } catch (err) {
+        return res.sendStatus(403);
     }
+});
 
-    // Check password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
+// @desc    Logout a client user
+// @route   POST /api/user/auth/logout
+router.post('/logout', protect, async (req, res) => {
+    const cookies = req.cookies;
+    if (!cookies?.clientRefreshToken) return res.sendStatus(204);
 
-    // Generate JWT token
-    const expiresIn = rememberMe ? '60d' : '7d';
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn }
-    );
-
-    // Save remember token if rememberMe is true
-    if (rememberMe) {
-      user.rememberToken = token;
-      user.rememberTokenExpires = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days
-      await user.save();
-    }
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        isMobileVerified: user.isMobileVerified
-      }
-    });
-
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
+    res.clearCookie('clientRefreshToken', { httpOnly: true, sameSite: 'none', secure: process.env.NODE_ENV === 'production' });
+    res.json({ success: true, message: 'Logout successful' });
 });
 
 // Forgot password
@@ -394,7 +339,6 @@ router.post('/send-mobile-otp', protect, async (req, res) => {
     const { mobile } = req.body;
     const userId = req.userId || req.user._id || req.user.id; // Ensure userId is correctly extracted
 
-    console.log("user Id at route ",userId)
     if (!mobile) {
       return res.status(400).json({ message: 'Mobile number is required' });
     }
@@ -447,8 +391,6 @@ router.put('/update-mobile', protect, async (req, res) => {
     const { mobile, otp } = req.body;
     const userId = req.userId || req.user._id || req.user.id; // Ensure userId is correctly extracted
 
-    console.log("user Id at route at update-mobile route :",userId)
-
     if (!mobile || !otp) {
       return res.status(400).json({ message: 'Mobile number and OTP are required' });
     }
@@ -488,8 +430,6 @@ router.put('/update-password', protect, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.userId ||  req.user._id || req.user.id; // Ensure userId is correctly extracted
-
-    console.log("user Id at route at update-password route :",userId)
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ message: 'Current password and new password are required' });
@@ -532,8 +472,6 @@ router.post('/send-email-otp', protect, async (req, res) => {
   try {
     const { email } = req.body;
     const userId = req.userId || req.user._id || req.user.id;
-
-    console.log("user Id at route at send-email-otp route:", userId);
 
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
@@ -582,16 +520,6 @@ router.post('/send-email-otp', protect, async (req, res) => {
 router.put('/update-email', protect, async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
-    // Debug logging - check what's available in req
-    console.log('=== UPDATE EMAIL DEBUG ===');
-    console.log('req.user:', req.user);
-    console.log('req.userId:', req.userId);
-    console.log('req.user._id:', req.user?._id);
-    console.log('req.user.id:', req.user?.id);
-    console.log('req.user.role:', req.user?.role);
-    console.log('email:', email);
-    console.log('otp:', otp);
 
     // Check if user exists in request
     if (!req.user) {
@@ -627,19 +555,15 @@ router.put('/update-email', protect, async (req, res) => {
 
     // Determine purpose based on user role
     const purpose = req.user.role === 'client' ? 'client_email_update' : 'vendor_email_update';
-    
-    console.log('Using purpose:', purpose);
 
     // Verify email OTP
     const verification = await EmailService.verifyEmailOTP(email.toLowerCase(), otp, purpose);
-    console.log('Verification result:', verification);
     
     if (!verification.success) {
       return res.status(400).json({ message: verification.message });
     }
 
     // Ensure the OTP belongs to the requesting user
-    console.log('Comparing userId:', userId, 'with verification.userId:', verification.userId);
     if (verification.userId.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'OTP does not belong to the requesting user' });
     }
@@ -658,8 +582,6 @@ router.put('/update-email', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    console.log('Email updated successfully for user:', updatedUser._id);
-
     res.json({
       message: 'Email updated successfully',
       user: updatedUser
@@ -676,13 +598,8 @@ router.put('/update-email', protect, async (req, res) => {
 // In your routes/user/auth.js file
 router.get('/me', protect, async (req, res) => {
   try {
-    console.log('Me route hit!', req.headers.authorization);
-    console.log('req.user:', req.user);
-
     // Get user ID from req.user (handle different structures)
     const userId = req.user.userId || req.user._id || req.user.id;
-
-    console.log('User ID from req.user:', userId);
 
     if (!userId) {
       return res.status(400).json({
@@ -694,14 +611,11 @@ router.get('/me', protect, async (req, res) => {
     const user = await User.findById(userId).select('-password');
 
     if (!user) {
-      console.log('User not found in database with ID:', userId);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
-
-    console.log('User found in database:', user.name, user.email);
 
     res.json({
       success: true,
@@ -725,27 +639,5 @@ router.get('/me', protect, async (req, res) => {
   }
 });
 
-// Logout (clear remember token)
-router.post('/logout', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId);
-    if (user) {
-      user.rememberToken = undefined;
-      user.rememberTokenExpires = undefined;
-      await user.save();
-    }
-
-    res.json({
-      success: true,
-      message: 'Logout successful'
-    });
-
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
 
 module.exports = router;

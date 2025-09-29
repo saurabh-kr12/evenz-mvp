@@ -1,307 +1,237 @@
-// client/src/context/AuthContext.js
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import api from '../services/api';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+
+// Create a dedicated axios instance for API calls
+export const api = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+    withCredentials: true
+});
 
 export const AuthContext = createContext({
-  currentUser: null,
-  loading: true,
-
-  // Auth functions
-  register: () => { },
-  login: () => { },
-  logout: () => { },
-  updateProfile: () => { },
-
-  // OTP functions
-  sendOTP: () => { },
-  verifyOTP: () => { },
-  resendOTP: () => { },
-
-  // OTP state
-  otpSent: false,
-  otpVerified: false,
-  attemptsLeft: 3,
-  canResendOtp: true,
-
-  // Utility functions
-  resetOTPState: () => { },
+    currentUser: null,
+    accessToken: null,
+    loading: true,
+    otpSent: false,
+    otpVerified: false,
+    canResendOtp: true,
+    attemptsLeft: 3,
+    currentMobile: '',
+    login: () => Promise.resolve(),
+    register: () => Promise.resolve(),
+    logout: () => Promise.resolve(),
+    sendOTP: () => Promise.resolve(),
+    verifyOTP: () => Promise.resolve(),
+    resendOTP: () => Promise.resolve(),
+    resetOTPState: () => {},
+    setAccessToken: () => {},
+    setCurrentUser: () => {}
 });
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [accessToken, setAccessToken] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  // OTP related state
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [attemptsLeft, setAttemptsLeft] = useState(3);
-  const [canResendOtp, setCanResendOtp] = useState(true);
-  const [currentMobile, setCurrentMobile] = useState('');
+    // --- OTP State for Registration ---
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [canResendOtp, setCanResendOtp] = useState(true);
+    const [attemptsLeft, setAttemptsLeft] = useState(3);
+    const [currentMobile, setCurrentMobile] = useState('');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const token = localStorage.getItem('clientToken');
-        if (token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
+    useEffect(() => {
+        // Axios interceptor for automatic token refresh and error handling
+        const responseInterceptor = api.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                const originalRequest = error.config;
+                const status = error.response?.status;
+                const url = originalRequest.url;
+
+                // --- THE FINAL FIX: A More Robust Interceptor ---
+
+                // 1. If a login/register attempt fails with a 401, it's an invalid credentials error.
+                //    Immediately reject it so the component's catch block can handle it.
+                if (status === 401 && (url.endsWith('/login') || url.endsWith('/register'))) {
+                    return Promise.reject(error);
+                }
+
+                // 2. If the refresh token request itself fails, the session is invalid. Reject it to stop loops.
+                if (status === 401 && url.endsWith('/refresh')) {
+                    // This is the key change to prevent infinite loops on startup
+                    setCurrentUser(null);
+                    setAccessToken(null);
+                    delete api.defaults.headers.common['Authorization'];
+                    return Promise.reject(error);
+                }
+                
+                // 3. For any OTHER 401 error, it's likely an expired token. Try to refresh it once.
+                if (status === 401 && !originalRequest._retry) {
+                    originalRequest._retry = true;
+                    try {
+                        const { data } = await api.get('/user/auth/refresh');
+                        setAccessToken(data.accessToken);
+                        api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
+                        return api(originalRequest); // Retry the original request with the new token
+                    } catch (refreshError) {
+                        // If refresh fails, log the user out completely.
+                        setCurrentUser(null);
+                        setAccessToken(null);
+                        delete api.defaults.headers.common['Authorization'];
+                        return Promise.reject(refreshError);
+                    }
+                }
+                
+                // For all other errors (like 400, 500, etc.), just pass them along.
+                return Promise.reject(error);
             }
-          });
-          const data = await res.json(); // Parse JSON response
-          setCurrentUser(data.user);
+        );
+
+        return () => {
+            api.interceptors.response.eject(responseInterceptor);
+        };
+    }, []);
+
+    useEffect(() => {
+        const verifyUser = async () => {
+            try {
+                const response = await api.get('/user/auth/refresh');
+                const newAccessToken = response.data.accessToken;
+                setAccessToken(newAccessToken);
+                api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                const userResponse = await api.get('/user/auth/me');
+                setCurrentUser(userResponse.data.user);
+            } catch (error) {
+                console.log("No active session on refresh.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        verifyUser();
+    }, []);
+
+    const login = async (credentials) => {
+        try {
+            const res = await api.post('/user/auth/login', credentials);
+            const { accessToken, user } = res.data;
+            setAccessToken(accessToken);
+            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+            setCurrentUser(user);
+            toast.success('Login successful!');
+            return res.data;
+        } catch (error) {
+            // This will now receive the ORIGINAL error from the /login endpoint.
+            const message = error.response?.data?.message || 'Login failed. Please try again.';
+            toast.error(message);
+            throw error; // Re-throw to let the component know the login failed
         }
-      } catch (error) {
-        console.error('Failed to load user:', error);
-        localStorage.removeItem('clientToken');
-        delete api.defaults.headers.common['Authorization'];
-      } finally {
-        setLoading(false);
-      }
     };
 
-    loadUser();
-  }, []);
+    const register = async (userData) => {
+        try {
+            const res = await api.post('/user/auth/register', userData);
+            const { accessToken, user } = res.data;
+            setAccessToken(accessToken);
+            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+            setCurrentUser(user);
+            toast.success('Registration successful! Welcome.');
+            resetOTPState();
+            return res.data;
+        } catch(error) {
+            const message = error.response?.data?.message || 'Registration failed. Please try again.';
+            toast.error(message);
+            throw error;
+        }
+    };
+    
+    const logout = async () => {
+        try {
+            await api.post('/user/auth/logout');
+        } catch (error) {
+            console.error("Logout failed on server, but logging out locally.", error);
+        } finally {
+            delete api.defaults.headers.common['Authorization'];
+            setCurrentUser(null);
+            setAccessToken(null);
+            resetOTPState();
+            toast.success('Logged out successfully');
+        }
+    };
 
-  // OTP Functions
-  const sendOTP = async (mobile) => {
-    if (!mobile) {
-      toast.error('Please enter a valid mobile number');
-      return { success: false, message: 'Mobile number is required' };
-    }
+    // --- OTP Functions for Registration ---
+    const sendOTP = async (mobile) => {
+        try {
+            const response = await api.post('/user/auth/send-otp', { mobile });
+            if (response.data.success) {
+                setOtpSent(true);
+                setCurrentMobile(mobile);
+                setAttemptsLeft(response.data.attemptsLeft || 3);
+                setCanResendOtp(false);
+                setTimeout(() => setCanResendOtp(true), 30000);
+                toast.success('OTP sent to your WhatsApp!');
+            }
+        } catch (error) {
+            const message = error.response?.data?.message || 'Failed to send OTP.';
+            toast.error(message);
+            throw error;
+        }
+    };
 
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile })
-      });
+    const verifyOTP = async (mobile, otp) => {
+        try {
+            const response = await api.post('/user/auth/verify-otp', { mobile, otp });
+            if (response.data.success) {
+                setOtpVerified(true);
+                toast.success('Mobile verified successfully!');
+            }
+        } catch (error) {
+            const message = error.response?.data?.message || 'Invalid OTP.';
+            toast.error(message);
+            throw error;
+        }
+    };
 
-      const data = await response.json();
+    const resendOTP = async () => {
+        return await sendOTP(currentMobile);
+    };
 
-      if (data.success) {
-        setOtpSent(true);
-        setCanResendOtp(false);
-        setAttemptsLeft(data.attemptsLeft || 3);
-        setCurrentMobile(mobile);
-        toast.success('OTP sent to your WhatsApp number successfully!');
+    const resetOTPState = () => {
+        setOtpSent(false);
+        setOtpVerified(false);
+        setCurrentMobile('');
+        setAttemptsLeft(3);
+        setCanResendOtp(true);
+    };
 
-        // Enable resend after 30 seconds
-        setTimeout(() => setCanResendOtp(true), 30000);
+    const contextValue = {
+        currentUser,
+        accessToken,
+        loading,
+        otpSent,
+        otpVerified,
+        attemptsLeft,
+        canResendOtp,
+        currentMobile,
+        login,
+        register,
+        logout,
+        sendOTP,
+        verifyOTP,
+        resendOTP,
+        resetOTPState,
+        setAccessToken,
+        setCurrentUser
+    };
 
-        return { success: true, data };
-      } else {
-        toast.error(data.message);
-        return { success: false, message: data.message };
-      }
-    } catch (error) {
-      const errorMessage = 'Failed to send OTP. Please try again.';
-      toast.error(errorMessage);
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const verifyOTP = async (mobile, otp) => {
-    if (!otp || otp.length !== 6) {
-      toast.error('Please enter a valid 6-digit OTP');
-      return { success: false, message: 'Invalid OTP format' };
-    }
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: mobile || currentMobile, otp })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setOtpVerified(true);
-        toast.success('Mobile number verified successfully!');
-        return { success: true, data };
-      } else {
-        toast.error(data.message);
-        setAttemptsLeft(data.attemptsLeft || attemptsLeft - 1);
-        return { success: false, message: data.message };
-      }
-    } catch (error) {
-      const errorMessage = 'Failed to verify OTP. Please try again.';
-      toast.error(errorMessage);
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const resendOTP = async () => {
-    if (!canResendOtp) {
-      toast.error('Please wait before requesting another OTP');
-      return { success: false, message: 'Too many requests' };
-    }
-
-    if (!currentMobile) {
-      toast.error('No mobile number found. Please start over.');
-      return { success: false, message: 'Mobile number not found' };
-    }
-
-    return await sendOTP(currentMobile);
-  };
-
-  // Registration function
-  const register = async (userData) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem('clientToken', data.token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        setCurrentUser(data.user);
-        toast.success('Registration successful! Welcome to our platform.');
-
-        // Reset OTP state
-        resetOTPState();
-
-        return { success: true, data };
-      } else {
-        toast.error(data.message);
-        return { success: false, message: data.message };
-      }
-    } catch (error) {
-      const errorMessage = 'Registration failed. Please try again.';
-      toast.error(errorMessage);
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  // Login function
-  const login = async (credentials) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem('clientToken', data.token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        setCurrentUser(data.user);
-        toast.success('Login successful! Redirecting...');
-        return { success: true, data };
-      } else {
-        toast.error(data.message);
-        return { success: false, message: data.message };
-      }
-    } catch (error) {
-      const errorMessage = 'Login failed. Please try again.';
-      toast.error(errorMessage);
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      // Call backend logout endpoint to clear remember token
-      await api.post('/api/user/auth/logout');
-
-      // Clear local storage and reset client state
-      localStorage.removeItem('clientToken');
-      delete api.defaults.headers.common['Authorization'];
-      setCurrentUser(null);
-
-      // Reset all state
-      resetOTPState();
-
-      toast.success('Logged out successfully');
-    } catch (error) {
-      console.error('Logout error:', error);
-
-      // Even if the API call fails, still clear local data
-      localStorage.removeItem('clientToken');
-      delete api.defaults.headers.common['Authorization'];
-      setCurrentUser(null);
-      resetOTPState();
-
-      // Show appropriate message based on error
-      if (error.response?.status === 401) {
-        toast.success('Logged out successfully');
-      } else {
-        toast.error('Logout completed locally, but server cleanup may have failed');
-      }
-    }
-  };
-
-  // Update profile function
-  const updateProfile = async (userData) => {
-    try {
-      const response = await api.put('/api/user/auth/me', userData);
-      const updatedUser = { ...currentUser, ...response.data.user };
-      setCurrentUser(updatedUser);
-      toast.success('Profile updated successfully');
-      return { success: true, data: response.data };
-    } catch (error) {
-      const errorMessage = 'Failed to update profile';
-      toast.error(errorMessage);
-      return { success: false, message: errorMessage };
-    }
-  };
-
-  // Reset OTP state (useful for switching between login/register)
-  const resetOTPState = () => {
-    setOtpSent(false);
-    setOtpVerified(false);
-    setCurrentMobile('');
-    setAttemptsLeft(3);
-    setCanResendOtp(true);
-  };
-
-  const contextValue = {
-    // User state
-    currentUser,
-    loading,
-
-    // OTP state
-    otpSent,
-    otpVerified,
-    attemptsLeft,
-    canResendOtp,
-    currentMobile,
-
-    // Auth functions
-    register,
-    login,
-    logout,
-    updateProfile,
-
-    // OTP functions
-    sendOTP,
-    verifyOTP,
-    resendOTP,
-    resetOTPState,
-  };
-
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={contextValue}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-// Custom hook for using auth context
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    return useContext(AuthContext);
 };

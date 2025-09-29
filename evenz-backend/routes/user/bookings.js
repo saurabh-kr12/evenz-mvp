@@ -5,11 +5,14 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const BookingRequest = require('../../models/Admin/BookingRequest');
 const Vendor = require('../../models/Vendor/Vendor');
+const { body, validationResult } = require('express-validator');
 const Admin = require('../../models/Admin/Admin'); // You'll need to create this model
 const { protect } = require('../../middleware/user/auth');
 const { protect: protectVendor } = require('../../middleware/vendor/auth');
 const { protect: protectAdmin } = require('../../middleware/admin/auth'); // You'll need to create this
 
+// This regex is a whitelist for common text, allowing letters, numbers, spaces, and basic punctuation.
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -18,77 +21,147 @@ const razorpay = new Razorpay({
 });
 
 // POST /api/booking/booking-requests (Your existing route - keep as is)
-router.post('/booking-requests', protect, async (req, res) => {
-  try {
-    const {
-      catererId,
-      eventType,
-      eventDate,
-      numGuests,
-      eventLocation,
-      venueType,
-      mealPreference,
-      selectedCuisine,
-      selectedPackage,
-      selectedLiveCounters = [],
-      specialRequests,
-      estimatedCost
-    } = req.body;
+// router.post('/booking-requests', protect, async (req, res) => {
+//   try {
+//     const {
+//       catererId,
+//       eventType,
+//       eventDate,
+//       numGuests,
+//       eventLocation,
+//       venueType,
+//       mealPreference,
+//       selectedCuisine,
+//       selectedPackage,
+//       selectedLiveCounters = [],
+//       specialRequests,
+//       estimatedCost
+//     } = req.body;
 
-    // Server-side validation
-    if (!catererId || !eventType || !eventDate || !numGuests || !eventLocation || 
-        !mealPreference || !selectedCuisine || !selectedPackage) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
+//     // Server-side validation
+//     if (!catererId || !eventType || !eventDate || !numGuests || !eventLocation || 
+//         !mealPreference || !selectedCuisine || !selectedPackage) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Missing required fields'
+//       });
+//     }
+
+//     // Fetch caterer details for validation
+//     const caterer = await Vendor.findById(catererId);
+//     if (!caterer) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Caterer not found'
+//       });
+//     }
+
+//     // Create booking request
+//     const bookingRequest = new BookingRequest({
+//       clientId: req.user._id,
+//       clientName: req.user.name,
+//       clientPhone: req.user.mobile,
+//       catererId,
+//       catererName: caterer.businessName,
+//       eventType,
+//       eventDate: new Date(eventDate),
+//       numGuests,
+//       eventLocation,
+//       venueType,
+//       mealPreference,
+//       selectedCuisine,
+//       selectedPackage,
+//       selectedLiveCounters,
+//       specialRequests,
+//       estimatedCost
+//     });
+
+//     await bookingRequest.save();
+
+//     res.status(201).json({
+//       success: true,
+//       data: bookingRequest,
+//       message: 'Booking request submitted successfully'
+//     });
+
+//   } catch (error) {
+//     console.error('Error creating booking request:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Internal server error'
+//     });
+//   }
+// });
+// POST /api/booking/booking-requests
+router.post(
+    '/booking-requests', 
+    protect, 
+    [ // --- THE FIX: Added robust validation and sanitization ---
+        body('catererId').isMongoId().withMessage('Invalid caterer ID.'),
+        body('eventType').not().isEmpty().withMessage('Event type is required.').matches(safeTextRegex).trim().escape(),
+        body('eventDate').isISO8601().toDate().withMessage('Invalid event date.'),
+        body('numGuests').isInt({ min: 1 }).withMessage('Number of guests must be a positive number.'),
+        body('eventLocation').not().isEmpty().withMessage('Event location is required.').matches(safeTextRegex).trim().escape(),
+        body('venueType').not().isEmpty().withMessage('Venue type is required.').matches(safeTextRegex).trim().escape(),
+        body('mealPreference').isArray({ min: 1 }).withMessage('At least one meal preference is required.'),
+        body('mealPreference.*').isString().trim().escape(),
+        body('selectedCuisine').not().isEmpty().withMessage('Cuisine selection is required.').matches(safeTextRegex).trim().escape(),
+        body('selectedPackage.name').not().isEmpty().withMessage('Package name is required.').matches(safeTextRegex).trim().escape(),
+        body('selectedPackage.pricePerPlate').isNumeric().withMessage('Package price must be a number.'),
+        body('specialRequests').optional().matches(safeTextRegex).withMessage('Special requests contain invalid characters.').trim().escape(),
+        body('estimatedCost').isNumeric().withMessage('Estimated cost must be a number.')
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
+  
+        try {
+            const {
+                catererId, eventType, eventDate, numGuests, eventLocation, 
+                venueType, mealPreference, selectedCuisine, selectedPackage, 
+                selectedLiveCounters = [], specialRequests, estimatedCost
+            } = req.body;
+
+            const caterer = await Vendor.findById(catererId);
+            if (!caterer) {
+                return res.status(404).json({ success: false, message: 'Caterer not found' });
+            }
+
+            const bookingRequest = new BookingRequest({
+                clientId: req.user._id,
+                clientName: req.user.name,
+                clientPhone: req.user.mobile,
+                catererId,
+                catererName: caterer.businessName,
+                eventType,
+                eventDate, // Already converted to Date by validator
+                numGuests,
+                eventLocation,
+                venueType,
+                mealPreference,
+                selectedCuisine,
+                selectedPackage,
+                selectedLiveCounters,
+                specialRequests,
+                estimatedCost
+            });
+
+            await bookingRequest.save();
+
+            res.status(201).json({
+                success: true,
+                data: bookingRequest,
+                message: 'Booking request submitted successfully'
+            });
+
+        } catch (error) {
+            console.error('Error creating booking request:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
     }
-
-    // Fetch caterer details for validation
-    const caterer = await Vendor.findById(catererId);
-    if (!caterer) {
-      return res.status(404).json({
-        success: false,
-        message: 'Caterer not found'
-      });
-    }
-
-    // Create booking request
-    const bookingRequest = new BookingRequest({
-      clientId: req.user._id,
-      clientName: req.user.name,
-      clientPhone: req.user.mobile,
-      catererId,
-      catererName: caterer.businessName,
-      eventType,
-      eventDate: new Date(eventDate),
-      numGuests,
-      eventLocation,
-      venueType,
-      mealPreference,
-      selectedCuisine,
-      selectedPackage,
-      selectedLiveCounters,
-      specialRequests,
-      estimatedCost
-    });
-
-    await bookingRequest.save();
-
-    res.status(201).json({
-      success: true,
-      data: bookingRequest,
-      message: 'Booking request submitted successfully'
-    });
-
-  } catch (error) {
-    console.error('Error creating booking request:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
+);
 
 // GET /api/booking/vendor/ongoing - Get ongoing (locked) bookings for vendor
 router.get('/vendor/ongoing', protectVendor, async (req, res) => {

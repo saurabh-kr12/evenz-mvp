@@ -30,7 +30,6 @@ const ResetPassword = () => {
    useEffect(() => {
       // Extract token from URL parameters
       const urlToken = searchParams.get('token');
-      console.log('Token from URL:', urlToken);
       
       if (urlToken) {
          setToken(urlToken);
@@ -47,10 +46,7 @@ const ResetPassword = () => {
    };
 
    const handleResetPassword = async () => {
-      console.log('Reset password clicked');
-      console.log('Token:', token);
-      console.log('Values:', values);
-      
+
       if (!token) {
          showMessage('Invalid reset token. Please check your email for the correct link.', 'error');
          return;
@@ -68,12 +64,7 @@ const ResetPassword = () => {
 
       setLoading(true);
       try {
-         console.log('Sending request with:', {
-            token,
-            password: values.password
-         });
-
-         const response = await fetch('http://localhost:5000/api/user/auth/reset-password', {
+         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/auth/reset-password`, {
             method: 'POST',
             headers: { 
                'Content-Type': 'application/json',
@@ -84,15 +75,12 @@ const ResetPassword = () => {
                password: values.password
             })
          });
-
-         console.log('Response status:', response.status);
          
          if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
          }
 
          const data = await response.json();
-         console.log('Response data:', data);
 
          if (data.success) {
             showMessage('Password reset successful! Redirecting to login...', 'success');

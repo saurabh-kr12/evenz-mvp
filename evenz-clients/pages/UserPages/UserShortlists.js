@@ -1,8 +1,11 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { FaHeart, FaMapMarkerAlt, FaPhone, FaUser, FaEye, FaTrash } from 'react-icons/fa';
 import useAnalytics from '@/hooks/useAnalytics';
+import { useAuth } from '@/context/AuthContext'; // 1. Import useAuth
+import { api } from '@/context/AuthContext';    // 2. Import the central api instance
+
 
 const UserShortlists = () => {
   const [shortlistedCaterers, setShortlistedCaterers] = useState([]);
@@ -10,70 +13,51 @@ const UserShortlists = () => {
   const [error, setError] = useState(null);
   const analytics = useAnalytics();
 
-  // Fetch shortlisted caterers on component mount
-  useEffect(() => {
-    analytics.trackPageView('shortlists_page', 'dashboard');
-    fetchShortlistedCaterers();
-  }, []);
+  // 3. Get the authentication state from the context
+  const { accessToken, loading: authLoading } = useAuth();
 
-  const fetchShortlistedCaterers = async () => {
+  // 4. Wrap the data fetching in a useCallback and useEffect
+  const fetchShortlistedCaterers = useCallback(async () => {
+    setLoading(true);
     try {
-      const token = localStorage.getItem('clientToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setShortlistedCaterers(data.data);
-        analytics.trackCustomEvent('shortlist_loaded', 'data', 'shortlist_fetch_success', data.data.length);
+      const response = await api.get('/user/shortlist');
+      if (response.data.success) {
+        setShortlistedCaterers(response.data.data);
       } else {
-        setError(data.message);
-        analytics.trackError('api_error', data.message, 'shortlists_page');
+        setError(response.data.message);
       }
     } catch (err) {
-      setError('Failed to fetch shortlisted caterers');
-      analytics.trackError('network_error', err.message, 'shortlists_page');
-      console.error('Error fetching shortlist:', err);
+      setError(err.message || 'Failed to fetch shortlisted caterers');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && accessToken) {
+      analytics.trackPageView('shortlists_page', 'dashboard');
+      fetchShortlistedCaterers();
+    } else if (!authLoading && !accessToken) {
+      setLoading(false);
+    }
+  }, [accessToken, authLoading, fetchShortlistedCaterers]);
 
   const handleRemoveFromShortlist = async (catererId, catererName) => {
     try {
       analytics.trackCustomEvent('shortlist_remove_attempt', 'user_action', catererName);
-      
-      const token = localStorage.getItem('clientToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
 
-      const data = await response.json();
+      const response = await api.delete(`/user/shortlist/${catererId}`);
 
-      if (data.success) {
-        // Remove from local state
+      if (response.data.success) {
         setShortlistedCaterers(prev =>
-          prev.filter(item => item.caterer.id !== catererId)
+          prev.filter(item => item.caterer._id !== catererId) // Use _id for consistency
         );
         analytics.trackCustomEvent('shortlist_removed', 'user_action', catererName);
-        console.log(`${catererName} removed from shortlist`);
       } else {
-        analytics.trackError('remove_shortlist_error', data.message, 'shortlists_page');
-        console.error('Failed to remove from shortlist:', data.message);
+        setError(response.data.message || 'Failed to remove from shortlist');
       }
     } catch (error) {
-      analytics.trackError('network_error', error.message, 'shortlists_page');
-      console.error('Error removing from shortlist:', error);
+      setError(error.message || 'Error removing from shortlist');
     }
   };
 

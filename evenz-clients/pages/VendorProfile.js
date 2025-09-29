@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect,useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -20,7 +20,8 @@ import {
 import { FaUtensils } from 'react-icons/fa';
 import BookingModal from '@/components/BookingModal';
 import { useAuth } from '@/context/AuthContext';
-import  useAnalytics  from '@/hooks/useAnalytics';
+import useAnalytics from '@/hooks/useAnalytics';
+import { api } from '@/context/AuthContext';
 
 const CatererProfileView = () => {
    const { id: catererId } = useParams();
@@ -31,20 +32,55 @@ const CatererProfileView = () => {
    const [activeTab, setActiveTab] = useState('overview');
    const [error, setError] = useState(null);
    const [loading, setLoading] = useState(true);
-   const { currentUser } = useAuth();
    const analytics = useAnalytics();
 
+   // Get auth state from the central context
+   const { currentUser, accessToken, loading: authLoading } = useAuth();
    // Tab time tracking
    const tabStartTime = useRef(Date.now());
    const pageStartTime = useRef(Date.now());
    const tabTimeSpent = useRef({});
 
+   const fetchAllData = useCallback(async () => {
+      setLoading(true);
+      try {
+         // Fetch public caterer profile
+         const profileResponse = await api.get(`/caterers-details/${catererId}/view-profile`);
+         if (profileResponse.data.success) {
+            setCatererData(profileResponse.data.data);
+         } else {
+            throw new Error(profileResponse.data.message || 'Failed to load caterer profile');
+         }
+
+         // If the user is logged in, check their shortlist status
+         if (accessToken) {
+            const shortlistResponse = await api.get(`/user/shortlist/${catererId}/status`);
+            if (shortlistResponse.data.success) {
+               setIsShortlisted(shortlistResponse.data.isShortlisted);
+            }
+         }
+      } catch (err) {
+         setError(err.message || 'An error occurred while loading the profile.');
+         analytics.trackError('profile_load_error', err.message, 'caterer_profile');
+      } finally {
+         setLoading(false);
+      }
+   }, [catererId, accessToken]);
+
+   // Fetch data when the component mounts or when the auth state changes
+   useEffect(() => {
+      // We can fetch data as soon as the catererId is available,
+      // and the fetchAllData function will handle the auth state internally.
+      if (catererId) {
+         fetchAllData();
+      }
+   }, [catererId, fetchAllData]);
 
    // Component mount tracking
    useEffect(() => {
       // Track page view
       analytics.trackPageView('caterer_profile', 'vendor_discovery');
-      
+
       // Track profile view event
       analytics.trackCustomEvent(
          'profile_viewed',
@@ -68,10 +104,10 @@ const CatererProfileView = () => {
       };
    }, []);
 
-   useEffect(() => {
-      fetchCatererProfile();
-      checkShortlistStatus(catererId);
-   }, [catererId]);
+   // useEffect(() => {
+   //    fetchCatererProfile();
+   //    checkShortlistStatus(catererId);
+   // }, [catererId]);
 
    // Track tab changes and time spent
    useEffect(() => {
@@ -79,10 +115,10 @@ const CatererProfileView = () => {
       if (tabStartTime.current) {
          const timeSpent = Math.round((Date.now() - tabStartTime.current) / 1000);
          const previousTab = Object.keys(tabTimeSpent.current).length === 0 ? 'overview' : activeTab;
-         
+
          if (timeSpent > 0) {
             tabTimeSpent.current[previousTab] = (tabTimeSpent.current[previousTab] || 0) + timeSpent;
-            
+
             // Track tab time spent
             analytics.trackCustomEvent(
                'tab_time_spent',
@@ -153,134 +189,48 @@ const CatererProfileView = () => {
       try {
          const catererIdString = typeof catererId === 'object' ? catererId._id || catererId.id : catererId;
 
-         const token = localStorage.getItem('clientToken');
-         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererIdString}/status`, {
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
+         // If the user is logged in, check their shortlist status
+         if (accessToken) {
+            const shortlistResponse = await api.get(`/user/shortlist/${catererId}/status`);
+            if (shortlistResponse.data.success) {
+               setIsShortlisted(shortlistResponse.data.isShortlisted);
             }
-         });
-         const data = await response.json();
-         if (data.success) {
-            setIsShortlisted(data.isShortlisted);
          }
       } catch (error) {
          console.error('Error checking shortlist status:', error);
       }
    };
 
-   // handleShortlist function to toggle shortlist status
-   // Enhanced handleShortlist function with analytics
-   const handleShortlist = async (catererId) => {
+   // Handle toggling the shortlist status
+   const handleShortlist = async () => {
+      if (!currentUser) {
+         // Optional: prompt user to log in
+         alert('Please log in to shortlist caterers.');
+         return;
+      }
+
       try {
-         const catererIdString = typeof catererId === 'object' ? catererId._id || catererId.id : catererId;
-
-         if (!catererIdString) {
-            console.error('Invalid caterer ID provided');
-            analytics.trackError(
-               'invalid_caterer_id',
-               'Missing caterer ID',
-               'caterer_profile'
-            );
-            return;
-         }
-
-         const token = localStorage.getItem('clientToken');
-
-         if (!token) {
-            console.error('No authentication token found');
-            analytics.trackError(
-               'auth_token_missing',
-               'No authentication token',
-               'caterer_profile'
-            );
-            return;
-         }
-
-         // Track shortlist action start
          const action = isShortlisted ? 'remove_from_shortlist' : 'add_to_shortlist';
-         analytics.trackCustomEvent(
-            `${action}_started`,
-            'shortlist_interaction',
-            `caterer_${catererIdString}`,
-            0
-         );
+         analytics.trackCustomEvent(`${action}_started`, 'shortlist_interaction', `caterer_${catererId}`);
 
+         let response;
          if (isShortlisted) {
             // Remove from shortlist
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererIdString}`, {
-               method: 'DELETE',
-               headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-               }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-               setIsShortlisted(false);
-               
-               // Track successful removal
-               analytics.trackCustomEvent(
-                  'remove_from_shortlist_success',
-                  'shortlist_interaction',
-                  `caterer_${catererIdString}`,
-                  0
-               );
-               
-               console.log('Caterer removed from shortlist');
-            } else {
-               console.error('Failed to remove from shortlist:', data.message);
-               analytics.trackError(
-                  'shortlist_remove_error',
-                  data.message,
-                  'caterer_profile'
-               );
-            }
+            response = await api.delete(`/user/shortlist/${catererId}`);
          } else {
             // Add to shortlist
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/shortlist/${catererIdString}`, {
-               method: 'POST',
-               headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-               }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-               setIsShortlisted(true);
-               
-               // Track successful addition
-               analytics.trackCustomEvent(
-                  'add_to_shortlist_success',
-                  'shortlist_interaction',
-                  `caterer_${catererIdString}`,
-                  0
-               );
-               
-               // Track conversion event
-               analytics.trackConversion('vendor_shortlisted', 1);
-               
-               console.log('Caterer added to shortlist');
-            } else {
-               console.error('Failed to add to shortlist:', data.message);
-               analytics.trackError(
-                  'shortlist_add_error',
-                  data.message,
-                  'caterer_profile'
-               );
-            }
+            response = await api.post(`/user/shortlist/${catererId}`);
          }
-      } catch (error) {
-         console.error('Error toggling shortlist:', error);
-         analytics.trackError(
-            'shortlist_toggle_error',
-            error.message,
-            'caterer_profile'
-         );
+
+         if (response.data.success) {
+            setIsShortlisted(!isShortlisted); // Toggle the state
+            analytics.trackCustomEvent(`${action}_success`, 'shortlist_interaction', `caterer_${catererId}`);
+         } else {
+            throw new Error(response.data.message);
+         }
+      } catch (err) {
+         setError(err.message || 'Failed to update shortlist. Please try again.');
+         analytics.trackError('shortlist_toggle_error', err.message, 'caterer_profile');
       }
    };
 
@@ -288,7 +238,7 @@ const CatererProfileView = () => {
    const handleShare = () => {
       // Track share button click
       analytics.trackButtonClick('share_profile', 'social_sharing');
-      
+
       const shareData = {
          title: catererData?.businessName || 'Check out this vendor on Evenz',
          text: `Check out ${catererData?.businessName} on Evenz!`,
@@ -298,7 +248,6 @@ const CatererProfileView = () => {
       if (navigator.share) {
          navigator.share(shareData)
             .then(() => {
-               console.log('Shared successfully');
                // Track successful share
                analytics.trackCustomEvent(
                   'share_success',
@@ -343,7 +292,7 @@ const CatererProfileView = () => {
    const handleTabChange = (tabId) => {
       // Track tab click
       analytics.trackButtonClick(`${tabId}_tab`, 'navigation');
-      
+
       setActiveTab(tabId);
    };
 
@@ -358,7 +307,7 @@ const CatererProfileView = () => {
          `caterer_${catererId}`,
          0
       );
-      
+
       setShowBookingModal(true);
    };
 
@@ -370,7 +319,7 @@ const CatererProfileView = () => {
          `caterer_${catererId}`,
          0
       );
-      
+
       setShowBookingModal(false);
    };
 
@@ -384,7 +333,7 @@ const CatererProfileView = () => {
             'shortlist_attempt',
             0
          );
-         
+
          setShowTooltip(prev => !prev);
       }
    };
