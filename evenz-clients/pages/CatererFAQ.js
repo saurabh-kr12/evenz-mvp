@@ -7,7 +7,7 @@ const CatererFAQs = () => {
   const faqs = [
     {
       question: "How do I register my catering business on Evenz.in?",
-      answer: "You can register by clicking 'Become a Partner' or 'Register as Caterer' on our homepage. Follow the steps to create your account and then set up your comprehensive caterer profile in your dashboard.",
+      answer: "You can register by clicking 'Register as Caterer' on our homepage. Follow the steps to create your account and then set up your comprehensive caterer profile in your dashboard.",
       category: "Getting Started"
     },
     {
@@ -23,7 +23,7 @@ const CatererFAQs = () => {
     },
     {
       question: "How do I receive booking requests from Evenz.in?",
-      answer: "Once your profile is complete and visible, clients will send booking requests directly to you through your Evenz.in profile for their specific event needs. You will receive notifications via email and on your dashboard.",
+      answer: "Once your profile is complete and visible, clients will send booking requests directly to you through your Evenz.in profile for their specific event needs. You will receive booking requests on your dashboard.",
       category: "Booking Process"
     },
     {
@@ -35,7 +35,7 @@ const CatererFAQs = () => {
     {
       question: "Is the unlocking fee refundable?",
       answer: "No, the unlocking fee of ₹200 is a non-refundable fee for providing you with a client's contact details for a specific booking request. It is a charge for the lead generated and access to the contact information, irrespective of whether the booking is finalized or not.",
-      category: "Pricing"
+      category: "Refund"
     },
     {
       question: "How does Evenz.in's payment model compare to other platforms' subscription fees?",
@@ -51,7 +51,7 @@ const CatererFAQs = () => {
     },
     {
       question: "How do I update my catering packages and services?",
-      answer: "Log in to your caterer dashboard and navigate to the 'Services & Logistics' tab. Here you can add, edit, or remove your packages, cuisines, service types, and other offerings.",
+      answer: "Log in to your caterer dashboard and navigate to the 'Services' page. Here you can add, edit, or remove your packages, cuisines, service types, and other offerings.",
       category: "Profile Management"
     },
     {
@@ -72,7 +72,7 @@ const CatererFAQs = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">
+          <h1 className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl bg-gradient-to-r from-blue-600 font-bold to-purple-600 bg-clip-text text-transparent mt-1 sm:mt-2">
             Caterer FAQs
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -124,7 +124,7 @@ const CatererFAQs = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         )}
-                        <h3 className="text-lg font-semibold text-slate-900 pr-4">
+                        <h3 className="sm:text-lg text-sm font-semibold text-slate-900 pr-4">
                           {faq.question}
                         </h3>
                       </div>
@@ -162,7 +162,7 @@ const CatererFAQs = () => {
                           ? 'bg-white border border-blue-200' 
                           : 'bg-gray-50'
                     }`}>
-                      <p className="text-slate-700 leading-relaxed">
+                      <p className="text-slate-700 text-sm sm:text-base leading-relaxed">
                         {faq.category === 'Pricing' && faq.answer.includes('₹200') ? (
                           <span>
                             {faq.answer.includes('NO monthly or yearly subscription fees') ? (
@@ -171,7 +171,7 @@ const CatererFAQs = () => {
                               </>
                             ) : (
                               <>
-                                The 'Unlocking Fee' is a nominal charge of <strong className="text-blue-800">₹200 (Rupees Two Hundred Only)</strong> per booking request. This fee gives you immediate access to the client's direct contact details (mobile number) so you can communicate with them personally to discuss their event, negotiate prices, finalize menus, and ultimately secure the booking. This fee covers our costs in providing you with qualified leads and maintaining the platform.
+                                The &apos;Unlocking Fee&apos; is a nominal charge of <strong className="text-blue-800">₹200 (Rupees Two Hundred Only)</strong> per booking request. This fee gives you immediate access to the client&apos;s direct contact details (mobile number) so you can communicate with them personally to discuss their event, negotiate prices, finalize menus, and ultimately secure the booking. This fee covers our costs in providing you with qualified leads and maintaining the platform.
                               </>
                             )}
                           </span>
@@ -179,11 +179,11 @@ const CatererFAQs = () => {
                           <span>
                             {faq.category === 'Platform Role' ? (
                               <>
-                                <strong className="text-amber-800">Evenz.in is solely a platform to connect you with potential clients.</strong> Once you have paid the unlocking fee and gained access to the client's contact details, our role in that specific connection is complete. <strong className="text-amber-800">We are not involved in the actual booking process, contract negotiation, payment collection from the client, or the delivery of catering services.</strong> All aspects of the booking, service quality, terms, and execution are your direct responsibility to manage with the client.
+                                <strong className="text-amber-800">Evenz.in is solely a platform to connect you with potential clients.</strong> Once you have paid the unlocking fee and gained access to the client&apos;s contact details, our role in that specific connection is complete. <strong className="text-amber-800">We are not involved in the actual booking process, contract negotiation, payment collection from the client, or the delivery of catering services.</strong> All aspects of the booking, service quality, terms, and execution are your direct responsibility to manage with the client.
                               </>
                             ) : (
                               <>
-                                To be visible and receive leads, you <strong className="text-amber-800">MUST complete your 'Menu & Cuisines' section</strong> (adding at least one package with pricing). Additionally, ensuring your 'Cover Image', 'Min/Max Guests', and 'Available for Events' details are filled is crucial for client search visibility.
+                                To be visible and receive leads, you <strong className="text-amber-800">MUST complete your &apos;Menu & Cuisines&apos; section</strong> (adding at least one package with pricing). Additionally, ensuring your &apos;Cover Image&apos;, &apos;Min/Max Guests&apos;, and &apos;Available for Events&apos; details are filled is crucial for client search visibility.
                               </>
                             )}
                           </span>
@@ -215,14 +215,13 @@ const CatererFAQs = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
               href="mailto:partners@evenz.in"
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-pink-600 transition-colors duration-200"
+              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-purple-600 transition-colors duration-200"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Partner Support
             </a>
-            
           </div>
         </div>
       </div>

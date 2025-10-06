@@ -1,4 +1,5 @@
 import { AuthProvider } from '../context/AuthContext';
+import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -17,7 +18,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <GoogleAnalytics/>
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         <AuthProvider>
           <div className="app">
             <Navbar />

@@ -53,7 +53,7 @@ const AboutUs = () => {
                   Our Vision
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Our platform was founded with a simple vision: to make the process of finding and booking the perfect caterer as effortless as possible. We're passionate about bringing people together through the joy of food.
+                  Our platform was founded with a simple vision: to make the process of finding and booking the perfect caterer as effortless as possible. We&apos;re passionate about bringing people together through the joy of food.
                 </p>
               </div>
               <div className="bg-gray-50 p-6 rounded-lg">

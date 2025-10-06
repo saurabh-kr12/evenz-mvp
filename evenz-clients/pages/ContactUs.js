@@ -14,14 +14,14 @@ const ContactPage = () => {
             Contact Us
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Have questions, feedback, or need assistance? Reach out to our team. We're here to help you connect with the perfect caterer for your event.
+            Have questions, feedback, or need assistance? Reach out to our team. We&apos;re here to help you connect with the perfect caterer for your event.
           </p>
         </div>
 
         {/* Contact Information Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 lg:p-10">
           <h2 className="text-3xl font-bold text-gray-800 mb-10">
-            Let's Connect
+            Let&apos;s Connect
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">

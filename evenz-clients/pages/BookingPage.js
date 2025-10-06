@@ -10,7 +10,7 @@ import { api } from '@/context/AuthContext';    // 2. Import the central api ins
 const BookingRequestForm = () => {
    const params = useParams();
    const searchParams = useSearchParams();
-   const eventDate = searchParams.get('date');
+   const eventDate = searchParams?.get('date');
 
    // Form state
    const [formData, setFormData] = useState({
@@ -34,30 +34,32 @@ const BookingRequestForm = () => {
    const [success, setSuccess] = useState(false);
    const [estimatedCost, setEstimatedCost] = useState(0);
    const [debugInfo, setDebugInfo] = useState('');
-   // const { currentUser } = useContext(AuthContext);
 
    // Analytics
    const analytics = useAnalytics();
-
    const { currentUser } = useAuth();
+
+   // Get vendorId safely
+   const vendorId = params?.vendorId;
    // Track form initialization
    useEffect(() => {
-      if (params.vendorId && eventDate) {
+      if (vendorId && eventDate) {
          analytics.trackFormStart('booking_request_form');
          analytics.trackCustomEvent(
             'booking_form_loaded',
             'booking_funnel',
-            `vendor_${params.vendorId}_date_${eventDate}`,
+            `vendor_${vendorId}_date_${eventDate}`,
             0
          );
       }
-   }, [params.vendorId, eventDate, analytics]);
+   }, [vendorId, eventDate, analytics]);
 
    // Fetch caterer data
    useEffect(() => {
-      const catererId = params.vendorId;
-      fetchCatererProfile(catererId);
-   }, []);
+      if (vendorId) {
+         fetchCatererProfile(vendorId);
+      }
+   }, [vendorId]);
 
    // Calculate estimated cost whenever form data changes
    useEffect(() => {
@@ -251,7 +253,7 @@ const BookingRequestForm = () => {
       analytics.trackFormSubmit('booking_request_form', false); // Will update to true on success
 
       try {
-         const catererId = params.vendorId;
+         const catererId = params?.vendorId;
          // 4. Use the central 'api' instance for the POST request
          const response = await api.post('/booking/booking-requests', {
             ...formData,

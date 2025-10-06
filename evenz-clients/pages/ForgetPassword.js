@@ -75,8 +75,8 @@ const ForgotPasswordPage = () => {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                <p className="text-sm text-blue-800">
-                  If you don't receive the email or used a different email during registration,
-                  you can enter the correct email address above and we'll send the reset link there.
+                  If you don&apos;t receive the email or used a different email during registration,
+                  you can enter the correct email address above and we&apos;ll send the reset link there.
                </p>
             </div>
 

@@ -10,7 +10,7 @@ const ClientTermsAndConditions = () => {
 
         <div className="space-y-6 text-gray-700 leading-relaxed">
           <p>
-            Welcome to <strong>Evenz.in</strong>. These Client Terms & Conditions ("Terms") govern your use of the Evenz.in platform as a client seeking catering services. By accessing or using our website, you agree to be bound by these Terms.
+            Welcome to <strong>Evenz.in</strong>. These Client Terms & Conditions (&quot;Terms&quot;) govern your use of the Evenz.in platform as a client seeking catering services. By accessing or using our website, you agree to be bound by these Terms.
           </p>
 
           <div className="border-l-4 border-red-700 bg-red-50 p-4">

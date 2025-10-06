@@ -134,7 +134,7 @@ const FoundersWord = () => {
                         {/* Quote */}
                         <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg shadow-lg border-l-4 border-indigo-500">
                           <p className="text-lg sm:text-xl font-semibold text-indigo-700 italic">
-                            "{slide.quote}"
+                            &quot;{slide.quote}&quot;
                           </p>
                         </div>
                       </div>

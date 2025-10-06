@@ -50,7 +50,11 @@ const UserShortlists = () => {
 
       if (response.data.success) {
         setShortlistedCaterers(prev =>
-          prev.filter(item => item.caterer._id !== catererId) // Use _id for consistency
+          prev.filter(item => {
+            // Handle both _id and id formats
+            const itemId = item.caterer._id || item.caterer.id;
+            return itemId !== catererId;
+          })
         );
         analytics.trackCustomEvent('shortlist_removed', 'user_action', catererName);
       } else {
@@ -109,7 +113,7 @@ const UserShortlists = () => {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FaHeart className="text-4xl md:text-5xl text-gray-400 mb-4" />
             <p className="text-gray-600 mb-4 text-sm md:text-base">
-              You haven't shortlisted any caterer yet.
+              You haven&apos;t shortlisted any caterer yet.
             </p>
             <Link
               href="/dashboard"
@@ -174,7 +178,7 @@ const UserShortlists = () => {
                     className="cursor-pointer flex-1 bg-red-50 text-red-600 py-2 px-3 rounded-md hover:bg-red-100 transition-colors text-sm font-medium flex items-center justify-center gap-1 border border-red-200"
                   >
                     <FaTrash className="text-xs" />
-                    Remove from Shortlist
+                    Remove 
                   </button>
                 </div>
               </div>

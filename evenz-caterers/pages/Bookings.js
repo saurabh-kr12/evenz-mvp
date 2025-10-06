@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect,useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import useAnalytics from '@/hooks/useAnalytics';
 import { useAuth } from '@/context/AuthContext';
 
@@ -60,13 +60,13 @@ const BookingsDashboard = () => {
     } finally {
       setLoading(false);
     }
-  },[accessToken]);
+  }, [accessToken]);
 
   useEffect(() => {
     if (!authLoading) {
       fetchDashboardData();
     }
-  }, [accessToken, authLoading,fetchDashboardData]);
+  }, [accessToken, authLoading, fetchDashboardData]);
 
   // Auto-hide toast messages after 5 seconds
   useEffect(() => {
@@ -265,6 +265,9 @@ const BookingsDashboard = () => {
 
       {/* Main Details */}
       <div className="space-y-2 mb-3">
+        <p className="text-xs text-gray-500 mt-1">
+          Booking ID: {booking._id.slice(-8).toUpperCase()}
+        </p>
         <div className="flex items-center text-sm text-gray-600">
           <svg className="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
@@ -392,6 +395,9 @@ const BookingsDashboard = () => {
 
       {/* Main Details */}
       <div className="space-y-2 mb-3">
+        <p className="text-xs text-gray-500 mt-1">
+          Booking ID: {booking._id.slice(-8).toUpperCase()}
+        </p>
         <div className="flex items-center text-sm text-gray-600">
           <svg className="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />

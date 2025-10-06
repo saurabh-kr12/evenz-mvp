@@ -1,5 +1,6 @@
 // src/components/HowItWorksClients.js
 import React from 'react';
+import Link from 'next/link';
 import { Search, UserRoundCheck, CalendarCheck2, MailCheck, Phone, Handshake } from 'lucide-react'; // Added CalendarCheck2 for availability
 
 const HowItWorksClients = () => {
@@ -66,7 +67,7 @@ const HowItWorksClients = () => {
           <p className="text-lg font-semibold text-gray-800 mb-4">
             Ready to find your perfect caterer?
           </p>
-          <a
+          <Link
             href="/catering-services" 
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
@@ -75,7 +76,7 @@ const HowItWorksClients = () => {
               <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
               <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414L8.586 10 4.293 5.707a1 1 0 011.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

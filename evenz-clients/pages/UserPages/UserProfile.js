@@ -12,7 +12,7 @@ const UserProfile = () => {
         <h2 className="text-lg md:text-xl font-medium mb-4">FAQs</h2>
         <div className="mb-4">
           <h3 className="font-medium mb-2 text-sm md:text-base">What happens when I update my email address (or mobile number)?</h3>
-          <p className="text-gray-600 text-sm">Your login email id (or mobile number) changes, likewise. You'll receive all your account related communication on your updated email address (or mobile number).</p>
+          <p className="text-gray-600 text-sm">Your login email id (or mobile number) changes, likewise. You&apos;ll receive all your account related communication on your updated email address (or mobile number).</p>
         </div>
         <div className="mb-4">
           <h3 className="font-medium mb-2 text-sm md:text-base">When will my Evenz.in account be updated with the new email address (or mobile number)?</h3>

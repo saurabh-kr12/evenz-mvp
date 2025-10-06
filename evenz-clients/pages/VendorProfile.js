@@ -24,7 +24,8 @@ import useAnalytics from '@/hooks/useAnalytics';
 import { api } from '@/context/AuthContext';
 
 const CatererProfileView = () => {
-   const { id: catererId } = useParams();
+   const params = useParams();
+   const catererId = params?.id;
    const [catererData, setCatererData] = useState(null);
    const [isShortlisted, setIsShortlisted] = useState(false);
    const [showBookingModal, setShowBookingModal] = useState(false);
@@ -78,6 +79,7 @@ const CatererProfileView = () => {
 
    // Component mount tracking
    useEffect(() => {
+      if (!catererId) return;
       // Track page view
       analytics.trackPageView('caterer_profile', 'vendor_discovery');
 
@@ -137,6 +139,7 @@ const CatererProfileView = () => {
    }, [activeTab]);
 
    const fetchCatererProfile = async () => {
+      if (!catererId) return;
       try {
          setLoading(true);
 
