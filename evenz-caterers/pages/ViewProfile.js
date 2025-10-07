@@ -67,6 +67,11 @@ const CatererProfileView = () => {
       return String(value);
    };
 
+   // Enhanced tab switching with analytics
+   const handleTabChange = (tabId) => {
+      setActiveTab(tabId);
+   };
+
    const safeObjectEntries = (obj) => { if (!obj || typeof obj !== 'object') return []; return Object.entries(obj); };
 
    if (loading) {
