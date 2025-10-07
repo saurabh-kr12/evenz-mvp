@@ -13,6 +13,11 @@ function ResetPasswordLoading() {
   );
 }
 
+export const metadata = {
+  title: "Reset Your Password | Evenz.in",
+  description: "Create a new, secure password for your Evenz.in account.",
+};
+
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<ResetPasswordLoading />}>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: [https://evenz.in/sitemap.xml](https://evenz.in/sitemap.xml)
