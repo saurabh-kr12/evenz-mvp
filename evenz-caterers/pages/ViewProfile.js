@@ -26,7 +26,7 @@ const CatererProfileView = () => {
    const [catererData, setCatererData] = useState(null);
    const [isShortlisted, setIsShortlisted] = useState(false);
    const [showBookingModal, setShowBookingModal] = useState(false);
-   const [activeTab, setActiveTab] = useState('overview');
+   const [activeTab, setActiveTab] = useState('menu');
    const [error, setError] = useState(null);
    const [loading, setLoading] = useState(true);
 
