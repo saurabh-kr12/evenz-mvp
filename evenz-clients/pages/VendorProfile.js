@@ -30,7 +30,7 @@ const CatererProfileView = () => {
    const [isShortlisted, setIsShortlisted] = useState(false);
    const [showBookingModal, setShowBookingModal] = useState(false);
    const [showTooltip, setShowTooltip] = useState(false);
-   const [activeTab, setActiveTab] = useState('overview');
+   const [activeTab, setActiveTab] = useState('menu');
    const [error, setError] = useState(null);
    const [loading, setLoading] = useState(true);
    const analytics = useAnalytics();
@@ -137,67 +137,6 @@ const CatererProfileView = () => {
       // Reset timer for new tab
       tabStartTime.current = Date.now();
    }, [activeTab]);
-
-   const fetchCatererProfile = async () => {
-      if (!catererId) return;
-      try {
-         setLoading(true);
-
-         // Track profile fetch start
-         analytics.trackCustomEvent(
-            'profile_fetch_started',
-            'api_call',
-            `caterer_${catererId}`,
-            0
-         );
-
-         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
-
-         if (!response.ok) {
-            throw new Error('Failed to fetch caterer profile');
-         }
-
-         const data = await response.json();
-         if (data.success) {
-            setCatererData(data.data);
-            // Track successful profile load
-            analytics.trackCustomEvent(
-               'profile_loaded_success',
-               'api_call',
-               `caterer_${catererId}`,
-               0
-            );
-         } else {
-            throw new Error(data.message || 'Failed to load caterer profile');
-         }
-      } catch (err) {
-         setError(err.message);
-         // Track profile load error
-         analytics.trackError(
-            'profile_load_error',
-            err.message,
-            'caterer_profile'
-         );
-      } finally {
-         setLoading(false);
-      }
-   };
-
-   const checkShortlistStatus = async (catererId) => {
-      try {
-         const catererIdString = typeof catererId === 'object' ? catererId._id || catererId.id : catererId;
-
-         // If the user is logged in, check their shortlist status
-         if (accessToken) {
-            const shortlistResponse = await api.get(`/user/shortlist/${catererId}/status`);
-            if (shortlistResponse.data.success) {
-               setIsShortlisted(shortlistResponse.data.isShortlisted);
-            }
-         }
-      } catch (error) {
-         console.error('Error checking shortlist status:', error);
-      }
-   };
 
    // Handle toggling the shortlist status
    const handleShortlist = async () => {
@@ -390,7 +329,6 @@ const CatererProfileView = () => {
    const { vendorInfo, gallery, menu, services, legal, compliance, customization } = catererData;
 
    return (
-
       <div className="min-h-screen bg-gray-50">
          {/* Header */}
          <div className="bg-white text-gray-700 shadow-sm sticky top-17 z-40">
@@ -573,12 +511,9 @@ const CatererProfileView = () => {
                <div className="max-w-7xl mx-auto px-4 sm:px-9">
                   <div className="flex  space-x-8 overflow-x-auto">
                      {[
-                        { id: 'overview', label: 'Overview' },
                         { id: 'menu', label: 'Menu & Packages' },
-                        { id: 'services', label: 'Services' },
-                        { id: 'customization', label: 'Customization' },
-                        { id: 'compliance', label: 'Compliance' },
-                        { id: 'policies', label: 'Policies' }
+                        { id: 'services', label: 'Services & Logistics' },
+                        { id: 'policies', label: 'Policies & Safety' }
                      ].map((tab) => (
                         <button
                            key={tab.id}
@@ -598,72 +533,6 @@ const CatererProfileView = () => {
 
          {/* Tab Content */}
          <div className="max-w-7xl mx-auto px-4 sm:px-9 py-6">
-            {activeTab === 'overview' && (
-               <div className="space-y-6">
-                  {/* Meal Service Types */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Utensils className="w-5 h-5" />
-                        Meal Service Types
-                     </h3>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 min-h-[2rem] items-center">
-                        {(() => {
-                           const mealServices = safeObjectEntries(catererData?.services?.mealServiceTypes)
-                              .filter(([key, value]) => typeof value === 'boolean');
-
-                           return mealServices.length > 0 ? (
-                              mealServices.map(([key, value]) => (
-                                 <div key={key} className="flex items-center gap-2">
-                                    {value ? (
-                                       <CheckCircle className="w-5 h-5 text-green-500" />
-                                    ) : (
-                                       <XCircle className="w-5 h-5 text-gray-300" />
-                                    )}
-                                    <span className={`text-sm capitalize ${value ? 'text-gray-900' : 'text-gray-400'}`}>
-                                       {safeRender(key.replace(/([A-Z])/g, ' $1').trim())}
-                                    </span>
-                                 </div>
-                              ))
-                           ) : (
-                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200 col-span-full">
-                                 Meal services not specified
-                              </div>
-                           );
-                        })()}
-                     </div>
-                  </div>
-
-                  {/* Live Counters */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <ChefHat className="w-5 h-5" />
-                        Live Counters
-                     </h3>
-                     <div className="space-y-4 min-h-[2rem] items-center">
-                        {(() => {
-                           const liveCounters = catererData?.services?.liveCounters;
-
-                           return (liveCounters && Array.isArray(liveCounters) && liveCounters.length > 0) ? (
-                              liveCounters.map((counter, index) => (
-                                 <div key={index} className="border border-gray-200 rounded-lg p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                       <h4 className="font-medium text-gray-900">{safeRender(counter.name)}</h4>
-                                       <span className="text-orange-600 font-semibold">₹{safeRender(counter.pricePerPlate)}/plate</span>
-                                    </div>
-                                    <p className="text-gray-600 text-sm">{safeRender(counter.description)}</p>
-                                 </div>
-                              ))
-                           ) : (
-                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                                 Live counters not configured
-                              </div>
-                           );
-                        })()}
-                     </div>
-                  </div>
-               </div>
-            )}
-
             {activeTab === 'menu' && (
                <div className="space-y-6">
                   {/* Cuisines */}
@@ -765,11 +634,74 @@ const CatererProfileView = () => {
                         </div>
                      );
                   })()}
+
+                  {/* Live Counters */}
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <ChefHat className="w-5 h-5" />
+                        Live Counters
+                     </h3>
+                     <div className="space-y-4 min-h-[2rem] items-center">
+                        {(() => {
+                           const liveCounters = catererData?.services?.liveCounters;
+
+                           return (liveCounters && Array.isArray(liveCounters) && liveCounters.length > 0) ? (
+                              liveCounters.map((counter, index) => (
+                                 <div key={index} className="border border-gray-200 rounded-lg p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                       <h4 className="font-medium text-gray-900">{safeRender(counter.name)}</h4>
+                                       <span className="text-orange-600 font-semibold">₹{safeRender(counter.pricePerPlate)}/plate</span>
+                                    </div>
+                                    <p className="text-gray-600 text-sm">{safeRender(counter.description)}</p>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
+                                 Live counters not configured
+                              </div>
+                           );
+                        })()}
+                     </div>
+                  </div>
                </div>
             )}
 
             {activeTab === 'services' && (
                <div className="space-y-6">
+
+                  {/* Meal Service Types */}
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Utensils className="w-5 h-5" />
+                        Meal Service Types
+                     </h3>
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 min-h-[2rem] items-center">
+                        {(() => {
+                           const mealServices = safeObjectEntries(catererData?.services?.mealServiceTypes)
+                              .filter(([key, value]) => typeof value === 'boolean');
+
+                           return mealServices.length > 0 ? (
+                              mealServices.map(([key, value]) => (
+                                 <div key={key} className="flex items-center gap-2">
+                                    {value ? (
+                                       <CheckCircle className="w-5 h-5 text-green-500" />
+                                    ) : (
+                                       <XCircle className="w-5 h-5 text-gray-300" />
+                                    )}
+                                    <span className={`text-sm capitalize ${value ? 'text-gray-900' : 'text-gray-400'}`}>
+                                       {safeRender(key.replace(/([A-Z])/g, ' $1').trim())}
+                                    </span>
+                                 </div>
+                              ))
+                           ) : (
+                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200 col-span-full">
+                                 Meal services not specified
+                              </div>
+                           );
+                        })()}
+                     </div>
+                  </div>
+
                   {/* Staff Details */}
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -787,7 +719,7 @@ const CatererProfileView = () => {
                         return hasStaffDetails ? (
                            <>
                               <p className="text-gray-600 mb-4">{safeRender(staffDetails)}</p>
-                              <div className="bg-gray-50 p-4 rounded-lg">
+                              {/* <div className="bg-gray-50 p-4 rounded-lg">
                                  <div className="flex justify-between items-center">
                                     <span className="text-gray-700">Staff Cost:</span>
                                     <span className="font-semibold text-gray-600">
@@ -801,7 +733,7 @@ const CatererProfileView = () => {
                                     Ratio: {safeRender(services?.staffProvided?.ratio?.staffCount)} staff
                                     per {safeRender(services?.staffProvided?.ratio?.guestCount)} guests
                                  </div>
-                              </div>
+                              </div> */}
                            </>
                         ) : (
                            <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
@@ -842,22 +774,6 @@ const CatererProfileView = () => {
                      </div>
                   </div>
 
-                  {/* Delivery & Setup */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Delivery & Setup</h3>
-                     {services?.deliveryLogistics ? (
-                        <p className="text-gray-600">{safeRender(services?.deliveryLogistics)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Delivery and setup details not specified
-                        </div>
-                     )}
-                  </div>
-               </div>
-            )}
-
-            {activeTab === 'customization' && (
-               <div className="space-y-6">
                   {/* Customization Allowed */}
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                      <h3 className="font-semibold text-gray-900 mb-3">Menu Customization</h3>
@@ -945,8 +861,6 @@ const CatererProfileView = () => {
                      )}
                   </div>
 
-
-
                   {/* Tasting Session */}
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                      <h3 className="font-semibold text-gray-900 mb-3">Tasting Session</h3>
@@ -964,75 +878,15 @@ const CatererProfileView = () => {
                         </div>
                      )}
                   </div>
-               </div>
-            )}
 
-            {activeTab === 'compliance' && (
-               <div className="space-y-6">
-                  {/* FSSAI License */}
+                  {/* Delivery & Setup */}
                   <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Shield className="w-5 h-5" />
-                        FSSAI License
-                     </h3>
-                     {compliance?.fssaiLicense?.number ? (
-                        <div className="bg-green-50 p-3 rounded-lg">
-                           <span className="text-green-700 font-medium">
-                              License Number: {safeRender(compliance?.fssaiLicense?.number)}
-                           </span>
-                        </div>
+                     <h3 className="font-semibold text-gray-900 mb-3">Delivery & Setup</h3>
+                     {services?.deliveryLogistics ? (
+                        <p className="text-gray-600">{safeRender(services?.deliveryLogistics)}</p>
                      ) : (
                         <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           FSSAI license not specified
-                        </div>
-                     )}
-                  </div>
-
-                  {/* Hygiene Audits */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Hygiene Audits</h3>
-                     {compliance?.hygieneAudits?.details ? (
-                        <p className="text-gray-600">{safeRender(compliance?.hygieneAudits?.details)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Hygiene audit details not specified
-                        </div>
-                     )}
-                  </div>
-
-                  {/* Allergen Handling */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Allergen Handling</h3>
-                     {compliance?.allergenHandling?.details ? (
-                        <p className="text-gray-600">{safeRender(compliance?.allergenHandling?.details)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Allergen handling details not specified
-                        </div>
-                     )}
-                  </div>
-
-                  {/* Insurance */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Insurance</h3>
-                     {compliance?.insurance?.provided && compliance?.insurance?.details ? (
-                        <>
-                           <div className="flex items-center gap-2 mb-2">
-                              {compliance?.insurance?.provided ? (
-                                 <CheckCircle className="w-5 h-5 text-green-500" />
-                              ) : (
-                                 <XCircle className="w-5 h-5 text-red-500" />
-                              )}
-                              <span className={`font-medium ${compliance?.insurance?.provided ? 'text-green-700' : 'text-red-700'
-                                 }`}>
-                                 {compliance?.insurance?.provided ? 'Insurance Provided' : 'No Insurance'}
-                              </span>
-                           </div>
-                           <p className="text-gray-600">{safeRender(compliance?.insurance?.details)}</p>
-                        </>
-                     ) : !compliance?.insurance?.provided && (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Insurance details not specified
+                           Delivery and setup details not specified
                         </div>
                      )}
                   </div>
@@ -1118,6 +972,74 @@ const CatererProfileView = () => {
                      ) : (
                         <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
                            Cancellation and refund policy not specified
+                        </div>
+                     )}
+                  </div>
+
+                  {/* FSSAI License */}
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Shield className="w-5 h-5" />
+                        FSSAI License
+                     </h3>
+                     {compliance?.fssaiLicense?.number ? (
+                        <div className="bg-green-50 p-3 rounded-lg">
+                           <span className="text-green-700 font-medium">
+                              License Number: {safeRender(compliance?.fssaiLicense?.number)}
+                           </span>
+                        </div>
+                     ) : (
+                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
+                           FSSAI license not specified
+                        </div>
+                     )}
+                  </div>
+
+                  {/* Hygiene Audits */}
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                     <h3 className="font-semibold text-gray-900 mb-3">Hygiene Audits</h3>
+                     {compliance?.hygieneAudits?.details ? (
+                        <p className="text-gray-600">{safeRender(compliance?.hygieneAudits?.details)}</p>
+                     ) : (
+                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
+                           Hygiene audit details not specified
+                        </div>
+                     )}
+                  </div>
+
+                  {/* Allergen Handling */}
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                     <h3 className="font-semibold text-gray-900 mb-3">Allergen Handling</h3>
+                     {compliance?.allergenHandling?.details ? (
+                        <p className="text-gray-600">{safeRender(compliance?.allergenHandling?.details)}</p>
+                     ) : (
+                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
+                           Allergen handling details not specified
+                        </div>
+                     )}
+                  </div>
+
+                  {/* Insurance */}
+                  <div className="bg-white p-6 rounded-lg shadow-sm">
+                     <h3 className="font-semibold text-gray-900 mb-3">Insurance</h3>
+                     {compliance?.insurance?.provided && compliance?.insurance?.details ? (
+                        <>
+                           <div className="flex items-center gap-2 mb-2">
+                              {compliance?.insurance?.provided ? (
+                                 <CheckCircle className="w-5 h-5 text-green-500" />
+                              ) : (
+                                 <XCircle className="w-5 h-5 text-red-500" />
+                              )}
+                              <span className={`font-medium ${compliance?.insurance?.provided ? 'text-green-700' : 'text-red-700'
+                                 }`}>
+                                 {compliance?.insurance?.provided ? 'Insurance Provided' : 'No Insurance'}
+                              </span>
+                           </div>
+                           <p className="text-gray-600">{safeRender(compliance?.insurance?.details)}</p>
+                        </>
+                     ) : !compliance?.insurance?.provided && (
+                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
+                           Insurance details not specified
                         </div>
                      )}
                   </div>
