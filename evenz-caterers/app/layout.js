@@ -25,7 +25,7 @@ function RootLoading() {
 }
 
 export const metadata = {
-  title: "Evenz Caterers",
+  title: "Evenz.in Caterers",
   description: "Professional catering services platform",
   icons: {
     icon: '/Evenz_app_logo.png', // /public is implied
