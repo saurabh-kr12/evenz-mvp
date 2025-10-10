@@ -628,18 +628,6 @@ const BookingRequestForm = () => {
                      </div>
                   )}
 
-                  {/* Current Form State Display */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                     <h4 className="font-medium text-gray-900 mb-2">Current Form State:</h4>
-                     <div className="text-xs text-gray-600 space-y-1">
-                        <div>Number of Guests: {formData.numGuests || 'Not set'}</div>
-                        <div>Selected Package: {formData.selectedPackage?.name || 'Not selected'}</div>
-                        <div>Package Price: {formData.selectedPackage?.pricePerPlate ? `₹${formData.selectedPackage.pricePerPlate}` : 'N/A'}</div>
-                        <div>Live Counters: {formData.selectedLiveCounters.length}</div>
-                        <div>Estimated Cost: ₹{estimatedCost}</div>
-                     </div>
-                  </div>
-
                   {/* Submit Button */}
                   <div className="pt-6">
                      <button
