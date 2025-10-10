@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -297,6 +297,15 @@ const CatererProfileView = () => {
 
    const safeObjectEntries = (obj) => { if (!obj || typeof obj !== 'object') return []; return Object.entries(obj); };
 
+   // Group master menu items by category for the new "Full Menu" tab
+   const groupedMasterMenu = useMemo(() => {
+      if (!catererData?.menu?.masterMenuItems || catererData.menu.masterMenuItems.length === 0) return null;
+      return catererData.menu.masterMenuItems.reduce((acc, item) => {
+         (acc[item.category] = acc[item.category] || []).push(item);
+         return acc;
+      }, {});
+   }, [catererData]);
+
    if (loading) {
       return (
          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -511,7 +520,9 @@ const CatererProfileView = () => {
                <div className="max-w-7xl mx-auto px-4 sm:px-9">
                   <div className="flex  space-x-8 overflow-x-auto">
                      {[
-                        { id: 'menu', label: 'Menu & Packages' },
+                        { id: 'menu', label: 'Packages & Counters' },
+                        // Conditionally render the "Full Menu" tab
+                        ...(groupedMasterMenu ? [{ id: 'full-menu', label: 'Full Menu' }] : []),
                         { id: 'services', label: 'Services & Logistics' },
                         { id: 'policies', label: 'Policies & Safety' }
                      ].map((tab) => (
@@ -662,6 +673,28 @@ const CatererProfileView = () => {
                            );
                         })()}
                      </div>
+                  </div>
+               </div>
+            )}
+
+            {activeTab === 'full-menu' && groupedMasterMenu && (
+               <div className="bg-white p-6 rounded-lg shadow-sm">
+                  <h3 className="font-semibold text-gray-900 mb-4 text-xl">Full Menu Library</h3>
+                  <div className="space-y-6">
+                     {Object.entries(groupedMasterMenu).map(([category, items]) => (
+                        <div key={category}>
+                           <h4 className="font-medium text-gray-800 text-lg mb-3 capitalize">{category}</h4>
+                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                              {items.map(item => (
+                                 <div key={item._id} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                                    <span className={`w-2 h-2 rounded-full ${item.type === 'veg' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                    <p className="text-gray-700 text-sm">{item.name}</p>
+                                    {item.extraCharge > 0 && <span className="text-xs text-orange-600 font-medium">(+₹{item.extraCharge})</span>}
+                                 </div>
+                              ))}
+                           </div>
+                        </div>
+                     ))}
                   </div>
                </div>
             )}

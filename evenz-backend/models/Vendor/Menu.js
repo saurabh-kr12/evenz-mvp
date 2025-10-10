@@ -88,6 +88,14 @@ const packageSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// --- NEW SCHEMA for Master Menu Items ---
+const masterMenuItemSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    category: { type: String, required: true }, // e.g., 'Starter', 'Main Course'
+    type: { type: String, enum: ['veg', 'non-veg'], required: true, default: 'veg' },
+    extraCharge: { type: Number, default: 0 }
+});
+
 // Main Menu Schema
 const menuSchema = new mongoose.Schema({
   vendor: {
@@ -105,6 +113,7 @@ const menuSchema = new mongoose.Schema({
     of: [packageSchema],
     default: new Map()
   },
+  masterMenuItems: [masterMenuItemSchema], 
   isActive: {
     type: Boolean,
     default: true

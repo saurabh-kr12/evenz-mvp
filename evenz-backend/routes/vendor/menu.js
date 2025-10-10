@@ -33,6 +33,7 @@ router.get('/', async (req, res) => {
       vendor: menu.vendor,
       cuisines: menu.cuisines,
       packages: Object.fromEntries(menu.packages),
+      masterMenuItems: menu.masterMenuItems,
       isActive: menu.isActive,
       createdAt: menu.createdAt,
       updatedAt: menu.updatedAt
@@ -533,5 +534,101 @@ router.get('/packages/:packageId', async (req, res) => {
     });
   }
 });
+
+// --- NEW ROUTES FOR MASTER MENU ITEMS ---
+
+// POST /api/vendor/menu/master-items - Add a new item to the master list
+router.post('/master-items',
+  [
+    body('name').not().isEmpty().withMessage('Item name is required.').matches(safeTextRegex).trim().escape(),
+    body('category').not().isEmpty().withMessage('Category is required.').matches(safeTextRegex).trim().escape(),
+    body('type').isIn(['veg', 'non-veg']).withMessage('Invalid item type.'),
+    body('extraCharge').optional().isNumeric().withMessage('Extra charge must be a number.')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    try {
+      const menu = await Menu.findOne({ vendor: req.vendor._id });
+      if (!menu) {
+        return res.status(404).json({ success: false, message: 'Menu not found.' });
+      }
+      const newItem = req.body;
+      menu.masterMenuItems.push(newItem);
+      await menu.save();
+      // Return the newly created item with its generated _id
+      const savedItem = menu.masterMenuItems[menu.masterMenuItems.length - 1];
+      res.status(201).json({ success: true, message: 'Menu item added successfully.', data: savedItem });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Server error while adding item.' });
+    }
+  }
+);
+
+// PUT /api/vendor/menu/master-items/:itemId - Update a master menu item
+router.put('/master-items/:itemId',
+  [
+    body('name').not().isEmpty().withMessage('Item name is required.').matches(safeTextRegex).trim().escape(),
+    body('category').not().isEmpty().withMessage('Category is required.').matches(safeTextRegex).trim().escape(),
+    body('type').isIn(['veg', 'non-veg']).withMessage('Invalid item type.'),
+    body('extraCharge').optional().isNumeric().withMessage('Extra charge must be a number.')
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+    try {
+      const { itemId } = req.params;
+      const menu = await Menu.findOne({ vendor: req.vendor._id });
+      if (!menu) {
+        return res.status(404).json({ success: false, message: 'Menu not found.' });
+      }
+      const item = menu.masterMenuItems.id(itemId);
+      if (!item) {
+        return res.status(404).json({ success: false, message: 'Menu item not found.' });
+      }
+      // Update fields
+      item.name = req.body.name;
+      item.category = req.body.category;
+      item.type = req.body.type;
+      item.extraCharge = req.body.extraCharge || 0;
+      await menu.save();
+      res.status(200).json({ success: true, message: 'Menu item updated successfully.', data: item });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Server error while updating item.' });
+    }
+  }
+);
+
+// DELETE /api/vendor/menu/master-items/:itemId - Delete a master menu item
+router.delete('/master-items/:itemId', 
+    async (req, res) => {
+        try {
+            const { itemId } = req.params;
+
+            // --- THE FIX IS HERE ---
+            // Use the more reliable $pull operator to remove the subdocument directly.
+            const result = await Menu.updateOne(
+                { vendor: req.vendor._id },
+                { $pull: { masterMenuItems: { _id: itemId } } }
+            );
+
+            // Check if anything was actually modified
+            if (result.nModified === 0) {
+                 return res.status(404).json({ success: false, message: 'Menu item not found.' });
+            }
+            
+            res.status(200).json({ success: true, message: 'Menu item deleted successfully.' });
+
+        } catch (error) {
+            // --- ALSO ADDED THIS CRITICAL LOG ---
+            console.error('Error deleting master menu item:', error);
+            res.status(500).json({ success: false, message: 'Server error while deleting item.' });
+        }
+    }
+);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import SectionHeaderWithTooltip from '../SectionHeaderWithTooltip';
-import { ChevronDown, ChevronUp, Plus, Edit, Trash2, Save, X, Check, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Edit, Trash2, Save, X, Check, AlertTriangle,Loader2 } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/context/AuthContext'; // Import the axios instance
@@ -50,6 +50,73 @@ const ConfirmationDialog = ({ isOpen, onClose, onConfirm, title, message, confir
    );
 };
 
+const MasterMenuItemForm = ({ item, onSave, onCancel, isLoading, categorySuggestions }) => {
+   const [formData, setFormData] = useState(item);
+
+   const handleChange = (field, value) => {
+      setFormData(prev => ({ ...prev, [field]: value }));
+   };
+
+   const handleSave = (e) => {
+      e.preventDefault();
+      onSave(formData);
+   };
+
+   return (
+      <form onSubmit={handleSave} className="p-4 bg-gray-100 rounded-lg space-y-4">
+         <h4 className="font-semibold text-gray-800">{item._id ? 'Edit Menu Item' : 'Add New Menu Item'}</h4>
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+               type="text"
+               placeholder="Item Name (e.g., Paneer Butter Masala)"
+               value={formData.name}
+               onChange={(e) => handleChange('name', e.target.value)}
+               required
+               className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+               type="text"
+               list="category-suggestions"
+               placeholder="Category (e.g., Main Course)"
+               value={formData.category}
+               onChange={(e) => handleChange('category', e.target.value)}
+               required
+               className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+            <datalist id="category-suggestions">
+               {categorySuggestions.map(cat => <option key={cat} value={cat} />)}
+            </datalist>
+         </div>
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <select
+               value={formData.type}
+               onChange={(e) => handleChange('type', e.target.value)}
+               required
+               className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            >
+               <option value="veg">Vegetarian</option>
+               <option value="non-veg">Non-Vegetarian</option>
+            </select>
+            <input
+               type="number"
+               placeholder="Extra Charge (optional)"
+               value={formData.extraCharge || ''}
+               onChange={(e) => handleChange('extraCharge', e.target.value ? parseInt(e.target.value) : 0)}
+               min="0"
+               className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            />
+         </div>
+         <div className="flex gap-2 justify-end">
+            <button type="button" onClick={onCancel} className="px-4 py-2 text-sm bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+            <button type="submit" disabled={isLoading} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center">
+               {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+               {item._id ? 'Update Item' : 'Save Item'}
+            </button>
+         </div>
+      </form>
+   );
+};
+
 const MenuCuisinesModule = () => {
    // State Management
    const [selectedCuisines, setSelectedCuisines] = useState([]);
@@ -63,6 +130,10 @@ const MenuCuisinesModule = () => {
    const [isLoading, setIsLoading] = useState(true);
    const [error, setError] = useState('');
    const [showCuisineForm, setShowCuisineForm] = useState(false);
+   // State for the new Master Menu
+   const [menuuData, setMenuuData] = useState(null);
+   const [showMasterItemForm, setShowMasterItemForm] = useState(false);
+   const [editingMasterItem, setEditingMasterItem] = useState(null);
    const { accessToken, loading: authLoading, currentUser } = useAuth();
 
    // Analytics
@@ -157,6 +228,7 @@ const MenuCuisinesModule = () => {
             setSavedCuisines(menuData.cuisines || []);
             setSelectedCuisines(menuData.cuisines || []);
             setPackages(menuData.packages || {});
+            setMenuuData(response.data.data);
          }
       } catch (err) {
          console.error('Failed to load menu data:', err);
@@ -241,7 +313,6 @@ const MenuCuisinesModule = () => {
          setIsLoading(false);
       }
    };
-
 
    // Package handlers
    const handlePackageFormChange = (field, value) => {
@@ -385,6 +456,67 @@ const MenuCuisinesModule = () => {
          [key]: !prev[key]
       }));
    };
+
+   // --- Master Menu Item Handlers ---
+   const handleSaveMasterItem = async (itemData) => {
+      setIsLoading(true);
+      try {
+         let response;
+         if (itemData._id) { // This is an update
+            response = await api.put(`/vendor/menu/master-items/${itemData._id}`, itemData);
+         } else { // This is a new item
+            response = await api.post('/vendor/menu/master-items', itemData);
+         }
+
+         if (response.data.success) {
+            await loadExistingData(); // Reload all data to get the latest list
+            setShowMasterItemForm(false);
+            setEditingMasterItem(null);
+         }
+      } catch (err) {
+         setError(err.message || 'Failed to save menu item.');
+      } finally {
+         setIsLoading(false);
+      }
+   };
+
+   const handleDeleteMasterItem = async (itemId) => {
+      setIsLoading(true);
+      try {
+         const response = await api.delete(`/vendor/menu/master-items/${itemId}`);
+         if (response.data.success) {
+            await loadExistingData();
+         }
+      } catch (err) {
+         setError(err.message || 'Failed to delete menu item.');
+      } finally {
+         setIsLoading(false);
+      }
+   };
+
+   const handleEditMasterItem = (item) => {
+      setEditingMasterItem(item);
+      setShowMasterItemForm(true);
+   };
+
+   const handleAddNewMasterItem = () => {
+      setEditingMasterItem(null); // Ensure we are not editing
+      setShowMasterItemForm(true);
+   };
+
+   const masterItemCategories = useMemo(() => {
+      if (!menuuData?.masterMenuItems) return [];
+      const categories = menuuData.masterMenuItems.map(item => item.category);
+      return [...new Set(categories)]; // Get unique categories
+   }, [menuuData]);
+
+   const groupedMasterItems = useMemo(() => {
+      if (!menuuData?.masterMenuItems) return {};
+      return menuuData.masterMenuItems.reduce((acc, item) => {
+         (acc[item.category] = acc[item.category] || []).push(item);
+         return acc;
+      }, {});
+   }, [menuuData]);
 
    return (
       <div className="w-full max-w-none sm:max-w-6xl mx-auto p-3 sm:p-6 bg-white shadow-lg rounded-lg text-gray-700">
@@ -821,6 +953,56 @@ const MenuCuisinesModule = () => {
                ))}
             </div>
          )}
+
+         {/* --- NEW: Master Menu Library Card --- */}
+         <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-4">
+               <h3 className="text-xl font-semibold text-gray-800">My Menu Library</h3>
+               {!showMasterItemForm && (
+                  <button onClick={handleAddNewMasterItem} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center text-sm">
+                     <Plus className="w-4 h-4 mr-2" />
+                     Add Menu Item
+                  </button>
+               )}
+            </div>
+
+            {showMasterItemForm && (
+               <MasterMenuItemForm
+                  item={editingMasterItem || { name: '', category: '', type: 'veg', extraCharge: 0 }}
+                  onSave={handleSaveMasterItem}
+                  onCancel={() => setShowMasterItemForm(false)}
+                  isLoading={isLoading}
+                  categorySuggestions={masterItemCategories}
+               />
+            )}
+
+            <div className="mt-6 space-y-4">
+               {Object.keys(groupedMasterItems).length > 0 ? (
+                  Object.entries(groupedMasterItems).map(([category, items]) => (
+                     <div key={category}>
+                        <h4 className="font-semibold text-gray-600 border-b pb-2 mb-2">{category}</h4>
+                        <div className="space-y-2">
+                           {items.map(item => (
+                              <div key={item._id} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md">
+                                 <div className="flex items-center gap-3">
+                                    <span className={`w-2 h-2 rounded-full ${item.type === 'veg' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                    <span className="font-medium text-gray-800">{item.name}</span>
+                                    {item.extraCharge > 0 && <span className="text-xs text-gray-500">(+₹{item.extraCharge})</span>}
+                                 </div>
+                                 <div className="flex gap-2">
+                                    <button onClick={() => handleEditMasterItem(item)} className="text-blue-500 hover:text-blue-700"><Edit className="w-4 h-4" /></button>
+                                    <button onClick={() => handleDeleteMasterItem(item._id)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  ))
+               ) : (
+                  <p className="text-gray-500 text-center py-4">Your menu library is empty. Click "Add Menu Item" to get started.</p>
+               )}
+            </div>
+         </div>
       </div>
    );
 };

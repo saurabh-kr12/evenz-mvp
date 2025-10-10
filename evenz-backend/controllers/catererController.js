@@ -89,6 +89,7 @@ const getCatererProfile = async (req, res) => {
       menu: menu ? {
         cuisines: menu.cuisines || [],
         packages: menu.packages ? Object.fromEntries(menu.packages) : {},
+        masterMenuItems: menu.masterMenuItems || [],
         totalPackages: menu.packages ? Array.from(menu.packages.values()).reduce((total, packages) => total + packages.length, 0) : 0,
         isActive: menu.isActive
       } : null,
