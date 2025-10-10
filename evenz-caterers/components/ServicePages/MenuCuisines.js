@@ -999,7 +999,7 @@ const MenuCuisinesModule = () => {
                      </div>
                   ))
                ) : (
-                  <p className="text-gray-500 text-center py-4">Your menu library is empty. Click "Add Menu Item" to get started.</p>
+                  <p className="text-gray-500 text-center py-4">Your menu library is empty. Click &quot;Add Menu Item&quot; to get started.</p>
                )}
             </div>
          </div>
