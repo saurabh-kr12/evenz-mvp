@@ -7,7 +7,7 @@ import './globals.css';
 import GoogleAnalytics from '../components/GoogleAnalytics';
 
 export const metadata = {
-  title: 'Evenz - Event Planning Made Easy',
+  title: 'Evenz.in - Event Planning Made Easy',
   description: 'Find and book the best caterers for your events',
   icons: {
     icon: '/Evenz_app_logo.png', // /public is implied
