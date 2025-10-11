@@ -349,6 +349,7 @@ const SearchPage = () => {
     // --- THE FIX IS HERE: The backend now sends a simple string ---
     const coverImageUrl = vendor?.coverImage;
 
+    console.log('Vendor Cover Image URL:', coverImageUrl);
     return (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
             <div className="relative">

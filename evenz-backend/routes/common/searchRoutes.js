@@ -61,20 +61,17 @@ router.get('/vendors', [
         // Stage 2: Join with Menus and Media
         pipeline.push({ $lookup: { from: 'menus', localField: '_id', foreignField: 'vendor', as: 'menu' } });
         pipeline.push({ $unwind: { path: '$menu', preserveNullAndEmptyArrays: true } });
-        pipeline.push({ $lookup: { from: 'media', localField: '_id', foreignField: 'vendor', pipeline: [{ $match: { isCoverImage: true } }], as: 'coverImage' } });
+        pipeline.push({ $lookup: { from: 'media', localField: '_id', foreignField: 'vendor', as: 'coverImage' } });
         pipeline.push({ $unwind: { path: '$coverImage', preserveNullAndEmptyArrays: true } });
         
-        // --- THE FIX IS HERE ---
         // Stage 4: Convert packages object to a flat array and calculate min/max prices.
         pipeline.push({
             $addFields: {
-                // Convert the packages object { "Cuisine1": [pkg1], "Cuisine2": [pkg2] } to an array of its values [[pkg1], [pkg2]]
                 packagesAsArrayOfArrays: { $objectToArray: { $ifNull: ["$menu.packages", {}] } },
             }
         });
         pipeline.push({
             $addFields: {
-                // Flatten the array of arrays into a single array of all packages
                 allPackages: {
                     $reduce: {
                         input: "$packagesAsArrayOfArrays.v",
@@ -90,7 +87,6 @@ router.get('/vendors', [
                 maxPrice: { $max: "$allPackages.pricePerPlate" }
             }
         });
-        // --- END OF FIX ---
 
         // Stage 5: Apply post-join filters for cuisine and price
         let postJoinMatch = {};
@@ -101,11 +97,7 @@ router.get('/vendors', [
             postJoinMatch['minPrice'] = { $gte: minPrice };
         }
         if (maxPrice) {
-            // Caterers with no price should not be excluded if only maxPrice is set
-            postJoinMatch['$or'] = [
-                { 'maxPrice': { $lte: maxPrice } },
-                { 'maxPrice': null }
-            ];
+            postJoinMatch['maxPrice'] = { $lte: maxPrice };
         }
         if (Object.keys(postJoinMatch).length > 0) {
             pipeline.push({ $match: postJoinMatch });
@@ -122,10 +114,16 @@ router.get('/vendors', [
                     { $limit: limit },
                     {
                         $project: {
-                             id: '$_id', 
-                            _id: 0, businessName: 1, ownerName: 1, locality: 1, city: 1, pinCode: 1,
+                            id: '$_id', 
+                            _id: 0,
+                            businessName: 1, 
+                            ownerName: 1, 
+                            locality: 1, 
+                            city: 1, 
+                            pinCode: 1,
                             cuisines: "$menu.cuisines",
-                            minPrice: 1, maxPrice: 1,
+                            minPrice: 1, 
+                            maxPrice: 1,
                             coverImage: "$coverImage.cloudinaryUrl",
                             experience: "$coverImage.experience",
                             rank: 1
