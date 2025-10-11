@@ -336,80 +336,89 @@ const SearchPage = () => {
     );
   };
 
-  const VendorCard = ({ vendor, isFeatured = false }) => (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
-      <div className="relative">
-        {/* Cover Image or Placeholder */}
-        <div className="w-full h-48 relative overflow-hidden">
-          {vendor?.coverImage?.cloudinaryUrl ? (
-            <img
-              src={vendor.coverImage.cloudinaryUrl}
-              alt={vendor.businessName}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Track image load error
-                analytics.trackError('image_error', 'cover_image_failed_to_load', 'search_page');
-                // Fallback to placeholder if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          
-          {/* Placeholder (shown when no image or image fails to load) */}
-          <div 
-            className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${
-              vendor?.coverImage?.cloudinaryUrl ? 'hidden' : 'flex'
-            }`}
-          >
-            <FaUtensils className="text-6xl text-indigo-300" />
-          </div>
+ const VendorCard = ({ vendor, isFeatured = false }) => {
+    const analytics = useAnalytics(); // Assuming you initialize it like this
 
-          {/* Featured badge */}
-          {isFeatured && (
-            <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-              Featured
+    const handleVendorClick = (vendor) => {
+        // Example analytics tracking
+        if(analytics) {
+            analytics.trackCustomEvent('vendor_card_clicked', 'search_interaction', vendor.businessName);
+        }
+    };
+
+    // --- THE FIX IS HERE: The backend now sends a simple string ---
+    const coverImageUrl = vendor?.coverImage;
+
+    return (
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
+            <div className="relative">
+                <div className="w-full h-48 relative overflow-hidden">
+                    {coverImageUrl ? (
+                        <img
+                            src={coverImageUrl}
+                            alt={vendor.businessName}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                // Fallback to placeholder if image fails to load
+                                e.target.style.display = 'none';
+                                if (e.target.nextSibling) {
+                                    e.target.nextSibling.style.display = 'flex';
+                                }
+                            }}
+                        />
+                    ) : null}
+                    
+                    <div 
+                        className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${
+                            coverImageUrl ? 'hidden' : 'flex'
+                        }`}
+                    >
+                        <FaUtensils className="text-6xl text-indigo-300" />
+                    </div>
+
+                    {isFeatured && (
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                            Featured
+                        </div>
+                    )}
+                </div>
             </div>
-          )}
-        </div>
-      </div>
-      
-      <div className="p-4">
-        <h3 className="text-lg font-bold text-gray-800 mb-1">{vendor.businessName}</h3>
-        
-        <div className="flex items-center mb-2 text-gray-600">
-          <FaMapMarkerAlt className="mr-1 text-sm" />
-          <span className="text-sm">{vendor.locality}, {vendor.city}</span>
-        </div>
+            
+            <div className="p-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-1">{vendor.businessName}</h3>
+                
+                <div className="flex items-center mb-2 text-gray-600">
+                    <FaMapMarkerAlt className="mr-1 text-sm" />
+                    <span className="text-sm">{vendor.locality}, {vendor.city}</span>
+                </div>
 
-        {/* Cuisines - now guaranteed to exist */}
-        <div className="text-sm text-gray-600 mb-3">
-          <span className="font-medium">Cuisines: </span>
-          <span>{vendor.cuisines.slice(0, 3).join(', ')}</span>
-          {vendor.cuisines.length > 3 && <span className="text-gray-500"> +{vendor.cuisines.length - 3} more</span>}
-        </div>
+                <div className="text-sm text-gray-600 mb-3">
+                    <span className="font-medium">Cuisines: </span>
+                    <span>{vendor.cuisines?.slice(0, 3).join(', ')}</span>
+                    {vendor.cuisines?.length > 3 && <span className="text-gray-500"> +{vendor.cuisines.length - 3} more</span>}
+                </div>
 
-        {/* Price - now guaranteed to exist */}
-        <div className="mb-3 flex items-center gap-2">
-          <span className="font-bold text-indigo-600 flex items-center">
-            <FaRupeeSign className="mr-1" />
-            {vendor.minPrice} - {vendor.maxPrice}
-          </span>
-          <span className="text-gray-500 text-sm"> / person</span>
-        </div>
+                <div className="mb-3 flex items-center gap-2">
+                    <span className="font-bold text-indigo-600 flex items-center">
+                        <FaRupeeSign className="mr-1" />
+                        {(vendor.minPrice && vendor.maxPrice) ? `${vendor.minPrice} - ${vendor.maxPrice}` : 'N/A'}
+                    </span>
+                    <span className="text-gray-500 text-sm"> / person</span>
+                </div>
 
-        <div className="mt-4 grid grid-cols-1">
-          <Link
-            href={`/vendors/${vendor.id}`}
-            className="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm"
-            onClick={() => handleVendorClick(vendor)}
-          >
-            View Profile
-          </Link>
+                <div className="mt-4 grid grid-cols-1">
+                    <Link
+                        href={`/vendors/${vendor.id}`}
+                        className="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm"
+                        onClick={() => handleVendorClick(vendor)}
+                    >
+                        View Profile
+                    </Link>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
+};
 
   return (
     <div className="bg-white min-h-screen">

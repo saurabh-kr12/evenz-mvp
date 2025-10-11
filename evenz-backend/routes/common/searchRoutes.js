@@ -126,7 +126,7 @@ router.get('/vendors', [
                             _id: 0, businessName: 1, ownerName: 1, locality: 1, city: 1, pinCode: 1,
                             cuisines: "$menu.cuisines",
                             minPrice: 1, maxPrice: 1,
-                            coverImage: "$coverImage",
+                            coverImage: "$coverImage.cloudinaryUrl",
                             experience: "$coverImage.experience",
                             rank: 1
                         }
