@@ -359,7 +359,7 @@ const SearchPage = () => {
           {/* Placeholder (shown when no image or image fails to load) */}
           <div 
             className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${
-              vendor.coverImage?.cloudinaryUrl ? 'hidden' : 'flex'
+              vendor.coverImage ? 'hidden' : 'flex'
             }`}
           >
             <FaUtensils className="text-6xl text-indigo-300" />
