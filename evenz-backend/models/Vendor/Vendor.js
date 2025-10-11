@@ -81,11 +81,11 @@ const vendorSchema = new mongoose.Schema({
   },
   termsAcceptedAt: {
     type: Date,
-    required: function() {
+    required: function () {
       return this.termsAccepted;
     }
   },
-  status :{
+  status: {
     type: String,
     enum: ['active', 'inactive', 'suspended'],
     default: 'active'
@@ -110,6 +110,11 @@ const vendorSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  rank: {
+    type: Number,
+    default: 99, // A high number ensures unranked vendors appear last
+    index: true  // Improves sorting performance
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -118,14 +123,14 @@ const vendorSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-},{
+}, {
   timestamps: true
 });
 
 // Middleware to hash password before save
-vendorSchema.pre('save', async function(next) {
+vendorSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -136,7 +141,7 @@ vendorSchema.pre('save', async function(next) {
 });
 
 // Method to compare password
-vendorSchema.methods.comparePassword = async function(candidatePassword) {
+vendorSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

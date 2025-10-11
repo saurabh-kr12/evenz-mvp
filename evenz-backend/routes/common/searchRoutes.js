@@ -1,200 +1,167 @@
-// File: routes/searchRoutes.js
 const express = require('express');
 const router = express.Router();
+const { body, query, param, validationResult } = require('express-validator');
 const Vendor = require('../../models/Vendor/Vendor');
 const Menu = require('../../models/Vendor/Menu');
 const Media = require('../../models/Vendor/media');
+const mongoose = require('mongoose');
 
-// @desc    Get all vendors with their menu data and cover images for search page
+// This regex is a whitelist for common text, allowing letters, numbers, spaces, and basic punctuation.
+const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
+
+// @desc    Get all vendors with filtering, sorting, and pagination
 // @route   GET /api/search/vendors
 // @access  Public
-router.get('/vendors', async (req, res) => {
-  try {
-    const {
-      query,
-      area,
-      minPrice,
-      maxPrice,
-      cuisineType,
-      limit = 50,
-      page = 1
-    } = req.query;
-
-    // Build search filters
-    let vendorFilter = {
-      status: 'active' // Only include active vendors
-    };
-    
-    // Search by business name, locality, or city
-    if (query) {
-      vendorFilter.$or = [
-        { businessName: { $regex: query, $options: 'i' } },
-        { locality: { $regex: query, $options: 'i' } },
-        { city: { $regex: query, $options: 'i' } }
-      ];
+router.get('/vendors', [
+    query('query').optional().matches(safeTextRegex).trim().escape(),
+    query('area').optional().matches(safeTextRegex).trim().escape(),
+    query('minPrice').optional().isNumeric().toInt(),
+    query('maxPrice').optional().isNumeric().toInt(),
+    query('cuisineType').optional().matches(safeTextRegex).trim().escape(),
+    query('limit').optional().isNumeric().toInt(),
+    query('page').optional().isNumeric().toInt()
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
     }
 
-    // Filter by area (locality or city)
-    if (area) {
-      vendorFilter.$or = [
-        { locality: { $regex: area, $options: 'i' } },
-        { city: { $regex: area, $options: 'i' } }
-      ];
-    }
+    try {
+        const {
+            query: searchQuery,
+            area,
+            minPrice,
+            maxPrice,
+            cuisineType,
+            limit = 10,
+            page = 1
+        } = req.query;
+        
+        const skip = (page - 1) * limit;
 
-    // Get all vendors first
-    const vendors = await Vendor.find(vendorFilter)
-      .select('businessName ownerName locality city pinCode fullAddress createdAt')
-      .lean();
+        let pipeline = [];
 
-    if (!vendors.length) {
-      return res.status(200).json({
-        success: true,
-        data: [],
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: 0,
-          totalVendors: 0,
-          hasNextPage: false,
-          hasPrevPage: false
+        // Stage 1: Initial match for active vendors and basic text search
+        const initialMatch = { status: 'active' };
+        if (searchQuery) {
+            initialMatch.$or = [
+                { businessName: { $regex: searchQuery, $options: 'i' } },
+                { locality: { $regex: searchQuery, $options: 'i' } },
+                { city: { $regex: searchQuery, $options: 'i' } }
+            ];
         }
-      });
-    }
+        if (area) {
+            const areaOr = initialMatch.$or || [];
+            areaOr.push({ locality: { $regex: area, $options: 'i' } });
+            areaOr.push({ city: { $regex: area, $options: 'i' } });
+            initialMatch.$or = areaOr;
+        }
+        pipeline.push({ $match: initialMatch });
 
-    // Get vendor IDs
-    const vendorIds = vendors.map(vendor => vendor._id);
-
-    // Get menu data for all vendors
-    const menus = await Menu.find({ 
-      vendor: { $in: vendorIds },
-      isActive: true 
-    }).lean();
-
-    // Get media (cover images) for all vendors using new schema
-    const mediaFiles = await Media.find({
-      vendor: { $in: vendorIds }
-    }).select('vendor cloudinaryUrl originalName experience').lean();
-
-    // Create a map of vendor ID to menu data
-    const menuMap = new Map();
-    menus.forEach(menu => {
-      menuMap.set(menu.vendor.toString(), menu);
-    });
-
-    // Create a map of vendor ID to media file
-    const mediaMap = new Map();
-    mediaFiles.forEach(media => {
-      mediaMap.set(media.vendor.toString(), media);
-    });
-
-    // Process vendors and combine with menu data and cover images
-    let processedVendors = vendors.map(vendor => {
-      const menu = menuMap.get(vendor._id.toString());
-      const media = mediaMap.get(vendor._id.toString());
-      
-      
-      let cuisines = [];
-      let minPrice = null;
-      let maxPrice = null;
-      
-      if (menu && menu.packages) {
-        // Extract cuisines
-        cuisines = menu.cuisines || [];
+        // Stage 2: Join with Menus and Media
+        pipeline.push({ $lookup: { from: 'menus', localField: '_id', foreignField: 'vendor', as: 'menu' } });
+        pipeline.push({ $unwind: { path: '$menu', preserveNullAndEmptyArrays: true } });
+        pipeline.push({ $lookup: { from: 'media', localField: '_id', foreignField: 'vendor', pipeline: [{ $match: { isCoverImage: true } }], as: 'coverImage' } });
+        pipeline.push({ $unwind: { path: '$coverImage', preserveNullAndEmptyArrays: true } });
         
-        // Calculate min and max prices from all packages
-        const allPrices = [];
-        
-        // Convert packages Map to Object if needed
-        const packagesObj = menu.packages instanceof Map ? 
-          Object.fromEntries(menu.packages) : menu.packages;
-        
-        Object.values(packagesObj).forEach(cuisinePackages => {
-          if (Array.isArray(cuisinePackages)) {
-            cuisinePackages.forEach(pkg => {
-              if (pkg.pricePerPlate && pkg.isActive !== false) {
-                allPrices.push(pkg.pricePerPlate);
-              }
-            });
-          }
+        // --- THE FIX IS HERE ---
+        // Stage 4: Convert packages object to a flat array and calculate min/max prices.
+        pipeline.push({
+            $addFields: {
+                // Convert the packages object { "Cuisine1": [pkg1], "Cuisine2": [pkg2] } to an array of its values [[pkg1], [pkg2]]
+                packagesAsArrayOfArrays: { $objectToArray: { $ifNull: ["$menu.packages", {}] } },
+            }
+        });
+        pipeline.push({
+            $addFields: {
+                // Flatten the array of arrays into a single array of all packages
+                allPackages: {
+                    $reduce: {
+                        input: "$packagesAsArrayOfArrays.v",
+                        initialValue: [],
+                        in: { $concatArrays: ["$$value", "$$this"] }
+                    }
+                }
+            }
+        });
+        pipeline.push({
+            $addFields: {
+                minPrice: { $min: "$allPackages.pricePerPlate" },
+                maxPrice: { $max: "$allPackages.pricePerPlate" }
+            }
+        });
+        // --- END OF FIX ---
+
+        // Stage 5: Apply post-join filters for cuisine and price
+        let postJoinMatch = {};
+        if (cuisineType) {
+            postJoinMatch['menu.cuisines'] = { $regex: cuisineType, $options: 'i' };
+        }
+        if (minPrice) {
+            postJoinMatch['minPrice'] = { $gte: minPrice };
+        }
+        if (maxPrice) {
+            // Caterers with no price should not be excluded if only maxPrice is set
+            postJoinMatch['$or'] = [
+                { 'maxPrice': { $lte: maxPrice } },
+                { 'maxPrice': null }
+            ];
+        }
+        if (Object.keys(postJoinMatch).length > 0) {
+            pipeline.push({ $match: postJoinMatch });
+        }
+
+        // Stage 6: Sort by Rank and then by creation date
+        pipeline.push({ $sort: { rank: 1, createdAt: -1 } });
+
+        // Stage 7: Pagination and Final Projection
+        pipeline.push({
+            $facet: {
+                paginatedResults: [
+                    { $skip: skip },
+                    { $limit: limit },
+                    {
+                        $project: {
+                             id: '$_id', 
+                            _id: 0, businessName: 1, ownerName: 1, locality: 1, city: 1, pinCode: 1,
+                            cuisines: "$menu.cuisines",
+                            minPrice: 1, maxPrice: 1,
+                            coverImage: "$coverImage.cloudinaryUrl",
+                            experience: "$coverImage.experience",
+                            rank: 1
+                        }
+                    }
+                ],
+                totalCount: [{ $count: 'count' }]
+            }
         });
         
-        if (allPrices.length > 0) {
-          minPrice = Math.min(...allPrices);
-          maxPrice = Math.max(...allPrices);
-        }
-      }
-
-      return {
-        id: vendor._id,
-        businessName: vendor.businessName,
-        ownerName: vendor.ownerName,
-        location: `${vendor.locality}, ${vendor.city}`,
-        locality: vendor.locality,
-        city: vendor.city,
-        pinCode: vendor.pinCode,
-        fullAddress: vendor.fullAddress,
-        cuisines: cuisines,
-        minPrice: minPrice,
-        maxPrice: maxPrice,
-        hasMenu: !!menu,
-        coverImage: media ? {
-          cloudinaryUrl: media.cloudinaryUrl,
-          originalName: media.originalName,
-          experience: media.experience
-        } : null,
-        // Add default values for features not yet implemented
-        rating: 0,
-        reviewCount: 0,
-        availableToday: true, // You can implement this logic later
-        featured: false // You can implement featured logic later
-      };
-    });
-
-    // Apply additional filters
-    if (cuisineType) {
-      processedVendors = processedVendors.filter(vendor => 
-        vendor.cuisines.some(cuisine => 
-          cuisine.toLowerCase().includes(cuisineType.toLowerCase())
-        )
-      );
-    }
-
-    if (minPrice || maxPrice) {
-      processedVendors = processedVendors.filter(vendor => {
-        if (!vendor.minPrice) return false;
+        const result = await Vendor.aggregate(pipeline);
         
-        const meetMinPrice = !minPrice || vendor.minPrice >= parseInt(minPrice);
-        const meetMaxPrice = !maxPrice || vendor.maxPrice <= parseInt(maxPrice);
-        
-        return meetMinPrice && meetMaxPrice;
-      });
+        const vendors = result[0].paginatedResults;
+        const totalVendors = result[0].totalCount[0] ? result[0].totalCount[0].count : 0;
+        const totalPages = Math.ceil(totalVendors / limit);
+
+        res.json({
+            success: true,
+            data: vendors,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalVendors,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+        });
+
+    } catch (error) {
+        console.error('Search vendors error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch vendors',
+            error: error.message
+        });
     }
-
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedVendors = processedVendors.slice(startIndex, endIndex);
-
-    res.status(200).json({
-      success: true,
-      data: paginatedVendors,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(processedVendors.length / limit),
-        totalVendors: processedVendors.length,
-        hasNextPage: endIndex < processedVendors.length,
-        hasPrevPage: startIndex > 0
-      }
-    });
-
-  } catch (error) {
-    console.error('Search vendors error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch vendors',
-      error: error.message
-    });
-  }
 });
 
 // @desc   Get all unique cuisines from all vendors

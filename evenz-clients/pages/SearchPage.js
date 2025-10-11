@@ -321,7 +321,7 @@ const SearchPage = () => {
       vendor.maxPrice - vendor.minPrice
     );
   };
-
+ 
   const handlePaginationClick = (direction) => {
     // Track pagination usage
     analytics.trackButtonClick(
@@ -379,7 +379,7 @@ const SearchPage = () => {
         
         <div className="flex items-center mb-2 text-gray-600">
           <FaMapMarkerAlt className="mr-1 text-sm" />
-          <span className="text-sm">{vendor.location}</span>
+          <span className="text-sm">{vendor.locality}, {vendor.city}</span>
         </div>
 
         {/* Cuisines - now guaranteed to exist */}
