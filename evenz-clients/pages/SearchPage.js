@@ -341,9 +341,9 @@ const SearchPage = () => {
       <div className="relative">
         {/* Cover Image or Placeholder */}
         <div className="w-full h-48 relative overflow-hidden">
-          {vendor.coverImage ? (
+          {vendor?.coverImage?.cloudinaryUrl ? (
             <img
-              src={vendor.coverImage}
+              src={vendor.coverImage.cloudinaryUrl}
               alt={vendor.businessName}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -359,7 +359,7 @@ const SearchPage = () => {
           {/* Placeholder (shown when no image or image fails to load) */}
           <div 
             className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${
-              vendor.coverImage ? 'hidden' : 'flex'
+              vendor?.coverImage?.cloudinaryUrl ? 'hidden' : 'flex'
             }`}
           >
             <FaUtensils className="text-6xl text-indigo-300" />
