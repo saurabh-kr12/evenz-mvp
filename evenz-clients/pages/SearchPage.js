@@ -341,9 +341,9 @@ const SearchPage = () => {
       <div className="relative">
         {/* Cover Image or Placeholder */}
         <div className="w-full h-48 relative overflow-hidden">
-          {vendor.coverImage?.cloudinaryUrl ? (
+          {vendor.coverImage ? (
             <img
-              src={vendor.coverImage?.cloudinaryUrl}
+              src={vendor.coverImage}
               alt={vendor.businessName}
               className="w-full h-full object-cover"
               onError={(e) => {
