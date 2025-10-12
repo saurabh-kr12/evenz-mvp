@@ -13,7 +13,7 @@ const HowItWorksClients = () => {
     {
       icon: <UserRoundCheck className="w-8 h-8 text-indigo-600" />,
       title: "Step 2: Visit Caterer Profiles",
-      description: "Dive deep into comprehensive caterer profiles. View their menus, packages, photos, and detailed service offerings to make an informed decision."
+      description: "Dive deep into comprehensive caterer profiles. View their menus, packages, and detailed service offerings to make an informed decision."
     },
     {
       icon: <CalendarCheck2 className="w-8 h-8 text-indigo-600" />, // Icon for availability check
