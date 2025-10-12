@@ -26,15 +26,15 @@ router.post(
     protect, 
     [ // --- THE FIX: Added robust validation and sanitization ---
         body('catererId').isMongoId().withMessage('Invalid caterer ID.'),
-        body('eventType').not().isEmpty().withMessage('Event type is required.').matches(safeTextRegex).trim().escape(),
+        body('eventType').not().isEmpty().withMessage('Event type is required.'),
         body('eventDate').isISO8601().toDate().withMessage('Invalid event date.'),
         body('numGuests').isInt({ min: 1 }).withMessage('Number of guests must be a positive number.'),
         body('eventLocation').not().isEmpty().withMessage('Event location is required.').matches(safeTextRegex).trim().escape(),
         body('venueType').not().isEmpty().withMessage('Venue type is required.').matches(safeTextRegex).trim().escape(),
         body('mealPreference').isArray({ min: 1 }).withMessage('At least one meal preference is required.'),
         body('mealPreference.*').isString().trim().escape(),
-        body('selectedCuisine').not().isEmpty().withMessage('Cuisine selection is required.').matches(safeTextRegex).trim().escape(),
-        body('selectedPackage.name').not().isEmpty().withMessage('Package name is required.').matches(safeTextRegex).trim().escape(),
+        body('selectedCuisine').not().isEmpty().withMessage('Cuisine selection is required.'),
+        body('selectedPackage.name').not().isEmpty().withMessage('Package name is required.'),
         body('selectedPackage.pricePerPlate').isNumeric().withMessage('Package price must be a number.'),
         body('specialRequests').optional().matches(safeTextRegex).withMessage('Special requests contain invalid characters.').trim().escape(),
         body('estimatedCost').isNumeric().withMessage('Estimated cost must be a number.')
