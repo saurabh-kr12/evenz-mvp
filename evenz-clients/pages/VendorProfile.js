@@ -306,6 +306,15 @@ const CatererProfileView = () => {
       }, {});
    }, [catererData]);
 
+   // Helper to check if a section has meaningful data
+   const hasContent = (data) => {
+      if (!data) return false;
+      if (typeof data === 'string') return data.trim() !== '';
+      if (Array.isArray(data)) return data.length > 0;
+      if (typeof data === 'object') return Object.values(data).some(v => v === true || (typeof v === 'string' && v.trim() !== ''));
+      return false;
+   };
+
    if (loading) {
       return (
          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -572,78 +581,85 @@ const CatererProfileView = () => {
                   {(() => {
                      const packages = menu.packages;
 
-                     return (packages && typeof packages === 'object' && Object.keys(packages).length > 0) ? (
-                        Object.entries(packages).map(([cuisineType, packages]) => (
-                           <div key={cuisineType} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
-                              <h3 className="font-semibold text-gray-900 mb-4 text-lg sm:text-xl">{safeRender(cuisineType)} Packages</h3>
-                              <div className="space-y-4 sm:space-y-6">
-                                 {packages.map((pkg) => (
-                                    <div key={pkg._id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
-                                       {/* Header with name and price */}
-                                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
-                                          <div className="flex-1">
-                                             <h4 className="font-medium text-gray-900 text-base sm:text-lg">{pkg.name}</h4>
-                                             <p className="text-sm text-gray-600 mt-1 leading-relaxed">{pkg.description}</p>
-                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${pkg.type === 'veg'
-                                                   ? 'bg-green-100 text-green-700'
-                                                   : pkg.type === 'non-veg'
-                                                      ? 'bg-red-100 text-red-700'
-                                                      : 'bg-orange-100 text-orange-700'
-                                                   }`}>
-                                                   {pkg.type === 'both' ? 'Veg & Non-Veg' : pkg.type.toUpperCase()}
-                                                </span>
-                                             </div>
-                                          </div>
-                                          <div className="text-left sm:text-right flex-shrink-0">
-                                             <div className="text-xl sm:text-2xl font-bold text-orange-600">₹{pkg.pricePerPlate}</div>
-                                             <div className="text-sm text-gray-500">per plate</div>
+                     // Check if packages exist and have valid data
+                     if (!packages || typeof packages !== 'object' || Object.keys(packages).length === 0) {
+                        return null;
+                     }
+
+                     // Filter out cuisine types that have no packages
+                     const validCuisines = Object.entries(packages).filter(
+                        ([cuisineType, packageList]) => Array.isArray(packageList) && packageList.length > 0
+                     );
+
+                     // If no valid cuisines with packages, don't render anything
+                     if (validCuisines.length === 0) {
+                        return null;
+                     }
+
+                     return validCuisines.map(([cuisineType, packages]) => (
+                        <div key={cuisineType} className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-4 text-lg sm:text-xl">{safeRender(cuisineType)} Packages</h3>
+                           <div className="space-y-4 sm:space-y-6">
+                              {packages.map((pkg) => (
+                                 <div key={pkg._id} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                                    {/* Header with name and price */}
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                                       <div className="flex-1">
+                                          <h4 className="font-medium text-gray-900 text-base sm:text-lg">{pkg.name}</h4>
+                                          <p className="text-sm text-gray-600 mt-1 leading-relaxed">{pkg.description}</p>
+                                          <div className="flex items-center gap-2 mt-2">
+                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${pkg.type === 'veg'
+                                                ? 'bg-green-100 text-green-700'
+                                                : pkg.type === 'non-veg'
+                                                   ? 'bg-red-100 text-red-700'
+                                                   : 'bg-orange-100 text-orange-700'
+                                                }`}>
+                                                {pkg.type === 'both' ? 'Veg & Non-Veg' : pkg.type.toUpperCase()}
+                                             </span>
                                           </div>
                                        </div>
+                                       <div className="text-left sm:text-right flex-shrink-0">
+                                          <div className="text-xl sm:text-2xl font-bold text-orange-600">₹{pkg.pricePerPlate}</div>
+                                          <div className="text-sm text-gray-500">per plate</div>
+                                       </div>
+                                    </div>
 
-                                       {/* Item Counts - More responsive grid */}
-                                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4">
-                                          {Object.entries(pkg.itemCounts).map(([type, count]) => (
-                                             <div key={type} className="text-center bg-gray-50 rounded-lg py-2 px-1">
-                                                <div className="text-base sm:text-lg font-semibold text-gray-900">{count}</div>
-                                                <div className="text-xs text-gray-500 capitalize leading-tight">{type}</div>
+                                    {/* Item Counts - More responsive grid */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4">
+                                       {Object.entries(pkg.itemCounts).map(([type, count]) => (
+                                          <div key={type} className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                                             <div className="text-base sm:text-lg font-semibold text-gray-900">{count}</div>
+                                             <div className="text-xs text-gray-500 capitalize leading-tight">{type}</div>
+                                          </div>
+                                       ))}
+                                    </div>
+
+                                    {/* Menu Items - Improved mobile layout */}
+                                    <div className="space-y-3 ">
+                                       <h5 className="font-medium text-gray-900 text-sm sm:text-base">Menu Items:</h5>
+                                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4 ">
+                                          {pkg.menuItems.map((item, index) => (
+                                             <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 p-2 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+                                                <div className="flex items-center gap-2 flex-1">
+                                                   <span className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${item.vegNonVeg === 'veg' ? 'bg-green-800' : 'bg-red-500'
+                                                      }`}></span>
+                                                   <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
+                                                      <span className="capitalize text-xs sm:text-sm text-gray-600 font-medium">{item.type}:</span>
+                                                      <span className="font-medium text-sm sm:text-sm text-gray-900 break-words">{item.name}</span>
+                                                   </div>
+                                                </div>
+                                                {item.extraPrice > 0 && (
+                                                   <span className="text-orange-600 font-medium text-sm flex-shrink-0 self-start sm:self-center">+₹{item.extraPrice}</span>
+                                                )}
                                              </div>
                                           ))}
                                        </div>
-
-                                       {/* Menu Items - Improved mobile layout */}
-                                       <div className="space-y-3 ">
-                                          <h5 className="font-medium text-gray-900 text-sm sm:text-base">Menu Items:</h5>
-                                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4 ">
-                                             {pkg.menuItems.map((item, index) => (
-                                                <div key={index} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2 p-2 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
-                                                   <div className="flex items-center gap-2 flex-1">
-                                                      <span className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${item.vegNonVeg === 'veg' ? 'bg-green-800' : 'bg-red-500'
-                                                         }`}></span>
-                                                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0">
-                                                         <span className="capitalize text-xs sm:text-sm text-gray-600 font-medium">{item.type}:</span>
-                                                         <span className="font-medium text-sm sm:text-sm text-gray-900 break-words">{item.name}</span>
-                                                      </div>
-                                                   </div>
-                                                   {item.extraPrice > 0 && (
-                                                      <span className="text-orange-600 font-medium text-sm flex-shrink-0 self-start sm:self-center">+₹{item.extraPrice}</span>
-                                                   )}
-                                                </div>
-                                             ))}
-                                          </div>
-                                       </div>
                                     </div>
-                                 ))}
-                              </div>
-                           </div>
-                        ))
-                     ) : (
-                        <div className="bg-white p-6 rounded-lg shadow-sm">
-                           <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                              No packages configured
+                                 </div>
+                              ))}
                            </div>
                         </div>
-                     );
+                     ));
                   })()}
 
                   {/* Live Counters */}
@@ -703,18 +719,20 @@ const CatererProfileView = () => {
                <div className="space-y-6">
 
                   {/* Meal Service Types */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Utensils className="w-5 h-5" />
-                        Meal Service Types
-                     </h3>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 min-h-[2rem] items-center">
-                        {(() => {
-                           const mealServices = safeObjectEntries(catererData?.services?.mealServiceTypes)
-                              .filter(([key, value]) => typeof value === 'boolean');
+                  {(() => {
+                     const mealServices = safeObjectEntries(catererData?.services?.mealServiceTypes)
+                        .filter(([key, value]) => typeof value === 'boolean');
 
-                           return mealServices.length > 0 ? (
-                              mealServices.map(([key, value]) => (
+                     if (mealServices.length === 0) return null;
+
+                     return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                              <Utensils className="w-5 h-5" />
+                              Meal Service Types
+                           </h3>
+                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {mealServices.map(([key, value]) => (
                                  <div key={key} className="flex items-center gap-2">
                                     {value ? (
                                        <CheckCircle className="w-5 h-5 text-green-500" />
@@ -725,68 +743,45 @@ const CatererProfileView = () => {
                                        {safeRender(key.replace(/([A-Z])/g, ' $1').trim())}
                                     </span>
                                  </div>
-                              ))
-                           ) : (
-                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200 col-span-full">
-                                 Meal services not specified
-                              </div>
-                           );
-                        })()}
-                     </div>
-                  </div>
+                              ))}
+                           </div>
+                        </div>
+                     );
+                  })()}
 
                   {/* Staff Details */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Users className="w-5 h-5" />
-                        Staff Details
-                     </h3>
-                     {(() => {
-                        const staffDetails = services?.staffDetails;
+                  {(() => {
+                     const staffDetails = services?.staffDetails;
+                     const hasStaffDetails =
+                        typeof staffDetails === "string"
+                           ? staffDetails.trim() !== "" && staffDetails.trim() !== "{}"
+                           : staffDetails && Object.keys(staffDetails).length > 0;
 
-                        const hasStaffDetails =
-                           typeof staffDetails === "string"
-                              ? staffDetails.trim() !== "" && staffDetails.trim() !== "{}"
-                              : staffDetails && Object.keys(staffDetails).length > 0;
+                     if (!hasStaffDetails) return null;
 
-                        return hasStaffDetails ? (
-                           <>
-                              <p className="text-gray-600 mb-4">{safeRender(staffDetails)}</p>
-                              {/* <div className="bg-gray-50 p-4 rounded-lg">
-                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-700">Staff Cost:</span>
-                                    <span className="font-semibold text-gray-600">
-                                       ₹{safeRender(services?.staffProvided?.cost)}{" "}
-                                       {safeRender(
-                                          services?.staffProvided?.costType?.replace("_", " ")
-                                       )}
-                                    </span>
-                                 </div>
-                                 <div className="text-sm text-gray-500 mt-1">
-                                    Ratio: {safeRender(services?.staffProvided?.ratio?.staffCount)} staff
-                                    per {safeRender(services?.staffProvided?.ratio?.guestCount)} guests
-                                 </div>
-                              </div> */}
-                           </>
-                        ) : (
-                           <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                              Staff details not specified
-                           </div>
-                        );
-                     })()}
-
-                  </div>
+                     return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                              <Users className="w-5 h-5" />
+                              Staff Details
+                           </h3>
+                           <p className="text-gray-600 mb-4">{safeRender(staffDetails)}</p>
+                        </div>
+                     );
+                  })()}
 
                   {/* Tableware */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Tableware Provided</h3>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 min-h-[2rem] items-center">
-                        {(() => {
-                           const tableware = safeObjectEntries(services?.tableware)
-                              .filter(([key, value]) => typeof value === 'boolean');
+                  {(() => {
+                     const tableware = safeObjectEntries(services?.tableware)
+                        .filter(([key, value]) => typeof value === 'boolean');
 
-                           return tableware.length > 0 ? (
-                              tableware.map(([key, value]) => (
+                     if (tableware.length === 0) return null;
+
+                     return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3">Tableware Provided</h3>
+                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              {tableware.map(([key, value]) => (
                                  <div key={key} className="flex items-center gap-2">
                                     {value ? (
                                        <CheckCircle className="w-5 h-5 text-green-500" />
@@ -797,107 +792,112 @@ const CatererProfileView = () => {
                                        {safeRender(key)}
                                     </span>
                                  </div>
-                              ))
-                           ) : (
-                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200 col-span-full">
-                                 Tableware details not specified
-                              </div>
-                           );
-                        })()}
-                     </div>
-                  </div>
-
-                  {/* Customization Allowed */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Menu Customization</h3>
-                     <div className="flex items-center gap-2 mb-3">
-                        {customization?.allowCustomization ? (
-                           <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                           <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                        <span className={`font-medium ${customization?.allowCustomization ? 'text-green-700' : 'text-red-700'
-                           }`}>
-                           {customization?.allowCustomization ? 'Customization Available' : 'No Customization'}
-                        </span>
-                     </div>
-
-                     {customization?.allowCustomization && customization?.customizationCharges.hasCharges && (
-                        <div className="bg-orange-50 p-3 rounded-lg">
-                           <span className="text-orange-700 font-medium">
-                              Customization Charges: ₹{safeRender(customization?.customizationCharges.amount)}
-                              {customization?.customizationCharges.chargeType === 'per_plate' ? ' per plate' : ' fixed'}
-                           </span>
-                        </div>
-                     )}
-                  </div>
-
-                  {/* Dietary Filters */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Dietary Options</h3>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 min-h-[2rem] items-center">
-                        {(() => {
-                           const dietaryFilters = safeObjectEntries(customization?.dietaryFilters)
-                              .filter(([key, value]) => typeof value === 'boolean');
-
-                           return dietaryFilters.length > 0 ? (
-                              dietaryFilters.map(([key, value]) => (
-                                 <div key={key} className="flex items-center gap-2">
-                                    {value ? (
-                                       <CheckCircle className="w-5 h-5 text-green-500" />
-                                    ) : (
-                                       <XCircle className="w-5 h-5 text-gray-300" />
-                                    )}
-                                    <span className={`text-sm capitalize ${value ? 'text-gray-900' : 'text-gray-400'}`}>
-                                       {safeRender(key.replace(/([A-Z])/g, ' $1').trim())}
-                                    </span>
-                                 </div>
-                              ))
-                           ) : (
-                              <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200 col-span-full">
-                                 Dietary options not specified
-                              </div>
-                           );
-                        })()}
-                     </div>
-
-                     {customization?.dietaryFilters?.custom && Array.isArray(customization.dietaryFilters.custom) && customization.dietaryFilters.custom.length > 0 && (
-                        <div className="mt-4">
-                           <h4 className="font-medium text-gray-900 mb-2">Custom Dietary Options:</h4>
-                           <div className="flex flex-wrap gap-2">
-                              {customization.dietaryFilters.custom.map((filter, index) => (
-                                 <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
-                                    {safeRender(filter)}
-                                 </span>
                               ))}
                            </div>
                         </div>
-                     )}
-                  </div>
+                     );
+                  })()}
 
-                  {/* Special Menus */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Special Menus</h3>
+                  {/* Customization Allowed */}
+                  {(customization?.allowCustomization !== undefined ||
+                     (customization?.allowCustomization && customization?.customizationCharges.hasCharges)) && (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3">Menu Customization</h3>
+                           <div className="flex items-center gap-2 mb-3">
+                              {customization?.allowCustomization ? (
+                                 <CheckCircle className="w-5 h-5 text-green-500" />
+                              ) : (
+                                 <XCircle className="w-5 h-5 text-red-500" />
+                              )}
+                              <span className={`font-medium ${customization?.allowCustomization ? 'text-green-700' : 'text-red-700'
+                                 }`}>
+                                 {customization?.allowCustomization ? 'Customization Available' : 'No Customization'}
+                              </span>
+                           </div>
 
-                     {Array.isArray(customization?.specialMenus) && customization.specialMenus.length > 0 ? (
-                        <ul className="list-disc list-inside text-gray-600 space-y-1">
-                           {customization.specialMenus.map((menu, index) => (
-                              <li key={index}>{safeRender(menu)}</li>
-                           ))}
-                        </ul>
-                     ) : typeof customization?.specialMenus === "string" && customization.specialMenus.trim() !== "" ? (
-                        <p className="text-gray-600">{safeRender(customization.specialMenus)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Special menus not specified
+                           {customization?.allowCustomization && customization?.customizationCharges.hasCharges && (
+                              <div className="bg-orange-50 p-3 rounded-lg">
+                                 <span className="text-orange-700 font-medium">
+                                    Customization Charges: ₹{safeRender(customization?.customizationCharges.amount)}
+                                    {customization?.customizationCharges.chargeType === 'per_plate' ? ' per plate' : ' fixed'}
+                                 </span>
+                              </div>
+                           )}
                         </div>
                      )}
-                  </div>
+
+                  {/* Dietary Filters */}
+                  {(() => {
+                     const dietaryFilters = safeObjectEntries(customization?.dietaryFilters)
+                        .filter(([key, value]) => typeof value === 'boolean');
+                     const hasCustomDietary = Array.isArray(customization?.dietaryFilters?.custom) &&
+                        customization.dietaryFilters.custom.length > 0;
+
+                     if (dietaryFilters.length === 0 && !hasCustomDietary) return null;
+
+                     return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3">Dietary Options</h3>
+                           {dietaryFilters.length > 0 && (
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                 {dietaryFilters.map(([key, value]) => (
+                                    <div key={key} className="flex items-center gap-2">
+                                       {value ? (
+                                          <CheckCircle className="w-5 h-5 text-green-500" />
+                                       ) : (
+                                          <XCircle className="w-5 h-5 text-gray-300" />
+                                       )}
+                                       <span className={`text-sm capitalize ${value ? 'text-gray-900' : 'text-gray-400'}`}>
+                                          {safeRender(key.replace(/([A-Z])/g, ' $1').trim())}
+                                       </span>
+                                    </div>
+                                 ))}
+                              </div>
+                           )}
+
+                           {hasCustomDietary && (
+                              <div className={dietaryFilters.length > 0 ? "mt-4" : ""}>
+                                 <h4 className="font-medium text-gray-900 mb-2">Custom Dietary Options:</h4>
+                                 <div className="flex flex-wrap gap-2">
+                                    {customization.dietaryFilters.custom.map((filter, index) => (
+                                       <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                          {safeRender(filter)}
+                                       </span>
+                                    ))}
+                                 </div>
+                              </div>
+                           )}
+                        </div>
+                     );
+                  })()}
+
+                  {/* Special Menus */}
+                  {(() => {
+                     const hasSpecialMenus = (Array.isArray(customization?.specialMenus) && customization.specialMenus.length > 0) ||
+                        (typeof customization?.specialMenus === "string" && customization.specialMenus.trim() !== "");
+
+                     if (!hasSpecialMenus) return null;
+
+                     return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3">Special Menus</h3>
+                           {Array.isArray(customization?.specialMenus) ? (
+                              <ul className="list-disc list-inside text-gray-600 space-y-1">
+                                 {customization.specialMenus.map((menu, index) => (
+                                    <li key={index}>{safeRender(menu)}</li>
+                                 ))}
+                              </ul>
+                           ) : (
+                              <p className="text-gray-600">{safeRender(customization.specialMenus)}</p>
+                           )}
+                        </div>
+                     );
+                  })()}
 
                   {/* Tasting Session */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Tasting Session</h3>
-                     {customization?.tastingSession?.allowed ? (
+                  {customization?.tastingSession?.allowed && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Tasting Session</h3>
                         <>
                            <div className="flex items-center gap-2 mb-2">
                               <CheckCircle className="w-5 h-5 text-green-500" />
@@ -905,177 +905,132 @@ const CatererProfileView = () => {
                            </div>
                            <p className="text-gray-600">{safeRender(customization?.tastingSession?.description)}</p>
                         </>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Tasting session not available
-                        </div>
-                     )}
-                  </div>
+                     </div>
+                  )}
 
                   {/* Delivery & Setup */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Delivery & Setup</h3>
-                     {services?.deliveryLogistics ? (
+                  {services?.deliveryLogistics && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Delivery & Setup</h3>
                         <p className="text-gray-600">{safeRender(services?.deliveryLogistics)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Delivery and setup details not specified
-                        </div>
-                     )}
-                  </div>
+                     </div>
+                  )}
+
                </div>
             )}
 
             {activeTab === 'policies' && (
                <div className="space-y-6">
                   {/* Payment Information */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <CreditCard className="w-5 h-5" />
-                        Payment Information
-                     </h3>
-                     <div className="space-y-4">
-                        <div>
-                           <h4 className="font-medium text-gray-900 mb-2">Accepted Payment Methods:</h4>
-                           <div className="flex flex-wrap gap-2 min-h-[2rem] items-center">
-                              {(() => {
-                                 const paymentMethods = safeObjectEntries(legal?.acceptedPaymentModes)
-                                    .filter(([key, value]) => value === true);
+                  {(() => {
+                     const paymentMethods = safeObjectEntries(legal?.acceptedPaymentModes)
+                        .filter(([key, value]) => value === true);
+                     const hasBookingAdvance = legal?.bookingAdvance?.value;
 
-                                 return paymentMethods.length > 0 ? (
-                                    paymentMethods.map(([key]) => (
-                                       <span key={key} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm capitalize">
-                                          {key === 'netBanking' ? 'Net Banking' : key}
-                                       </span>
-                                    ))
-                                 ) : (
-                                    <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                                       Payment methods not specified
+                     if (paymentMethods.length === 0 && !hasBookingAdvance) return null;
+
+                     return (
+                        <div className="bg-white p-6 rounded-lg shadow-sm">
+                           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                              <CreditCard className="w-5 h-5" />
+                              Payment Information
+                           </h3>
+                           <div className="space-y-4">
+                              {paymentMethods.length > 0 && (
+                                 <div>
+                                    <h4 className="font-medium text-gray-900 mb-2">Accepted Payment Methods:</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                       {paymentMethods.map(([key]) => (
+                                          <span key={key} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm capitalize">
+                                             {key === 'netBanking' ? 'Net Banking' : key}
+                                          </span>
+                                       ))}
                                     </div>
-                                 );
-                              })()}
+                                 </div>
+                              )}
+                              {hasBookingAdvance && (
+                                 <div className="bg-orange-50 p-3 rounded-lg">
+                                    <span className="text-orange-700 font-medium">
+                                       Booking Advance: {safeRender(legal?.bookingAdvance?.value)}%
+                                    </span>
+                                 </div>
+                              )}
                            </div>
                         </div>
-                        {legal?.bookingAdvance?.value ? (
-                           <div className="bg-orange-50 p-3 rounded-lg">
-                              <span className="text-orange-700 font-medium">
-                                 Booking Advance: {safeRender(legal?.bookingAdvance?.value)}%
-                              </span>
-                           </div>
-                        ) : (
-                           <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                              Booking advance not specified
-                           </div>
-                        )}
-                     </div>
-                  </div>
+                     );
+                  })()}
 
                   {/* Booking Policies */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Booking Policies</h3>
-                     <div className="space-y-3 text-gray-700">
-                        {legal?.minimumNoticeDays || legal?.gstRegistrationNumber ? (
-                           <>
-                              {legal?.minimumNoticeDays && (
-                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Minimum Notice Period:</span>
-                                    <span className="font-medium">{safeRender(legal?.minimumNoticeDays)} days</span>
-                                 </div>
-                              )}
-                              {legal?.gstRegistrationNumber && (
-                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">GST Registration:</span>
-                                    <span className="font-medium">{safeRender(legal?.gstRegistrationNumber)}</span>
-                                 </div>
-                              )}
-                           </>
-                        ) : (
-                           <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                              Booking policies not specified
-                           </div>
-                        )}
+                  {(legal?.minimumNoticeDays || legal?.gstRegistrationNumber) && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Booking Policies</h3>
+                        <div className="space-y-3 text-gray-700">
+                           {legal?.minimumNoticeDays && (
+                              <div className="flex justify-between items-center">
+                                 <span className="text-gray-600">Minimum Notice Period:</span>
+                                 <span className="font-medium">{safeRender(legal?.minimumNoticeDays)} days</span>
+                              </div>
+                           )}
+                           {legal?.gstRegistrationNumber && (
+                              <div className="flex justify-between items-center">
+                                 <span className="text-gray-600">GST Registration:</span>
+                                 <span className="font-medium">{safeRender(legal?.gstRegistrationNumber)}</span>
+                              </div>
+                           )}
+                        </div>
                      </div>
-                  </div>
+                  )}
 
                   {/* Cancellation Policy */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Cancellation & Refund Policy</h3>
-                     {legal?.cancellationRefundPolicy ? (
+                  {legal?.cancellationRefundPolicy && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Cancellation & Refund Policy</h3>
                         <p className="text-gray-600">{safeRender(legal?.cancellationRefundPolicy)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Cancellation and refund policy not specified
-                        </div>
-                     )}
-                  </div>
+                     </div>
+                  )}
 
                   {/* FSSAI License */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Shield className="w-5 h-5" />
-                        FSSAI License
-                     </h3>
-                     {compliance?.fssaiLicense?.number ? (
+                  {compliance?.fssaiLicense?.number && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                           <Shield className="w-5 h-5" />
+                           FSSAI License
+                        </h3>
                         <div className="bg-green-50 p-3 rounded-lg">
                            <span className="text-green-700 font-medium">
                               License Number: {safeRender(compliance?.fssaiLicense?.number)}
                            </span>
                         </div>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           FSSAI license not specified
-                        </div>
-                     )}
-                  </div>
+                     </div>
+                  )}
 
                   {/* Hygiene Audits */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Hygiene Audits</h3>
-                     {compliance?.hygieneAudits?.details ? (
+                  {compliance?.hygieneAudits?.details && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Hygiene Audits</h3>
                         <p className="text-gray-600">{safeRender(compliance?.hygieneAudits?.details)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Hygiene audit details not specified
-                        </div>
-                     )}
-                  </div>
+                     </div>
+                  )}
 
                   {/* Allergen Handling */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Allergen Handling</h3>
-                     {compliance?.allergenHandling?.details ? (
+                  {compliance?.allergenHandling?.details && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Allergen Handling</h3>
                         <p className="text-gray-600">{safeRender(compliance?.allergenHandling?.details)}</p>
-                     ) : (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Allergen handling details not specified
-                        </div>
-                     )}
-                  </div>
+                     </div>
+                  )}
 
                   {/* Insurance */}
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                     <h3 className="font-semibold text-gray-900 mb-3">Insurance</h3>
-                     {compliance?.insurance?.provided && compliance?.insurance?.details ? (
-                        <>
-                           <div className="flex items-center gap-2 mb-2">
-                              {compliance?.insurance?.provided ? (
-                                 <CheckCircle className="w-5 h-5 text-green-500" />
-                              ) : (
-                                 <XCircle className="w-5 h-5 text-red-500" />
-                              )}
-                              <span className={`font-medium ${compliance?.insurance?.provided ? 'text-green-700' : 'text-red-700'
-                                 }`}>
-                                 {compliance?.insurance?.provided ? 'Insurance Provided' : 'No Insurance'}
-                              </span>
-                           </div>
-                           <p className="text-gray-600">{safeRender(compliance?.insurance?.details)}</p>
-                        </>
-                     ) : !compliance?.insurance?.provided && (
-                        <div className="bg-gray-50 px-3 py-2 rounded-lg text-gray-500 text-sm italic border-2 border-dashed border-gray-200">
-                           Insurance details not specified
+                  {(compliance?.insurance?.provided && compliance?.insurance?.details) && (
+                     <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 className="font-semibold text-gray-900 mb-3">Insurance</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                           <CheckCircle className="w-5 h-5 text-green-500" />
+                           <span className="font-medium text-green-700">Insurance Provided</span>
                         </div>
-                     )}
-                  </div>
+                        <p className="text-gray-600">{safeRender(compliance?.insurance?.details)}</p>
+                     </div>
+                  )}
                </div>
             )}
          </div>
