@@ -457,11 +457,15 @@ const BookingRequestForm = () => {
                               <Users className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                               <input
                                  type="number"
-                                 value={formData.numGuests}
-                                 onChange={(e) => handleInputChange('numGuests', e.target.value)}
+                                 value={formData.numGuests || ""}
+                                 onChange={(e) => {
+                                    const value = e.target.value === "" ? "" : Number(e.target.value);
+                                    handleInputChange('numGuests', value);
+                                 }}
                                  className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                  placeholder="Enter number of guests"
                                  min="0"
+                                 onWheel={(e) => e.target.blur()}
                                  required
                               />
                            </div>
