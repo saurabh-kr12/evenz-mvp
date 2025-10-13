@@ -60,7 +60,8 @@ const allowedOrigins = [
   'https://evenz.in', // Your future client production URL
   'http://localhost:3001' , // Local development for vendors
   'http://localhost:3000' , // Local development for clients
-  'https://evenz-caterers.vercel.app' // vercel app
+  'https://evenz-caterers.vercel.app',
+  'https://evenz-mvp.vercel.app'  // vercel app
 ];
 app.use(cors({
   origin: function (origin, callback) {
