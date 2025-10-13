@@ -424,16 +424,17 @@ const SearchPage = () => {
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Search Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-12 px-4 md:px-6 relative">
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-8 sm:py-10 md:py-12 px-4 md:px-6 relative">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          backgroundSize: '30px 30px', // Smaller pattern on mobile, scales up on larger screens
         }}></div>
 
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white drop-shadow-lg">Find Your Perfect Caterer in Patna</h1>
-            <p className="text-lg md:text-xl text-white opacity-90">Discover top catering services for your special events</p>
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-3 md:mb-4 text-white drop-shadow-lg">Find Your Perfect Caterer in Patna</h1>
+            <p className="text-base sm:text-lg md:text-xl text-white opacity-90">Discover top catering services for your special events</p>
           </div>
 
           {/* Enhanced Search Bar */}
@@ -442,7 +443,7 @@ const SearchPage = () => {
               <input
                 type="text"
                 placeholder="Search by caterer name, cuisine or location..."
-                className="w-full sm:placeholder:text-lg placeholder:text-sm  px-2 sm:px-5 py-3 md:px-6 md:py-4 rounded-full text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md text-base md:text-lg font-medium"
+                className="w-full sm:placeholder:text-lg placeholder:text-sm px-2 sm:px-5 py-3 md:px-6 md:py-4 rounded-full text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md text-base md:text-lg font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => {
@@ -476,12 +477,11 @@ const SearchPage = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 sm:py-8">
         {/* Cuisine Type Filter */}
         {availableCuisines.length > 0 && (
-          <div className="mt-6 mb-8">
-            <h3 className="text-lg font-medium text-gray-700 mb-3">Cuisine Types:</h3>
+          <div className="sm:mt-6 sm:mb-8 mt-2 mb-3">
+            <h3 className="text-base sm:text-lg font-medium text-gray-700 mb-2 sm:mb-3">Cuisine Types:</h3>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleFilterChange({ cuisineType: '' })}
@@ -514,15 +514,15 @@ const SearchPage = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base">
             {error}
           </div>
         )}
 
         {/* Search Results */}
-        <div className="mt-10">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <span className="w-8 md:w-10 h-1 bg-indigo-600 mr-3 md:mr-4"></span>
+        <div className="mt-6 sm:mt-8 md:mt-10">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center">
+            <span className="w-6 sm:w-8 md:w-10 h-1 bg-indigo-600 mr-2 sm:mr-3 md:mr-4"></span>
             {loading ? 'Searching...' : `${pagination.totalVendors} Caterers Found`}
           </h2>
 
@@ -540,14 +540,14 @@ const SearchPage = () => {
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="flex justify-center items-center mt-8 space-x-2">
+                <div className="flex justify-center items-center mt-6 sm:mt-8 space-x-2">
                   <button
                     onClick={() => {
                       handlePaginationClick('previous');
                       setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }));
                     }}
                     disabled={!pagination.hasPrevPage}
-                    className={`px-4 py-2 rounded-lg ${pagination.hasPrevPage 
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg ${pagination.hasPrevPage 
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     } transition`}
@@ -555,7 +555,7 @@ const SearchPage = () => {
                     Previous
                   </button>
                   
-                  <span className="text-gray-600">
+                  <span className="text-gray-600 text-sm sm:text-base">
                     Page {pagination.currentPage} of {pagination.totalPages}
                   </span>
                   
@@ -565,7 +565,7 @@ const SearchPage = () => {
                       setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }));
                     }}
                     disabled={!pagination.hasNextPage}
-                    className={`px-4 py-2 rounded-lg ${pagination.hasNextPage 
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg ${pagination.hasNextPage 
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     } transition`}
@@ -576,12 +576,12 @@ const SearchPage = () => {
               )}
             </>
           ) : (
-            <div className="text-center py-12 md:py-16 bg-gray-50 rounded-lg border border-gray-200 shadow-inner mx-2 md:mx-4">
-              <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-3">No caterers found</h3>
-              <p className="text-gray-600 mb-6">Try adjusting your filters or search criteria</p>
+            <div className="text-center py-10 sm:py-12 md:py-16 bg-gray-50 rounded-lg border border-gray-200 shadow-inner mx-2 md:mx-4">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 mb-2 sm:mb-3">No caterers found</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Try adjusting your filters or search criteria</p>
               <button
                 onClick={clearAllFilters}
-                className="px-5 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition cursor-pointer"
+                className="px-4 sm:px-5 py-2 text-sm sm:text-base bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition cursor-pointer"
               >
                 Clear All Filters
               </button>

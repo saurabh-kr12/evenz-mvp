@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, Clock, AlertCircle, CheckCircle, Search, X } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle, ChevronsRight, Search, X } from 'lucide-react';
 import useAnalytics from '@/hooks/useAnalytics';
 
 const BookingModal = ({ vendor, showModal, onClose }) => {
@@ -277,8 +277,8 @@ const BookingModal = ({ vendor, showModal, onClose }) => {
                     onClick={handleBookingRequest}
                     className="w-full text-center bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
-                    <CheckCircle className="w-4 h-4" />
-                    Send Booking Request
+                    Proceed to Book
+                    <ChevronsRight className="w-5 h-5" />
                   </Link>
                 ) : (
                   <div className="space-y-3">

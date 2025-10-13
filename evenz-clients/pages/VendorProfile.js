@@ -177,8 +177,8 @@ const CatererProfileView = () => {
       analytics.trackButtonClick('share_profile', 'social_sharing');
 
       const shareData = {
-         title: catererData?.businessName || 'Check out this vendor on Evenz',
-         text: `Check out ${catererData?.businessName} on Evenz!`,
+         title: vendorInfo?.businessName || 'Check out this vendor on Evenz.in',
+         text: `Check out ${vendorInfo?.businessName} on Evenz.in!`,
          url: window.location.href,
       };
 
