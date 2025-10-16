@@ -58,6 +58,7 @@ app.use(mongoSanitize()); // ADDED
 const allowedOrigins = [
   process.env.FRONTEND_URL, // e.g., http://localhost:3000
   'https://evenz.in', // Your future client production URL
+  'https://www.evenz.in',
   'http://localhost:3001' , // Local development for vendors
   'http://localhost:3000' , // Local development for clients
   'https://evenz-caterers.vercel.app',
