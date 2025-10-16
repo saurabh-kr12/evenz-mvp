@@ -1,4 +1,5 @@
 import { AuthProvider } from '../context/AuthContext';
+import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '../components/Navbar';
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
             <Toaster position="top-center" />
           </div>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
