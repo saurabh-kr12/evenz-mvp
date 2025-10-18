@@ -556,23 +556,34 @@ const BookingRequestForm = () => {
                            <label className="block text-sm font-medium text-gray-700 mb-3">Package Selection *</label>
                            <div className="space-y-3">
                               {getPackagesForCuisine(formData.selectedCuisine).map((pkg, index) => (
-                                 <label key={index} className="flex items-start p-4 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                 <label
+                                    key={index}
+                                    className="flex items-start p-4 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer w-full"
+                                 >
                                     <input
                                        type="radio"
                                        name="package"
                                        checked={formData.selectedPackage?.name === pkg.name}
                                        onChange={() => handlePackageSelection(pkg)}
-                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mt-1"
+                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 mt-1 flex-shrink-0"
                                     />
                                     <div className="ml-3 flex-1">
-                                       <div className="flex justify-between items-start">
+                                       {/* Top section — package name & price */}
+                                       <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-1">
                                           <h3 className="text-sm font-medium text-gray-900">{pkg.name}</h3>
-                                          <span className="text-sm font-bold text-blue-600">₹{pkg.pricePerPlate}/plate</span>
+                                          <span className="text-sm font-bold text-blue-600 whitespace-nowrap">
+                                             ₹{pkg.pricePerPlate}/plate
+                                          </span>
                                        </div>
-                                       <div className="text-xs flex gap-1 sm:gap-2 text-gray-600 mt-1">
+
+                                       {/* Bottom section — item counts */}
+                                       <div className="text-xs flex flex-wrap gap-x-1 gap-y-1 text-gray-600 mt-1">
                                           {Object.entries(pkg.itemCounts).map(([type, count]) => (
-                                             <div key={type} className="text-center flex justify-center items-center gap-0.5 sm:gap-1">
-                                                <div className="sm:text-sm text-sm text-gray-900">{count}</div>
+                                             <div
+                                                key={type}
+                                                className="flex items-center gap-0.5 sm:gap-1 whitespace-nowrap"
+                                             >
+                                                <div className="text-sm text-gray-900">{count}</div>
                                                 <div className="text-xs text-gray-500 capitalize leading-tight">{type}</div>
                                              </div>
                                           ))}
@@ -638,7 +649,7 @@ const BookingRequestForm = () => {
                         type="submit"
                         disabled={submitting || !formData.eventType || !formData.numGuests || !formData.eventLocation ||
                            formData.mealPreference.length === 0 || !formData.selectedCuisine || !formData.selectedPackage}
-                        className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="w-full bg-blue-600 text-white px-4 py-3 sm:py-4 sm:px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                      >
                         {submitting ? (
                            <div className="flex items-center justify-center">
