@@ -188,11 +188,11 @@ const Navbar = ({ User, setUser }) => {
                 Contact
               </Link>
               <Link
-                href="/login"
+                href="/register"
                 className="px-4 py-2 text-gray-700 hover:text-pink-600 font-medium transition duration-300 ease-in-out"
-                onClick={() => analytics.trackLinkClick('nav_login', 'login', 'authentication')}
+                onClick={() => analytics.trackLinkClick('nav_register', 'register', 'authentication')}
               >
-                Login
+                Register
               </Link>
               <a
                 href='https://vendors.evenz.in/register'
@@ -314,14 +314,14 @@ const Navbar = ({ User, setUser }) => {
                 Contact
               </Link>
               <Link
-                href="/login"
+                href="/register"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-50 transition duration-300 ease-in-out"
                 onClick={() => {
-                  analytics.trackLinkClick('mobile_login', 'login', 'mobile_nav');
+                  analytics.trackLinkClick('mobile_register', 'register', 'mobile_nav');
                   setMenuOpen(false);
                 }}
               >
-                Login
+                Register
               </Link>
               <a
                 href='https://vendors.evenz.in/register'
