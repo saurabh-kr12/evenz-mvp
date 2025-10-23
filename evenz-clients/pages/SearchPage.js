@@ -349,7 +349,6 @@ const SearchPage = () => {
     // --- THE FIX IS HERE: The backend now sends a simple string ---
     const coverImageUrl = vendor?.coverImage;
 
-    console.log('Vendor Cover Image URL:', coverImageUrl);
     return (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
             <div className="relative">
@@ -521,10 +520,10 @@ const SearchPage = () => {
 
         {/* Search Results */}
         <div className="mt-6 sm:mt-8 md:mt-10">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center">
+          {/* <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center">
             <span className="w-6 sm:w-8 md:w-10 h-1 bg-indigo-600 mr-2 sm:mr-3 md:mr-4"></span>
             {loading ? 'Searching...' : `${pagination.totalVendors} Caterers Found`}
-          </h2>
+          </h2> */}
 
           {loading ? (
             <div className="flex justify-center items-center h-40">
