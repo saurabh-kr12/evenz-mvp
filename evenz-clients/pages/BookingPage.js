@@ -23,7 +23,10 @@ const BookingRequestForm = () => {
       selectedPackage: null,
       selectedLiveCounters: [],
       selectedSpecialMenus: [],
-      specialRequests: ''
+      specialRequests: '',
+      // Guest details (only used if not logged in)
+      clientName: '',
+      clientPhone: ''
    });
 
    // UI state
@@ -33,7 +36,6 @@ const BookingRequestForm = () => {
    const [error, setError] = useState('');
    const [success, setSuccess] = useState(false);
    const [estimatedCost, setEstimatedCost] = useState(0);
-   const [debugInfo, setDebugInfo] = useState('');
 
    // Analytics
    const analytics = useAnalytics();
@@ -108,14 +110,12 @@ const BookingRequestForm = () => {
    const calculateEstimatedCost = () => {
       if (!formData.numGuests || !formData.selectedPackage) {
          setEstimatedCost(0);
-         setDebugInfo('Missing numGuests or selectedPackage');
          return;
       }
 
       const numGuests = parseInt(formData.numGuests);
       if (isNaN(numGuests) || numGuests <= 0) {
          setEstimatedCost(0);
-         setDebugInfo('Invalid number of guests');
          return;
       }
 
@@ -148,7 +148,6 @@ const BookingRequestForm = () => {
       });
 
       setEstimatedCost(totalCost);
-      setDebugInfo(breakdown.join('\n'));
 
       // Track cost calculation milestones
       if (totalCost > 0) {
@@ -255,12 +254,28 @@ const BookingRequestForm = () => {
       try {
          const catererId = params?.vendorId;
          // 4. Use the central 'api' instance for the POST request
-         const response = await api.post('/booking/booking-requests', {
+         // const response = await api.post('/booking/booking-requests', {
+         //    ...formData,
+         //    catererId,
+         //    eventDate,
+         //    estimatedCost
+         // });
+
+         let payload = {
             ...formData,
             catererId,
             eventDate,
             estimatedCost
-         });
+         };
+
+         // Remove guest details if user is logged in
+         if (currentUser) {
+            delete payload.clientName;
+            delete payload.clientPhone;
+         }
+
+         const response = await api.post('/booking/booking-requests', payload);
+
 
          if (!response.data.success) {
             // const errorData = await response.json();
@@ -338,21 +353,43 @@ const BookingRequestForm = () => {
       );
    }
 
+   const { vendorInfo, menu, services } = catererData;
+
    if (success) {
       return (
-         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-               <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
-               <p className="text-gray-600 mb-6">
-                  Your booking request has been submitted successfully. The caterer will review your request and contact you soon.
-               </p>
+         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-100 p-4">
+            <div className="max-w-lg w-full bg-white rounded-2xl shadow-xl p-8 md:p-10 text-center border border-gray-100">
+               {/* Animated Checkmark (Optional but nice) */}
+               <CheckCircle className="sm:h-16 sm:w-16 h-8 w-8 text-green-500 mx-auto mb-4" />
+
+               <h2 className="sm:text-2xl text-xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
+               {/* Conditional Message */}
+               {currentUser ? (
+                  // Logged-in User Message
+                  <p className="text-gray-600 mb-8 text-base md:text-lg leading-relaxed">
+                     Your booking request for <span className="font-semibold">{catererData?.vendorInfo?.businessName || 'the caterer'}</span> has been sent. They will review your details and contact you shortly to discuss your event.
+                  </p>
+               ) : (
+                  // Guest User Message (Concierge) - More prominent
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-8 text-left">
+                     <h3 className="font-semibold text-blue-800 mb-2 sm:text-lg text-md">Thank You & What Happens Next</h3>
+                     <p className="text-blue-700 text-sm md:text-base leading-relaxed space-y-2">
+                        {/* --- FIX: Replaced ' with &apos; --- */}
+                        <span>Your request for <span className="font-semibold">{catererData?.vendorInfo?.businessName || 'the caterer'}</span> has been received!</span><br />
+                        <span>To ensure a high-quality experience, your request is being handled personally by our founder, Saurabh. You&apos;ll receive a confirmation call or WhatsApp message within the next few hours to verify your details before we connect you directly with the caterer.</span><br />
+                        <span className="font-medium">Your booking is in safe hands. We&apos;ll be in touch very soon!</span>
+                        {/* --- END FIX --- */}
+                     </p>
+                  </div>
+               )}
+
+               {/* Action Button */}
                <Link
-                  href={'/dashboard'}
-                  onClick={() => analytics.trackLinkClick('dashboard_from_success', 'dashboard', 'post_booking')}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  href={currentUser ? '/dashboard' : '/search'}
+                  onClick={() => analytics?.trackLinkClick(currentUser ? 'dashboard_from_success' : 'home_from_success', currentUser ? 'dashboard' : 'home', 'post_booking')}
+                  className="w-full inline-block bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-300"
                >
-                  Go to Dashboard
+                  {currentUser ? 'Go to My Dashboard' : 'Go to Seach Page'}
                </Link>
             </div>
          </div>
@@ -369,8 +406,6 @@ const BookingRequestForm = () => {
          </div>
       );
    }
-
-   const { vendorInfo, menu, services } = catererData;
 
    return (
       <div className="min-h-screen text-gray-700 bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
@@ -395,7 +430,7 @@ const BookingRequestForm = () => {
 
                <form onSubmit={handleSubmit} className="p-6 space-y-8">
                   {/* Client Details */}
-                  <div className="border-b border-gray-200 pb-6">
+                  {/* <div className="border-b border-gray-200 pb-6">
                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <User className="h-5 w-5 mr-2" />
                         Your Details
@@ -410,7 +445,68 @@ const BookingRequestForm = () => {
                            <span className="text-sm text-gray-700">{currentUser?.mobile}</span>
                         </div>
                      </div>
-                  </div>
+                  </div> */}
+                  {/* --- Guest Details Section (Conditional) --- */}
+                  {!currentUser && (
+                     <div className="border-b border-gray-200 pb-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                           <User className="h-5 w-5 mr-2" />
+                           Your Contact Details *
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div>
+                              <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                              <input
+                                 type="text"
+                                 id="clientName"
+                                 value={formData.clientName}
+                                 onChange={(e) => handleInputChange('clientName', e.target.value)}
+                                 required={!currentUser} // Required only if guest
+                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                 placeholder="Enter your full name"
+                              />
+                           </div>
+                           <div>
+                              <label htmlFor="clientPhone" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                              <input
+                                 type="tel" // Use tel for better mobile input
+                                 id="clientPhone"
+                                 value={formData.clientPhone}
+                                 onChange={(e) => handleInputChange('clientPhone', e.target.value.replace(/\D/g, '').slice(0, 10))} // Allow only digits, max 10
+                                 required={!currentUser} // Required only if guest
+                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                 placeholder="Enter 10-digit mobile number"
+                                 maxLength="10"
+                                 pattern="[6-9][0-9]{9}" // Basic Indian mobile pattern
+                                 title="Please enter a valid 10-digit Indian mobile number"
+                              />
+                           </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">We need this to send your request to the caterer.</p>
+                     </div>
+                  )}
+                  {/* --- End Guest Details --- */}
+
+
+                  {/* Logged-in User Details (Readonly) */}
+                  {currentUser && (
+                     <div className="border-b border-gray-200 pb-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                           <User className="h-5 w-5 mr-2" />
+                           Your Details
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                              <User className="h-4 w-4 text-gray-400 mr-2" />
+                              <span className="text-sm text-gray-700">{currentUser?.name}</span>
+                           </div>
+                           <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                              <Phone className="h-4 w-4 text-gray-400 mr-2" />
+                              <span className="text-sm text-gray-700">{currentUser?.mobile}</span>
+                           </div>
+                        </div>
+                     </div>
+                  )}
 
                   {/* Caterer & Date Info */}
                   <div className="border-b border-gray-200 pb-6">

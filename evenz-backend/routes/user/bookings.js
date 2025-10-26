@@ -5,7 +5,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const BookingRequest = require('../../models/Admin/BookingRequest');
 const Vendor = require('../../models/Vendor/Vendor');
-const { body, validationResult } = require('express-validator');
+const { body, validationResult, optional } = require('express-validator');
 const Admin = require('../../models/Admin/Admin'); // You'll need to create this model
 const { protect } = require('../../middleware/user/auth');
 const { protect: protectVendor } = require('../../middleware/vendor/auth');
@@ -13,90 +13,188 @@ const { protect: protectAdmin } = require('../../middleware/admin/auth'); // You
 
 // This regex is a whitelist for common text, allowing letters, numbers, spaces, and basic punctuation.
 const safeTextRegex = /^[a-zA-Z0-9\s.,!?'"()&%$#@\-_]*$/;
+const safePhoneRegex = /^[6-9]\d{9}$/; // Indian mobile number validation
 
+// Middleware to make authentication optional
+const optionalProtect = (req, res, next) => {
+  // Check if Authorization header exists
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // If token exists, run the protect middleware
+    return protect(req, res, next);
+  }
+  // If no token, just proceed to the next middleware/route handler
+  next();
+};
 // Initialize Razorpay
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID ,
-  key_secret: process.env.RAZORPAY_KEY_SECRET ,
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 // POST /api/booking/booking-requests
+// router.post(
+//     '/booking-requests', 
+//     protect, 
+//     [ // --- THE FIX: Added robust validation and sanitization ---
+//         body('catererId').isMongoId().withMessage('Invalid caterer ID.'),
+//         body('eventType').not().isEmpty().withMessage('Event type is required.'),
+//         body('eventDate').isISO8601().toDate().withMessage('Invalid event date.'),
+//         body('numGuests').isInt({ min: 1 }).withMessage('Number of guests must be a positive number.'),
+//         body('eventLocation').not().isEmpty().withMessage('Event location is required.').matches(safeTextRegex).trim().escape(),
+//         body('venueType').not().isEmpty().withMessage('Venue type is required.').matches(safeTextRegex).trim().escape(),
+//         body('mealPreference').isArray({ min: 1 }).withMessage('At least one meal preference is required.'),
+//         body('mealPreference.*').isString().trim().escape(),
+//         body('selectedCuisine').not().isEmpty().withMessage('Cuisine selection is required.'),
+//         body('selectedPackage.name').not().isEmpty().withMessage('Package name is required.'),
+//         body('selectedPackage.pricePerPlate').isNumeric().withMessage('Package price must be a number.'),
+//         body('specialRequests').optional().matches(safeTextRegex).withMessage('Special requests contain invalid characters.').trim().escape(),
+//         body('estimatedCost').isNumeric().withMessage('Estimated cost must be a number.')
+//     ],
+//     async (req, res) => {
+//         const errors = validationResult(req);
+//         if (!errors.isEmpty()) {
+//             return res.status(400).json({ success: false, errors: errors.array() });
+//         }
+//   
+//         try {
+//             const {
+//                 catererId, eventType, eventDate, numGuests, eventLocation, 
+//                 venueType, mealPreference, selectedCuisine, selectedPackage, 
+//                 selectedLiveCounters = [], specialRequests, estimatedCost
+//             } = req.body;
+
+//             const caterer = await Vendor.findById(catererId);
+//             if (!caterer) {
+//                 return res.status(404).json({ success: false, message: 'Caterer not found' });
+//             }
+
+//             const bookingRequest = new BookingRequest({
+//                 clientId: req.user._id,
+//                 clientName: req.user.name,
+//                 clientPhone: req.user.mobile,
+//                 catererId,
+//                 catererName: caterer.businessName,
+//                 eventType,
+//                 eventDate, // Already converted to Date by validator
+//                 numGuests,
+//                 eventLocation,
+//                 venueType,
+//                 mealPreference,
+//                 selectedCuisine,
+//                 selectedPackage,
+//                 selectedLiveCounters,
+//                 specialRequests,
+//                 estimatedCost
+//             });
+
+//             await bookingRequest.save();
+
+//             res.status(201).json({
+//                 success: true,
+//                 data: bookingRequest,
+//                 message: 'Booking request submitted successfully'
+//             });
+
+//         } catch (error) {
+//             console.error('Error creating booking request:', error);
+//             res.status(500).json({ success: false, message: 'Internal server error' });
+//         }
+//     }
+// );
+// POST /api/booking/booking-requests
 router.post(
-    '/booking-requests', 
-    protect, 
-    [ // --- THE FIX: Added robust validation and sanitization ---
-        body('catererId').isMongoId().withMessage('Invalid caterer ID.'),
-        body('eventType').not().isEmpty().withMessage('Event type is required.'),
-        body('eventDate').isISO8601().toDate().withMessage('Invalid event date.'),
-        body('numGuests').isInt({ min: 1 }).withMessage('Number of guests must be a positive number.'),
-        body('eventLocation').not().isEmpty().withMessage('Event location is required.').matches(safeTextRegex).trim().escape(),
-        body('venueType').not().isEmpty().withMessage('Venue type is required.').matches(safeTextRegex).trim().escape(),
-        body('mealPreference').isArray({ min: 1 }).withMessage('At least one meal preference is required.'),
-        body('mealPreference.*').isString().trim().escape(),
-        body('selectedCuisine').not().isEmpty().withMessage('Cuisine selection is required.'),
-        body('selectedPackage.name').not().isEmpty().withMessage('Package name is required.'),
-        body('selectedPackage.pricePerPlate').isNumeric().withMessage('Package price must be a number.'),
-        body('specialRequests').optional().matches(safeTextRegex).withMessage('Special requests contain invalid characters.').trim().escape(),
-        body('estimatedCost').isNumeric().withMessage('Estimated cost must be a number.')
-    ],
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ success: false, errors: errors.array() });
-        }
-  
-        try {
-            const {
-                catererId, eventType, eventDate, numGuests, eventLocation, 
-                venueType, mealPreference, selectedCuisine, selectedPackage, 
-                selectedLiveCounters = [], specialRequests, estimatedCost
-            } = req.body;
-
-            const caterer = await Vendor.findById(catererId);
-            if (!caterer) {
-                return res.status(404).json({ success: false, message: 'Caterer not found' });
-            }
-
-            const bookingRequest = new BookingRequest({
-                clientId: req.user._id,
-                clientName: req.user.name,
-                clientPhone: req.user.mobile,
-                catererId,
-                catererName: caterer.businessName,
-                eventType,
-                eventDate, // Already converted to Date by validator
-                numGuests,
-                eventLocation,
-                venueType,
-                mealPreference,
-                selectedCuisine,
-                selectedPackage,
-                selectedLiveCounters,
-                specialRequests,
-                estimatedCost
-            });
-
-            await bookingRequest.save();
-
-            res.status(201).json({
-                success: true,
-                data: bookingRequest,
-                message: 'Booking request submitted successfully'
-            });
-
-        } catch (error) {
-            console.error('Error creating booking request:', error);
-            res.status(500).json({ success: false, message: 'Internal server error' });
-        }
+  '/booking-requests',
+  optionalProtect, // Use the optional protect middleware
+  [ // Validation chain
+    body('catererId').isMongoId().withMessage('Invalid caterer ID.'),
+    body('eventType').not().isEmpty().withMessage('Event type is required.').matches(safeTextRegex).trim().escape(),
+    body('eventDate').isISO8601().toDate().withMessage('Invalid event date.'),
+    body('numGuests').isInt({ min: 1 }).withMessage('Number of guests must be a positive number.'),
+    body('eventLocation').not().isEmpty().withMessage('Event location is required.').matches(safeTextRegex).trim().escape(),
+    body('venueType').not().isEmpty().withMessage('Venue type is required.').matches(safeTextRegex).trim().escape(),
+    body('mealPreference').isArray({ min: 1 }).withMessage('At least one meal preference is required.'),
+    body('mealPreference.*').isString().trim().escape(),
+    body('selectedCuisine').not().isEmpty().withMessage('Cuisine selection is required.').matches(safeTextRegex).trim().escape(),
+    body('selectedPackage.name').not().isEmpty().withMessage('Package name is required.').matches(safeTextRegex).trim().escape(),
+    body('selectedPackage.pricePerPlate').isNumeric().withMessage('Package price must be a number.'),
+    body('specialRequests').optional().matches(safeTextRegex).withMessage('Special requests contain invalid characters.').trim().escape(),
+    body('estimatedCost').isNumeric().withMessage('Estimated cost must be a number.'),
+    // Conditional validation for guest users
+    body('clientName').if((value, { req }) => !req.user).not().isEmpty().withMessage('Your name is required.').matches(safeTextRegex).trim().escape(),
+    body('clientPhone').if((value, { req }) => !req.user).not().isEmpty().withMessage('Your mobile number is required.').matches(safePhoneRegex).withMessage('Please enter a valid 10-digit mobile number.'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
+
+    try {
+      const {
+        catererId, eventType, eventDate, numGuests, eventLocation,
+        venueType, mealPreference, selectedCuisine, selectedPackage,
+        selectedLiveCounters = [], specialRequests, estimatedCost,
+        // Get guest details if user is not logged in
+        clientName: guestName,
+        clientPhone: guestPhone
+      } = req.body;
+
+      const caterer = await Vendor.findById(catererId);
+      if (!caterer) {
+        return res.status(404).json({ success: false, message: 'Caterer not found' });
+      }
+
+      let clientId = null;
+      let finalClientName = guestName;
+      let finalClientPhone = guestPhone;
+
+      // If user is logged in, use their details
+      if (req.user) {
+        clientId = req.user._id;
+        finalClientName = req.user.name;
+        finalClientPhone = req.user.mobile;
+      }
+
+      const bookingRequest = new BookingRequest({
+        clientId, // Will be null for guests
+        clientName: finalClientName,
+        clientPhone: finalClientPhone,
+        catererId,
+        catererName: caterer.businessName,
+        eventType,
+        eventDate,
+        numGuests,
+        eventLocation,
+        venueType,
+        mealPreference,
+        selectedCuisine,
+        selectedPackage,
+        selectedLiveCounters,
+        specialRequests,
+        estimatedCost
+      });
+
+      await bookingRequest.save();
+
+      res.status(201).json({
+        success: true,
+        data: bookingRequest,
+        message: 'Booking request submitted successfully'
+      });
+
+    } catch (error) {
+      console.error('Error creating booking request:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  }
 );
 
 // GET /api/booking/vendor/ongoing - Get ongoing (locked) bookings for vendor
 router.get('/vendor/ongoing', protectVendor, async (req, res) => {
   try {
-    const bookings = await BookingRequest.find({ 
+    const bookings = await BookingRequest.find({
       catererId: req.vendor._id,
-      status: { $in: ['PENDING', 'PAYMENT_PENDING'] } ,
+      status: { $in: ['PENDING', 'PAYMENT_PENDING'] },
     }).sort({ createdAt: -1 });
 
     // Hide client contact details for locked requests
@@ -124,7 +222,7 @@ router.get('/vendor/ongoing', protectVendor, async (req, res) => {
 // GET /api/booking/vendor/unlocked - Get unlocked bookings for vendor
 router.get('/vendor/unlocked', protectVendor, async (req, res) => {
   try {
-    const bookings = await BookingRequest.find({ 
+    const bookings = await BookingRequest.find({
       catererId: req.vendor._id,
       status: { $in: ['UNLOCKED', 'CONFIRMED', 'NOT_CONFIRMED'] }
     }).sort({ createdAt: -1 });
@@ -148,7 +246,7 @@ router.get('/vendor/unlocked', protectVendor, async (req, res) => {
 router.post('/:bookingId/initiate-unlock', protectVendor, async (req, res) => {
   try {
     const { bookingId } = req.params; // Changed from 'id' to 'bookingId'
-    
+
     // Find booking request
     const bookingRequest = await BookingRequest.findById(bookingId); // Changed from 'id' to 'bookingId'
     if (!bookingRequest) {
@@ -189,11 +287,11 @@ router.post('/:bookingId/initiate-unlock', protectVendor, async (req, res) => {
       bookingRequest.status = 'UNLOCKED';
       bookingRequest.payment_status = 'NOT_APPLICABLE';
       bookingRequest.unlocked_at = new Date();
-      
+
       vendor.free_unlock_used = true;
       vendor.free_unlock_used_at = new Date();
       vendor.last_unlock_date = new Date();
-      
+
       await Promise.all([
         bookingRequest.save(),
         vendor.save()
@@ -201,7 +299,7 @@ router.post('/:bookingId/initiate-unlock', protectVendor, async (req, res) => {
 
       // Return unlocked client details
       const unlockedBooking = await BookingRequest.findById(bookingId).populate('clientId', 'name contact email');
-      
+
       return res.json({
         success: true,
         status: 'FREE_UNLOCK_SUCCESS',
@@ -218,7 +316,7 @@ router.post('/:bookingId/initiate-unlock', protectVendor, async (req, res) => {
     } else {
       // PAID UNLOCK FLOW
       const amount = bookingRequest.unlock_fee * 100; // Convert to paisa
-      
+
       // Create Razorpay order
       const razorpayOrder = await razorpay.orders.create({
         amount: amount,
@@ -235,7 +333,7 @@ router.post('/:bookingId/initiate-unlock', protectVendor, async (req, res) => {
       bookingRequest.razorpay_order_id = razorpayOrder.id;
       bookingRequest.status = 'PAYMENT_PENDING';
       bookingRequest.payment_status = 'PENDING';
-      
+
       await bookingRequest.save();
 
       return res.json({
@@ -296,7 +394,7 @@ router.post('/payments/verify-razorpay', async (req, res) => {
       bookingRequest.razorpay_payment_id = razorpay_payment_id;
       bookingRequest.razorpay_signature = razorpay_signature;
       bookingRequest.unlocked_at = new Date();
-      
+
       // Update vendor stats
       const vendor = await Vendor.findById(bookingRequest.catererId);
       if (vendor) {
@@ -305,12 +403,12 @@ router.post('/payments/verify-razorpay', async (req, res) => {
         vendor.last_unlock_date = new Date();
         await vendor.save();
       }
-      
+
       await bookingRequest.save();
 
       // Return unlocked client details
       const unlockedBooking = await BookingRequest.findById(bookingRequest._id).populate('clientId', 'name contact email');
-      
+
       return res.json({
         success: true,
         status: 'PAYMENT_SUCCESS',
@@ -329,7 +427,7 @@ router.post('/payments/verify-razorpay', async (req, res) => {
       bookingRequest.status = 'PAYMENT_FAILED';
       bookingRequest.payment_status = 'FAILED';
       await bookingRequest.save();
-      
+
       return res.status(400).json({
         success: false,
         message: 'Payment verification failed'
@@ -472,10 +570,10 @@ router.get('/client', protect, async (req, res) => {
 router.delete('/cancel/:id', protect, async (req, res) => {
   try {
     const bookingId = req.params.id;
-    
+
     // Find the booking request
     const bookingRequest = await BookingRequest.findById(bookingId);
-    
+
     if (!bookingRequest) {
       return res.status(404).json({
         success: false,

@@ -3,8 +3,8 @@ import PrivateRoute from '../../../components/PrivateRoute';
 
 export default function Booking({ params }) {
   return (
-    <PrivateRoute>
+    // <PrivateRoute>
       <BookingRequestForm params={params} />
-    </PrivateRoute>
+    // </PrivateRoute>
   );
 }
