@@ -93,6 +93,16 @@ const Footer = () => {
               </li>
               <li>
                 <Link
+                  href="/blog"
+                  className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start"
+                  onClick={() => handleFooterLinkClick('blog', 'blog')}
+                >
+                  <span className="h-1 w-1 bg-pink-500 rounded-full mr-2 hidden md:block"></span>
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/contact"
                   className="text-gray-300 hover:text-pink-500 transition duration-300 ease-in-out flex items-center justify-center md:justify-start"
                   onClick={() => handleFooterLinkClick('contact', 'contact')}
