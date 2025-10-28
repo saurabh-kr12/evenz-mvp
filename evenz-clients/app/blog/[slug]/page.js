@@ -53,7 +53,7 @@ export default async function BlogPostPage({ params }) {
     }
 
     return (
-        <div className="bg-white py-12 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white py-8 sm:py-10 md:py-12 px-4 sm:px-6 lg:px-8">
             <article className="prose prose-indigo lg:prose-xl mx-auto">
                  <ReactMarkdown>{post.content}</ReactMarkdown>
             </article>
