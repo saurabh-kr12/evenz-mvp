@@ -1,3 +1,8 @@
+---
+title: "How to Host a Great Birthday Party in Patna (Without a Huge Budget)"
+description: "Hosting a birthday party or small get-together in Patna? Don't stress! Here are our best tips for finding great, affordable home catering for 20-50 people."
+---
+
 # How to Host a Great Birthday Party in Patna (Without a Huge Budget)
 
 <div class="w-full max-h-64 sm:max-h-72 md:max-h-96 overflow-hidden rounded-lg shadow-md mb-6">

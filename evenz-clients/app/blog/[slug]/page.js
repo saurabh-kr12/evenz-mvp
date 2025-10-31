@@ -1,24 +1,27 @@
 import fs from 'fs';
 import path from 'path';
-import ReactMarkdown from 'react-markdown';
 import { notFound } from 'next/navigation';
-import rehypeRaw from 'rehype-raw';
 
-// Helper function to get post content (runs on the server)
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw'; // For rendering HTML (like the image div)
+import matter from 'gray-matter'; // For parsing frontmatter (title, description)
+
+const postsDirectory = path.join(process.cwd(), '_posts');
+
+// Helper function to get post content AND frontmatter
 function getPostBySlug(slug) {
-    const postsDirectory = path.join(process.cwd(), '_posts');
     const fullPath = path.join(postsDirectory, `${slug}.md`);
 
     try {
         const fileContents = fs.readFileSync(fullPath, 'utf8');
-        // Simple extraction of title for metadata (assumes first line is # Title)
-        const titleMatch = fileContents.match(/^# (.*)/);
-        const title = titleMatch ? titleMatch[1] : 'Evenz.in Blog';
-        // Simple extraction of description (first paragraph after title)
-        const descriptionMatch = fileContents.match(/^# .*\n\n(.*)/);
-        const description = descriptionMatch ? descriptionMatch[1].substring(0, 155) + '...' : 'Insights from Evenz.in';
+        // Use gray-matter to parse the post metadata and content
+        const { data, content } = matter(fileContents);
 
-        return { content: fileContents, title, description };
+        return {
+            slug,
+            frontmatter: data,
+            content,
+        };
     } catch (error) {
         console.error(`Error reading post ${slug}:`, error);
         return null; // Indicate post not found
@@ -27,9 +30,8 @@ function getPostBySlug(slug) {
 
 // Function to generate Metadata dynamically for SEO
 export async function generateMetadata({ params }) {
-    // Await params before accessing its properties
-    const { slug } = await params;
-    const post = getPostBySlug(slug);
+    const awaitedParams = await params; // Fix for Next.js build error
+    const post = getPostBySlug(awaitedParams.slug);
 
     if (!post) {
         return {
@@ -38,16 +40,15 @@ export async function generateMetadata({ params }) {
     }
 
     return {
-        title: `${post.title} | Evenz.in Blog`,
-        description: post.description,
+        title: `${post.frontmatter.title} | Evenz.in Blog`,
+        description: post.frontmatter.description,
     };
 }
 
 // The Page component
 export default async function BlogPostPage({ params }) {
-    // Await params before accessing its properties
-    const { slug } = await params;
-    const post = getPostBySlug(slug);
+    const awaitedParams = await params; // Fix for Next.js build error
+    const post = getPostBySlug(awaitedParams.slug);
 
     if (!post) {
         notFound(); // Trigger the 404 page if post doesn't exist
@@ -64,12 +65,19 @@ export default async function BlogPostPage({ params }) {
     );
 }
 
-// (Optional but recommended) Generate static paths at build time
+// Generate static paths at build time
 export async function generateStaticParams() {
-    const postsDirectory = path.join(process.cwd(), '_posts');
-    const filenames = fs.readdirSync(postsDirectory);
+    try {
+        const filenames = fs.readdirSync(postsDirectory);
 
-    return filenames.map((filename) => ({
-        slug: filename.replace(/\.md$/, ''),
-    }));
+        return filenames
+            .filter(filename => filename.endsWith('.md'))
+            .map((filename) => ({
+                slug: filename.replace(/\.md$/, ''),
+            }));
+    } catch (error) {
+        console.error("Could not read _posts directory for generateStaticParams:", error);
+        return []; 
+    }
 }
+

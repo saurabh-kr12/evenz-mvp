@@ -1,3 +1,8 @@
+---
+title: "Best Caterers in Patna: Your Top Guide for Any Event (2025)"
+description: "Looking for the best caterer in Patna? We've got you. Here's our local's guide to 8 top-rated caterers for your wedding, party, or corporate event."
+---
+
 # Best Caterers in Patna: Your Top Guide for Any Event (2025)
 
 <div class="w-full max-h-64 sm:max-h-72 md:max-h-96 overflow-hidden rounded-lg shadow-md mb-6">

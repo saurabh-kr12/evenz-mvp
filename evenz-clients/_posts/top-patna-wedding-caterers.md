@@ -1,3 +1,8 @@
+---
+title: "The 5 Best Wedding Caterers in Patna You Need to Know About (2025)"
+description: "Looking for the best wedding caterer in Patna? Here is our curated list of the top 5 caterers for your dream wedding, based on local reputation and service."
+---
+
 # The 5 Best Wedding Caterers in Patna You Need to Know About (2025)
 
 <div class="w-full max-h-64 sm:max-h-72 md:max-h-96 overflow-hidden rounded-lg shadow-md mb-6">
