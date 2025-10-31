@@ -42,11 +42,11 @@ We've been lucky enough to partner with some of the most established and profess
 * **The Vibe:** High-end weddings & big corporate events.
 * **Why They're Great:** If you've been to a really fancy wedding in Patna, Classic Caterer was probably there. They're based in Rajendra Nagar and have a rock-solid reputation (just check their Google reviews). They are total pros at handling large, multi-cuisine events where everything needs to be flawless at reasonable cost.
 
-### 2. [TASTY CATERERS (Sabzibagh)](https://evenz.in/vendors/688e8b1c802d923090b77e6b)
+### 2. [TASTY CATERERS (Sabzibagh)](https://evenz.in/vendors/68bc0d797f0a713708fd3d01)
 * **The Vibe:** The big, authentic feast (especially non-veg).
 * **Why They're Great:** "Tasty" is right in the name. If your event is all about *the food* - especially rich, authentic Mughlai or non-veg dishes, these guys are legends. They're a long-standing, super-experienced choice that can handle massive crowds without breaking a sweat.
 
-### 3. [Maa Caterers (Danapur)](https://evenz.in/vendors/689f3083ba59a83170cdc219)
+### 3. [Maa Caterers (Danapur)](https://evenz.in/vendors/689829e57f6aad1b6f98ffd6)
 * **The Vibe:** Traditional events, weddings, pujas, and family functions.
 * **Why They're Great:** This is a household name in Patna, known for being incredibly reliable. Maa Caterers is your go-to when you need everything to be perfect and to taste like authentic, high-quality home cooking. A trusted choice for any traditional function.
 
@@ -54,7 +54,7 @@ We've been lucky enough to partner with some of the most established and profess
 * **The Vibe:** Massive-scale events (think college fests, or community functions).
 * **Why They're Great:** MunnaJi Catering has a serious reputation for handling huge crowds. If you need someone who can serve a 1000+ guest list and deliver a solid, crowd-pleasing buffet without a single hiccup, they are one of the top names to call.
 
-### 5. [Singh Caterers (Income Tax, Golambar)](https://evenz.in/vendors/689ae464a888f584b8952f62)
+### 5. [Singh Caterers (Income Tax, Golambar)](https://evenz.in/vendors/68b6b4e552dcfc16a7deaa9c)
 * **The Vibe:** Corporate catering & no-fuss, dependable service for any event.
 * **Why They're Great:** Singh Caterers is just plain professional. Their central location makes them a perfect choice for `corporate catering` or office parties, but they're just as good at handling personal events like birthdays where you just need high-quality service, no excuses.
 
