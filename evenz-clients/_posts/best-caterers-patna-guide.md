@@ -11,7 +11,7 @@ description: "Looking for the best caterer in Patna? We've got you. Here's our l
 
 Let's be real: Patna is a city that loves to celebrate. From massive weddings to corporate gatherings, birthday parties to religious functions, we're always looking for a reason to share good food.
 
-But finding a truly **best caterer in Patna**? That's a whole other level of stress.
+But finding a truly the **best caterer in Patna**? That's a whole other level of stress.
 
 You type "best caterer in Patna" into Google. What you get back is a jumbled mess of listings. You're left staring at a list of names with so many questions. Are these guys reliable? Can they handle a 50-person party, or do they only do 1000-guest weddings? Is the food *actually* any good?
 
