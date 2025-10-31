@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import ReactMarkdown from 'react-markdown';
 import { notFound } from 'next/navigation';
+import rehypeRaw from 'rehype-raw';
 
 // Helper function to get post content (runs on the server)
 function getPostBySlug(slug) {
@@ -54,8 +55,10 @@ export default async function BlogPostPage({ params }) {
 
     return (
         <div className="bg-white py-8 sm:py-10 md:py-12 px-4 sm:px-6 lg:px-8">
-            <article className="prose prose-indigo lg:prose-xl mx-auto">
-                 <ReactMarkdown>{post.content}</ReactMarkdown>
+            <article className="prose prose-indigo lg:prose-xl mx-auto prose-img:rounded-lg prose-img:m-0 prose-p:m-0">
+                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                    {post.content}
+                </ReactMarkdown>
             </article>
         </div>
     );
