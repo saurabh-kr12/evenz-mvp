@@ -8,7 +8,7 @@ import useAnalytics from '../hooks/useAnalytics'; // Adjust path as needed
 const SearchPage = () => {
   const location = useParams;
   const analytics = useAnalytics();
-  
+
   // Get query parameters for initial search (if any)
   const queryParams = new URLSearchParams(location.search);
   const initialArea = queryParams.get('area') || '';
@@ -40,7 +40,7 @@ const SearchPage = () => {
   // Track page view on component mount
   useEffect(() => {
     analytics.trackPageView('search_page', 'catering_search');
-    
+
     // Track if user came with initial search parameters
     if (initialSearch || initialArea) {
       analytics.trackCustomEvent(
@@ -55,12 +55,12 @@ const SearchPage = () => {
   const hasRequiredDetails = (vendor) => {
     // Check if vendor has cuisines (array should exist and have at least one item)
     const hasCuisines = vendor.cuisines && Array.isArray(vendor.cuisines) && vendor.cuisines.length > 0;
-    
+
     // Check if vendor has both minPrice and maxPrice
     const hasPrice = vendor.minPrice && vendor.maxPrice;
 
-    
-    
+
+
     return hasCuisines && hasPrice;
   };
 
@@ -86,7 +86,7 @@ const SearchPage = () => {
         analytics.trackError('api_error', 'cuisines_fetch_failed', 'search_page');
       }
     };
-    
+
     fetchCuisines();
   }, []);
 
@@ -96,42 +96,42 @@ const SearchPage = () => {
       try {
         setLoading(true);
         setError('');
-        
+
         // Build  query parameters
         const params = new URLSearchParams();
-        
+
         if (searchParams.query) params.append('query', searchParams.query);
         if (searchParams.area) params.append('area', searchParams.area);
         if (searchParams.priceRange[0] > 250) params.append('minPrice', searchParams.priceRange[0]);
         if (searchParams.priceRange[1] < 1000) params.append('maxPrice', searchParams.priceRange[1]);
         if (searchParams.cuisineType) params.append('cuisineType', searchParams.cuisineType);
         if (searchParams.availableNow) params.append('availableNow', 'true');
-        
+
         params.append('page', pagination.currentPage);
         params.append('limit', '12');
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/search/vendors?${params}`);
         const data = await response.json();
-        
+
         if (data.success) {
           // Filter vendors to only include those with required details
           const filteredVendors = data.data.filter(vendor => hasRequiredDetails(vendor));
-          
+
           setVendors(filteredVendors);
-          
+
           // Update pagination to reflect filtered results
           setPagination({
             ...data.pagination,
             totalVendors: filteredVendors.length
           });
-          
+
           // Track successful search with exact search text
           analytics.trackSearch(
             searchParams.query || 'no_query_applied',
             filteredVendors.length,
             'vendor_search'
           );
-          
+
           // Track detailed search results with search text
           analytics.trackCustomEvent(
             'search_completed',
@@ -139,14 +139,14 @@ const SearchPage = () => {
             `query:"${searchParams.query || 'no_query'}"_results:${filteredVendors.length}`,
             filteredVendors.length
           );
-          
+
           // Track search with filters if any are applied
           const activeFilters = [];
           if (searchParams.area) activeFilters.push('area');
           if (searchParams.cuisineType) activeFilters.push('cuisine');
           if (searchParams.priceRange[0] > 250 || searchParams.priceRange[1] < 1000) activeFilters.push('price');
           if (searchParams.availableNow) activeFilters.push('availability');
-          
+
           if (activeFilters.length > 0) {
             analytics.trackCustomEvent(
               'filtered_search',
@@ -155,7 +155,7 @@ const SearchPage = () => {
               filteredVendors.length
             );
           }
-          
+
           // Track if search returned no results
           if (filteredVendors.length === 0 && searchParams.query) {
             analytics.trackCustomEvent(
@@ -165,13 +165,13 @@ const SearchPage = () => {
               0
             );
           }
-          
+
         } else {
           setError(data.message || 'Failed to fetch vendors');
           // Track search error
           analytics.trackError('search_error', data.message || 'vendor_fetch_failed', 'search_page');
         }
-        
+
       } catch (error) {
         console.error('Fetch vendors error:', error);
         setError('Failed to load vendors. Please try again.');
@@ -196,7 +196,7 @@ const SearchPage = () => {
         );
       }
     });
-    
+
     setSearchParams({
       ...searchParams,
       ...filters
@@ -206,13 +206,13 @@ const SearchPage = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    
+
     // Track form submission
     analytics.trackFormSubmit('search_form', true);
-    
+
     // Track the exact search text entered by user
     analytics.trackSearch(searchQuery || 'empty_search', 0, 'manual_search');
-    
+
     // Track detailed search text with additional context
     analytics.trackCustomEvent(
       'search_text_entered',
@@ -220,24 +220,24 @@ const SearchPage = () => {
       `search_term:${searchQuery || 'empty'}`,
       searchQuery ? searchQuery.length : 0
     );
-    
+
     // Track search text categorization (name, cuisine, or location hints)
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
       let searchType = 'general';
-      
+
       // Simple categorization based on common patterns
-      if (searchLower.includes('patna') || searchLower.includes('bihar') || 
-          searchLower.includes('station') || searchLower.includes('road')) {
+      if (searchLower.includes('patna') || searchLower.includes('bihar') ||
+        searchLower.includes('station') || searchLower.includes('road')) {
         searchType = 'location_based';
-      } else if (searchLower.includes('catering') || searchLower.includes('caterer') || 
-                searchLower.includes('food') || searchLower.includes('service')) {
+      } else if (searchLower.includes('catering') || searchLower.includes('caterer') ||
+        searchLower.includes('food') || searchLower.includes('service')) {
         searchType = 'service_based';
-      } else if (searchLower.includes('indian') || searchLower.includes('chinese') || 
-                searchLower.includes('continental') || searchLower.includes('bihari')) {
+      } else if (searchLower.includes('indian') || searchLower.includes('chinese') ||
+        searchLower.includes('continental') || searchLower.includes('bihari')) {
         searchType = 'cuisine_based';
       }
-      
+
       analytics.trackCustomEvent(
         'search_type_classification',
         'search_analysis',
@@ -245,7 +245,7 @@ const SearchPage = () => {
         searchQuery.length
       );
     }
-    
+
     setSearchParams({
       ...searchParams,
       query: searchQuery
@@ -256,7 +256,7 @@ const SearchPage = () => {
   const clearAllFilters = () => {
     // Track filter clearing
     analytics.trackButtonClick('clear_all_filters', 'search_filters');
-    
+
     setSearchParams({
       area: '',
       query: '',
@@ -279,7 +279,7 @@ const SearchPage = () => {
       `vendor_${vendor.id}`,
       'vendor_interaction'
     );
-    
+
     // Track detailed vendor click with business name and ID
     analytics.trackCustomEvent(
       'vendor_profile_click',
@@ -287,7 +287,7 @@ const SearchPage = () => {
       `id:${vendor.id}_name:"${vendor.businessName}"_location:"${vendor.location}"`,
       vendor.minPrice
     );
-    
+
     // Track vendor business name separately for easy filtering
     analytics.trackCustomEvent(
       'vendor_business_name_click',
@@ -295,7 +295,7 @@ const SearchPage = () => {
       `business:"${vendor.businessName}"`,
       vendor.id
     );
-    
+
     // Track vendor ID separately for technical analysis
     analytics.trackCustomEvent(
       'vendor_id_click',
@@ -303,7 +303,7 @@ const SearchPage = () => {
       `vendor_id:${vendor.id}`,
       vendor.minPrice
     );
-    
+
     // Track click position in search results
     const vendorIndex = vendors.findIndex(v => v.id === vendor.id);
     analytics.trackCustomEvent(
@@ -312,7 +312,7 @@ const SearchPage = () => {
       `position:${vendorIndex + 1}_of_${vendors.length}_name:"${vendor.businessName}"`,
       vendorIndex + 1
     );
-    
+
     // Track vendor details for business intelligence
     analytics.trackCustomEvent(
       'vendor_click_details',
@@ -321,14 +321,14 @@ const SearchPage = () => {
       vendor.maxPrice - vendor.minPrice
     );
   };
- 
+
   const handlePaginationClick = (direction) => {
     // Track pagination usage
     analytics.trackButtonClick(
       `pagination_${direction}`,
       'search_pagination'
     );
-    
+
     analytics.trackCustomEvent(
       'pagination_used',
       'search_behavior',
@@ -336,89 +336,88 @@ const SearchPage = () => {
     );
   };
 
- const VendorCard = ({ vendor, isFeatured = false }) => {
+  const VendorCard = ({ vendor, isFeatured = false }) => {
     const analytics = useAnalytics(); // Assuming you initialize it like this
 
     const handleVendorClick = (vendor) => {
-        // Example analytics tracking
-        if(analytics) {
-            analytics.trackCustomEvent('vendor_card_clicked', 'search_interaction', vendor.businessName);
-        }
+      // Example analytics tracking
+      if (analytics) {
+        analytics.trackCustomEvent('vendor_card_clicked', 'search_interaction', vendor.businessName);
+      }
     };
 
     // --- THE FIX IS HERE: The backend now sends a simple string ---
     const coverImageUrl = vendor?.coverImage;
 
     return (
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
-            <div className="relative">
-                <div className="w-full h-48 relative overflow-hidden">
-                    {coverImageUrl ? (
-                        <img
-                            src={coverImageUrl}
-                            alt={vendor.businessName}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                // Fallback to placeholder if image fails to load
-                                e.target.style.display = 'none';
-                                if (e.target.nextSibling) {
-                                    e.target.nextSibling.style.display = 'flex';
-                                }
-                            }}
-                        />
-                    ) : null}
-                    
-                    <div 
-                        className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${
-                            coverImageUrl ? 'hidden' : 'flex'
-                        }`}
-                    >
-                        <FaUtensils className="text-6xl text-indigo-300" />
-                    </div>
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
+        <div className="relative">
+          <div className="w-full h-48 relative overflow-hidden">
+            {coverImageUrl ? (
+              <img
+                src={coverImageUrl}
+                alt={vendor.businessName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  e.target.style.display = 'none';
+                  if (e.target.nextSibling) {
+                    e.target.nextSibling.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
 
-                    {isFeatured && (
-                        <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                            Featured
-                        </div>
-                    )}
-                </div>
+            <div
+              className={`w-full h-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center ${coverImageUrl ? 'hidden' : 'flex'
+                }`}
+            >
+              <FaUtensils className="text-6xl text-indigo-300" />
             </div>
-            
-            <div className="p-4">
-                <h3 className="text-lg font-bold text-gray-800 mb-1">{vendor.businessName}</h3>
-                
-                <div className="flex items-center mb-2 text-gray-600">
-                    <FaMapMarkerAlt className="mr-1 text-sm" />
-                    <span className="text-sm">{vendor.locality}, {vendor.city}</span>
-                </div>
 
-                <div className="text-sm text-gray-600 mb-3">
-                    <span className="font-medium">Cuisines: </span>
-                    <span>{vendor.cuisines?.slice(0, 3).join(', ')}</span>
-                    {vendor.cuisines?.length > 3 && <span className="text-gray-500"> +{vendor.cuisines.length - 3} more</span>}
-                </div>
-
-                <div className="mb-3 flex items-center gap-2">
-                    <span className="font-bold text-indigo-600 flex items-center">
-                        <FaRupeeSign className="mr-1" />
-                        {(vendor.minPrice && vendor.maxPrice) ? `${vendor.minPrice} - ${vendor.maxPrice}` : 'N/A'}
-                    </span>
-                    <span className="text-gray-500 text-sm"> / person</span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-1">
-                    <Link
-                        href={`/vendors/${vendor.id}`}
-                        className="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm"
-                        onClick={() => handleVendorClick(vendor)}
-                    >
-                        View Profile
-                    </Link>
-                </div>
-            </div>
+            {isFeatured && (
+              <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                Featured
+              </div>
+            )}
+          </div>
         </div>
+
+        <div className="p-4">
+          <h3 className="text-lg font-bold text-gray-800 mb-1">{vendor.businessName}</h3>
+
+          <div className="flex items-center mb-2 text-gray-600">
+            <FaMapMarkerAlt className="mr-1 text-sm" />
+            <span className="text-sm">{vendor.locality}, {vendor.city}</span>
+          </div>
+
+          <div className="text-sm text-gray-600 mb-3">
+            <span className="font-medium">Cuisines: </span>
+            <span>{vendor.cuisines?.slice(0, 3).join(', ')}</span>
+            {vendor.cuisines?.length > 3 && <span className="text-gray-500"> +{vendor.cuisines.length - 3} more</span>}
+          </div>
+
+          <div className="mb-3 flex items-center gap-2">
+            <span className="font-bold text-indigo-600 flex items-center">
+              <FaRupeeSign className="mr-1" />
+              {(vendor.minPrice && vendor.maxPrice) ? `${vendor.minPrice} - ${vendor.maxPrice}` : 'N/A'}
+            </span>
+            <span className="text-gray-500 text-sm"> / person</span>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1">
+            <Link
+              href={`/vendors/${vendor.id}`}
+              className="flex-1 bg-indigo-600 text-white text-center px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm"
+              onClick={() => handleVendorClick(vendor)}
+            >
+              View Profile
+            </Link>
+          </div>
+        </div>
+      </div>
     );
-};
+  };
 
   return (
     <div className="bg-white min-h-screen">
@@ -441,7 +440,7 @@ const SearchPage = () => {
             <div className="relative flex p-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full shadow-xl">
               <input
                 type="text"
-                placeholder="Search by caterer name, cuisine or location..."
+                placeholder="Search by caterer name or location..."
                 className="w-full sm:placeholder:text-lg placeholder:text-sm px-2 sm:px-5 py-3 md:px-6 md:py-4 rounded-full text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-md text-base md:text-lg font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -546,28 +545,28 @@ const SearchPage = () => {
                       setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }));
                     }}
                     disabled={!pagination.hasPrevPage}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg ${pagination.hasPrevPage 
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg ${pagination.hasPrevPage
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    } transition`}
+                      } transition`}
                   >
                     Previous
                   </button>
-                  
+
                   <span className="text-gray-600 text-sm sm:text-base">
                     Page {pagination.currentPage} of {pagination.totalPages}
                   </span>
-                  
+
                   <button
                     onClick={() => {
                       handlePaginationClick('next');
                       setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }));
                     }}
                     disabled={!pagination.hasNextPage}
-                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg ${pagination.hasNextPage 
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg ${pagination.hasNextPage
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    } transition`}
+                      } transition`}
                   >
                     Next
                   </button>
@@ -577,13 +576,19 @@ const SearchPage = () => {
           ) : (
             <div className="text-center py-10 sm:py-12 md:py-16 bg-gray-50 rounded-lg border border-gray-200 shadow-inner mx-2 md:mx-4">
               <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 mb-2 sm:mb-3">No caterers found</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Try adjusting your filters or search criteria</p>
+              <p className="text-sm sm:text-base text-gray-600 mb-2 sm:mb-3">Try adjusting your filters or search criteria</p>
               <button
                 onClick={clearAllFilters}
                 className="px-4 sm:px-5 py-2 text-sm sm:text-base bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition cursor-pointer"
               >
                 Clear All Filters
               </button>
+              {/* <p className='text-sm sm:text-base text-indigo-600 mt-2'>Note: All our partners serve the entire Patna area! The location search is to find caterers based near you, but they will travel.</p> */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-xs sm:text-sm text-gray-600 text-center">
+                  <strong>Tip:</strong> All caterers deliver across Patna. Location search shows where they&apos;re based, not where they serve.
+                </p>
+              </div>
             </div>
           )}
         </div>
