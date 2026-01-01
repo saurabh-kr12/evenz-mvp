@@ -1,6 +1,6 @@
 MIT License (Internal Use Only)
 
-Copyright (c) 2025 Evenz
+Copyright (c) 2026 Evenz
 
 Permission is hereby granted to authorized team members of the Evenz project to use, modify, and distribute this software for internal development and testing purposes only.
 
