@@ -1,12 +1,12 @@
 ---
-title: "So, What's the Damage? A Real Look at Catering Costs in Patna (2025)"
-description: "Planning an event in Patna? We break down the real costs. See the typical per-plate price for budget, mid-range, and luxury catering in 2025."
+title: "So, What's the Damage? A Real Look at Catering Costs in Patna (2026)"
+description: "Planning an event in Patna? We break down the real costs. See the typical per-plate price for budget, mid-range, and luxury catering in 2026."
 ---
-# So, What's the Damage? A Real Look at Catering Costs in Patna (2025)
+# So, What's the Damage? A Real Look at Catering Costs in Patna (2026)
 
 Planning a big event here in Patna? Awesome! Whether it's the wedding madness, a company get-together, or just a big family party, you've got a lot on your plate (pun intended!). And let's be real, one of the first questions buzzing in your head is probably: **"Okay, but how much is the food gonna cost?"** Figuring out the catering budget is a huge piece of the puzzle. Knowing the usual price tags and what makes them go up or down can seriously save you some hassle and help you find someone great without breaking the bank.
 
-Here at Evenz.in, we're all about making things easier for folks planning events in Patna. So, we wanted to give you the inside scoop on catering costs in our city for 2025. Hopefully, this helps clear things up!
+Here at Evenz.in, we're all about making things easier for folks planning events in Patna. So, we wanted to give you the inside scoop on catering costs in our city for 2026. Hopefully, this helps clear things up!
 
 ## Breaking Down the "Per Plate" Deal
 
@@ -19,7 +19,7 @@ You'll hear this a lot: caterers usually charge **"per plate"** or **"per person
 
 **Quick Tip:** Always, *always* ask *exactly* what's included. Things like fancy live cooking stations (chaat, pasta, etc.), really nice crockery, or special decorations often cost extra. Better to know upfront!
 
-## Patna Catering Prices: What to Expect (Roughly, for 2025)
+## Patna Catering Prices: What to Expect (Roughly, for 2026)
 
 Okay, let's talk numbers. Keep in mind, prices swing wildly based on who you hire, how fancy the menu is, and the service level. But here's a general idea for Patna:
 

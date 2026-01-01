@@ -1,9 +1,9 @@
 ---
-title: "Best Caterers in Patna: Your Top Guide for Any Event (2025)"
+title: "Best Caterers in Patna: Your Top Guide for Any Event (2026)"
 description: "Looking for the best caterer in Patna? We've got you. Here's our local's guide to 8 top-rated caterers for your wedding, party, or corporate event."
 ---
 
-# Best Caterers in Patna: Your Top Guide for Any Event (2025)
+# Best Caterers in Patna: Your Top Guide for Any Event (2026)
 
 <div class="w-full max-h-64 sm:max-h-72 md:max-h-96 overflow-hidden rounded-lg shadow-md mb-6">
 <img class="object-cover w-full h-full" src="/patna-top-catering-blog.png"/>
@@ -23,7 +23,7 @@ We know this feeling. Deeply. It's the whole reason we started Evenz.in. We've s
 
 Spoiler: It's not just about flashy food. It's about reliability.
 
-Here’s our 2025 guide to finding the **top caterers in Patna**, featuring many of our own trusted partners.
+Here’s our 2026 guide to finding the **top caterers in Patna**, featuring many of our own trusted partners.
 
 ## What *Actually* Makes a "Top Caterer"?
 
