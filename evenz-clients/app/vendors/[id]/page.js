@@ -1,20 +1,14 @@
-import CatererProfileView from '@/pages/VendorProfile'; // Make sure this is the correct path to your component
+import CatererProfileView from '@/pages/VendorProfile'; // Make sure this is the correct path
 
-// This function tells Next.js how to generate the metadata dynamically
 export async function generateMetadata(props) {
   try {
-    // --- THE FIX IS HERE ---
-    // In newer Next.js versions, for dynamic routes, you must await the params object
-    // before you can safely access its properties like .id
     const params = await props.params;
     const catererId = params.id;
-    // --- END OF FIX ---
 
     // Fetch the specific caterer's data from your backend
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
 
     if (!response.ok) {
-        // This handles network errors (e.g., backend is down)
         throw new Error('Failed to fetch caterer data from the server.');
     }
     
@@ -28,23 +22,27 @@ export async function generateMetadata(props) {
     }
 
     const caterer = data.data.vendorInfo;
-    const cuisines = data.data.menu?.cuisines || [];
+    const cuisines = Array.isArray(data.data.menu?.cuisines) ? data.data.menu.cuisines : [];
+
+    // SAFELY extract values. If data is missing, provide clean fallbacks so the server doesn't crash.
+    const businessName = caterer?.businessName || 'Caterer Profile';
+    const city = caterer?.address?.city ? ` in ${caterer.address.city}` : '';
+    const cuisineText = cuisines.length > 0 ? ` Specializing in ${cuisines.join(', ')}.` : '';
 
     return {
-      title: `${caterer.businessName} - Catering in ${caterer.address.city} | Evenz.in`,
-      description: `Book ${caterer.businessName} for your next event in Patna. Specializing in ${cuisines.join(', ')}. View packages, check availability, and get a free quote on Evenz.in.`,
+      title: `${businessName} - Catering${city} | Evenz.in`,
+      description: `Book ${businessName} for your next event in Patna.${cuisineText} View packages, check availability, and get a free quote on Evenz.in.`,
     };
   } catch (error) {
+    // If the server crashes, fail gracefully with a professional title, NOT "Error"
     console.error('Error generating metadata for vendor profile:', error);
-    // Return a generic title if there's any error to prevent the build from failing
     return {
-      title: 'Error | Evenz.in',
-      description: 'There was an error loading the caterer details.',
+      title: 'Caterer Profile | Evenz.in',
+      description: 'View caterer details, check availability, and book for your next event on Evenz.in.',
     };
   }
 }
 
-// Your page component remains the same
 export default function VendorProfilePage() {
     return <CatererProfileView />;
 }
