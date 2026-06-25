@@ -5,13 +5,17 @@ export async function generateMetadata(props) {
     const params = await props.params;
     const catererId = params.id;
 
-    // Fetch the specific caterer's data from your backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`);
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/caterers-details/${catererId}/view-profile`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+      }
+    });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch caterer data from the server.');
+      throw new Error(`Failed to fetch caterer data. HTTP Status: ${response.status} ${response.statusText}`);
     }
-    
+
     const data = await response.json();
 
     if (!data.success || !data.data?.vendorInfo) {
@@ -24,7 +28,6 @@ export async function generateMetadata(props) {
     const caterer = data.data.vendorInfo;
     const cuisines = Array.isArray(data.data.menu?.cuisines) ? data.data.menu.cuisines : [];
 
-    // SAFELY extract values. If data is missing, provide clean fallbacks so the server doesn't crash.
     const businessName = caterer?.businessName || 'Caterer Profile';
     const city = caterer?.address?.city ? ` in ${caterer.address.city}` : '';
     const cuisineText = cuisines.length > 0 ? ` Specializing in ${cuisines.join(', ')}.` : '';
@@ -34,7 +37,6 @@ export async function generateMetadata(props) {
       description: `Book ${businessName} for your next event in Patna.${cuisineText} View packages, check availability, and get a free quote on Evenz.in.`,
     };
   } catch (error) {
-    // If the server crashes, fail gracefully with a professional title, NOT "Error"
     console.error('Error generating metadata for vendor profile:', error);
     return {
       title: 'Caterer Profile | Evenz.in',
@@ -44,5 +46,5 @@ export async function generateMetadata(props) {
 }
 
 export default function VendorProfilePage() {
-    return <CatererProfileView />;
+  return <CatererProfileView />;
 }
